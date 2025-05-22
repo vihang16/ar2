@@ -42,13 +42,33 @@ def save_players(players):
 # Load and save matches
 def load_matches():
     df = pd.DataFrame(matches_sheet.get_all_records())
+    if "match_id" not in df.columns:
+        df["match_id"] = ""
+
+    # Fix missing or empty match_ids by generating new ones
+    updated = False
+    for idx, row in df.iterrows():
+        if not row["match_id"]:
+            date_str = row.get("date", datetime.now().strftime("%Y-%m-%d"))
+            # fallback: if date parsing fails, just use now
+            try:
+                date_parsed = pd.to_datetime(date_str)
+            except:
+                date_parsed = datetime.now()
+            new_id = f"MIRA-{date_parsed.strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+            df.at[idx, "match_id"] = new_id
+            updated = True
+
+    # If we added any IDs, save back to sheet
+    if updated:
+        matches_sheet.clear()
+        matches_sheet.update([df.columns.tolist()] + df.values.tolist())
+
     return df
 
 def save_matches(df):
-    # Drop any internal columns (like date_parsed) before saving
-    df_to_save = df.drop(columns=["date_parsed"], errors='ignore')
     matches_sheet.clear()
-    matches_sheet.update([df_to_save.columns.tolist()] + df_to_save.values.tolist())
+    matches_sheet.update([df.columns.tolist()] + df.values.tolist())
 
 # Compute stats
 def compute_stats(matches):
@@ -98,16 +118,17 @@ st.title("Mira Mixed Doubles Tennis Group 🎾")
 players = load_players()
 matches = load_matches()
 
-# Ensure match_id column exists to avoid blank ids
-if "match_id" not in matches.columns:
-    matches["match_id"] = ""
+# Sort matches by date (parse dates properly)
+if not matches.empty and "date" in matches.columns:
+    matches["date_parsed"] = pd.to_datetime(matches["date"], errors='coerce')
+    matches = matches.sort_values(by="date_parsed", ascending=False).reset_index(drop=True)
+else:
+    matches["date_parsed"] = pd.NaT
 
-# Parse dates for sorting
-matches["date_parsed"] = pd.to_datetime(matches["date"], errors='coerce')
+# Setup tabs
+tab1, tab2, tab3, tab4 = st.tabs(["🎾 Enter Match", "📖 Match Records", "🏆 Rankings", "👤 Player Stats"])
 
-# Organize into tabs
-tab1, tab2, tab3, tab4 = st.tabs(["📥 Post New Match", "📖 Match Records", "🏆 Rankings", "🎾 Player Stats"])
-
+# TAB 1 - Enter Match
 with tab1:
     st.header("Enter Match Result")
 
@@ -145,49 +166,45 @@ with tab1:
         st.success("Match submitted.")
         st.experimental_rerun()
 
+# TAB 2 - Match Records & Edit/Delete
 with tab2:
     st.header("Match Records")
 
-    # Allow edit/delete matches
-    st.subheader("Edit / Delete Matches")
-    match_ids = matches["match_id"].dropna().tolist()
-    selected_id = st.selectbox("Select Match ID", [""] + match_ids)
-
-    if selected_id:
-        selected_row = matches[matches["match_id"] == selected_id].iloc[0]
-        st.write("Selected Match Details:")
-        st.write(selected_row)
-
-        if st.button("Delete Match"):
-            matches = matches[matches["match_id"] != selected_id]
-            save_matches(matches)
-            st.success("Match deleted.")
-            st.experimental_rerun()
-
-    if not matches.empty:
-        matches_sorted = matches.sort_values(by="date_parsed", ascending=False)
-
-        # Prepare display columns
-        for col in ["set1", "set2", "set3"]:
-            if col not in matches_sorted.columns:
-                matches_sorted[col] = ""
+    if matches.empty:
+        st.write("No matches recorded yet.")
+    else:
+        # Display matches with formatted columns
+        matches["Date"] = matches["date_parsed"].dt.strftime("%d %b %Y")
+        for col in ["set1", "set2", "set3", "match_id"]:
+            if col not in matches.columns:
+                matches[col] = ""
 
         def format_winner(row):
             if row["winner"] == "Team 1":
                 return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
             return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
 
-        matches_sorted["Winner"] = matches_sorted.apply(format_winner, axis=1)
-        matches_sorted["Match"] = matches_sorted.apply(
-            lambda r: f"{r['team1_player1']} & {r['team1_player2']} vs {r['team2_player1']} & {r['team2_player2']}", axis=1)
+        matches["Winner"] = matches.apply(format_winner, axis=1)
+        matches["Match"] = matches.apply(lambda r: f"{r['team1_player1']} & {r['team1_player2']} vs {r['team2_player1']} & {r['team2_player2']}", axis=1)
 
-        matches_sorted["Date"] = matches_sorted["date_parsed"].dt.strftime("%d %b %Y")
-
-        display = matches_sorted[["Date", "Match", "set1", "set2", "set3", "Winner", "match_id"]].copy()
+        display = matches[["Date", "Match", "set1", "set2", "set3", "Winner", "match_id"]].copy()
         display.columns = ["Date", "Match", "Set 1", "Set 2", "Set 3", "Winner", "Match ID"]
-
         st.dataframe(display, use_container_width=True)
 
+        # Edit/Delete match
+        st.subheader("Edit/Delete Match")
+        match_ids = matches["match_id"].dropna().tolist()
+        selected_id = st.selectbox("Select Match ID", [""] + match_ids)
+        if selected_id:
+            selected_row = matches[matches["match_id"] == selected_id].iloc[0]
+
+            if st.button("Delete Match"):
+                matches = matches[matches["match_id"] != selected_id]
+                save_matches(matches)
+                st.success("Match deleted.")
+                st.experimental_rerun()
+
+# TAB 3 - Rankings
 with tab3:
     st.header("Player Rankings")
     stats = compute_stats(matches)
@@ -201,7 +218,10 @@ with tab3:
         rankings.index = range(1, len(rankings) + 1)
         rankings.index.name = "Rank"
         st.dataframe(rankings)
+    else:
+        st.write("No player stats available yet.")
 
+# TAB 4 - Player Stats
 with tab4:
     st.header("Player Insights")
     selected_player = st.selectbox("Select Player", players)
