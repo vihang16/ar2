@@ -90,7 +90,6 @@ st.title("Mira Mixed Doubles Tennis Group 🎾")
 players = load_players()
 matches = load_matches()
 
-# Sidebar for managing players
 with st.sidebar:
     st.header("Manage Players")
     new_player = st.text_input("Add New Player").upper()
@@ -105,19 +104,26 @@ with st.sidebar:
         save_players(players)
         st.rerun()
 
-# Match Entry Section
 st.header("Enter Match Result")
 
-p1 = st.selectbox("Team 1 - Player 1", players, key="t1p1")
-p2 = st.selectbox("Team 1 - Player 2", [p for p in players if p != p1], key="t1p2")
-p3 = st.selectbox("Team 2 - Player 1", [p for p in players if p not in [p1, p2]], key="t2p1")
-p4 = st.selectbox("Team 2 - Player 2", [p for p in players if p not in [p1, p2, p3]], key="t2p2")
+available_players = players.copy()
+p1 = st.selectbox("Team 1 - Player 1", available_players, key="t1p1")
+available_players = [p for p in available_players if p != p1]
+p2 = st.selectbox("Team 1 - Player 2", available_players, key="t1p2")
+available_players = [p for p in available_players if p != p2]
+p3 = st.selectbox("Team 2 - Player 1", available_players, key="t2p1")
+available_players = [p for p in available_players if p != p3]
+p4 = st.selectbox("Team 2 - Player 2", available_players, key="t2p2")
 
-# Score inputs
-st.markdown("**Enter Set Scores (Format: 6-4)**")
-set1 = st.text_input("Set 1", value="6-4")
-set2 = st.text_input("Set 2", value="6-4")
-set3 = st.text_input("Set 3 (optional)", value="")
+valid_scores = [
+    "6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6",
+    "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"
+]
+
+st.markdown("**Select Set Scores**")
+set1 = st.selectbox("Set 1", valid_scores, index=4)
+set2 = st.selectbox("Set 2", valid_scores, index=4)
+set3 = st.selectbox("Set 3 (optional)", [""] + valid_scores, index=0)
 
 winner = st.radio("Winner", ["Team 1", "Team 2"])
 
@@ -139,7 +145,6 @@ if st.button("Submit Match"):
     st.success("Match submitted.")
     st.rerun()
 
-# Match Records Display
 st.header("Match Records")
 if not matches.empty:
     display = matches.copy()
@@ -151,7 +156,6 @@ if not matches.empty:
     display = display[["Date", "Players", "set1", "set2", "set3", "winner"]]
     st.dataframe(display)
 
-# Player Rankings
 st.header("Player Rankings")
 stats = compute_stats(matches)
 if stats:
@@ -164,7 +168,6 @@ if stats:
     rankings.index.name = "Rank"
     st.dataframe(rankings)
 
-# Player Insights
 st.header("Player Insights")
 selected_player = st.selectbox("Select Player", players)
 if selected_player:
@@ -175,3 +178,34 @@ if selected_player:
     st.write(f"**Matches Played:** {data['matches']}")
     win_pct = (data["wins"] / data["matches"] * 100) if data["matches"] else 0
     st.write(f"**Win %:** {win_pct:.1f}%")
+
+    # Partner stats
+    partner_matches = []
+    for _, row in matches.iterrows():
+        if selected_player in [row["team1_player1"], row["team1_player2"]]:
+            teammate = row["team1_player2"] if selected_player == row["team1_player1"] else row["team1_player1"]
+            same_team = "Team 1"
+        elif selected_player in [row["team2_player1"], row["team2_player2"]]:
+            teammate = row["team2_player2"] if selected_player == row["team2_player1"] else row["team2_player1"]
+            same_team = "Team 2"
+        else:
+            continue
+        won = row["winner"] == same_team
+        partner_matches.append((teammate, won))
+
+    partner_stats = defaultdict(lambda: {"matches": 0, "wins": 0})
+    for partner, won in partner_matches:
+        partner_stats[partner]["matches"] += 1
+        if won:
+            partner_stats[partner]["wins"] += 1
+
+    if partner_stats:
+        st.subheader("Partner History")
+        for partner, stat in partner_stats.items():
+            pct = (stat["wins"] / stat["matches"] * 100) if stat["matches"] else 0
+            st.markdown(f"- {partner}: {stat['wins']} Wins / {stat['matches']} Matches ({pct:.1f}%)")
+
+        best_partner = max(partner_stats.items(), key=lambda x: (x[1]["wins"] / x[1]["matches"] if x[1]["matches"] > 0 else 0))
+        best_partner_name = best_partner[0]
+        win_pct = (best_partner[1]["wins"] / best_partner[1]["matches"]) * 100
+        st.markdown(f"**Most Effective Partner:** {best_partner_name} ({win_pct:.1f}% win rate)")
