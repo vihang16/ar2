@@ -169,7 +169,7 @@ with tab2:
     #    if row["winner"] == "Team 1":
     #        return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
     #    return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
-  def format_winner(row):
+def format_winner(row):
     if row["winner"] == "Team 1":
         return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
     elif row["winner"] == "Team 2":
