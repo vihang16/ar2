@@ -3,7 +3,7 @@ import pandas as pd
 import uuid
 from datetime import datetime
 import gspread
-from collections import defaultdict, Counter
+from collections import defaultdict
 from oauth2client.service_account import ServiceAccountCredentials
 
 # Google Sheets setup
@@ -16,8 +16,8 @@ SHEET_NAME = "RLTG Data"
 players_sheet_name = "Mira Players"
 matches_sheet_name = "Mira Matches"
 
+# Ensure worksheets exist
 spreadsheet = client.open(SHEET_NAME)
-
 def get_or_create_worksheet(sheet, name, rows=1000, cols=20):
     try:
         return sheet.worksheet(name)
@@ -42,16 +42,17 @@ def save_players(players):
 
 # Load matches
 def load_matches():
-    return pd.DataFrame(matches_sheet.get_all_records())
+    df = pd.DataFrame(matches_sheet.get_all_records())
+    return df
 
 # Save matches
 def save_matches(df):
     matches_sheet.clear()
     matches_sheet.update([df.columns.tolist()] + df.values.tolist())
 
-# Compute points and stats
+# Compute points
 def compute_stats(matches):
-    stats = defaultdict(lambda: {"points": 0, "wins": 0, "losses": 0, "matches": 0})
+    stats = defaultdict(lambda: {"points": 0, "wins": 0, "losses": 0, "matches": 0, "partners": defaultdict(int)})
     for _, row in matches.iterrows():
         team1 = [row["team1_player1"], row["team1_player2"]]
         team2 = [row["team2_player1"], row["team2_player2"]]
@@ -60,16 +61,25 @@ def compute_stats(matches):
             for p in team1:
                 stats[p]["points"] += 3
                 stats[p]["wins"] += 1
+                # Track partners
+                partner = team1[1] if p == team1[0] else team1[0]
+                stats[p]["partners"][partner] += 1
             for p in team2:
                 stats[p]["points"] += 1
                 stats[p]["losses"] += 1
+                partner = team2[1] if p == team2[0] else team2[0]
+                stats[p]["partners"][partner] += 1
         else:
             for p in team2:
                 stats[p]["points"] += 3
                 stats[p]["wins"] += 1
+                partner = team2[1] if p == team2[0] else team2[0]
+                stats[p]["partners"][partner] += 1
             for p in team1:
                 stats[p]["points"] += 1
                 stats[p]["losses"] += 1
+                partner = team1[1] if p == team1[0] else team1[0]
+                stats[p]["partners"][partner] += 1
         for p in team1 + team2:
             stats[p]["matches"] += 1
     return stats
@@ -90,23 +100,23 @@ st.title("Mira Mixed Doubles Tennis Group 🎾")
 players = load_players()
 matches = load_matches()
 
-# Sidebar - Player management
 with st.sidebar:
     st.header("Manage Players")
     new_player = st.text_input("Add New Player").upper()
     if st.button("Add Player") and new_player and new_player not in players:
         players.append(new_player)
         save_players(players)
-        st.rerun()
+        st.experimental_rerun()
 
     remove_player = st.selectbox("Remove Player", [""] + players)
     if st.button("Remove Selected Player") and remove_player:
         players.remove(remove_player)
         save_players(players)
-        st.rerun()
+        st.experimental_rerun()
 
-# Match entry
+# Enter match results
 st.header("Enter Match Result")
+
 available_players = players.copy()
 p1 = st.selectbox("Team 1 - Player 1", available_players, key="t1p1")
 available_players = [p for p in available_players if p != p1]
@@ -116,12 +126,15 @@ p3 = st.selectbox("Team 2 - Player 1", available_players, key="t2p1")
 available_players = [p for p in available_players if p != p3]
 p4 = st.selectbox("Team 2 - Player 2", available_players, key="t2p2")
 
-valid_scores = ['6-0', '6-1', '6-2', '6-3', '6-4', '6-5', '7-5', '7-6', '0-6', '1-6', '2-6', '3-6', '4-6', '5-6', '5-7', '6-7']
+# Tennis score options dropdown - common scores for sets
+score_options = [
+    "6-0","6-1","6-2","6-3","6-4","7-5","7-6","0-6","1-6","2-6","3-6","4-6","5-7","6-7"
+]
 
-st.markdown("**Select Set Scores**")
-set1 = st.selectbox("Set 1", valid_scores, key="set1")
-set2 = st.selectbox("Set 2", valid_scores, key="set2")
-set3 = st.selectbox("Set 3 (optional)", [""] + valid_scores, key="set3")
+st.markdown("**Enter Set Scores (choose from dropdown)**")
+set1 = st.selectbox("Set 1", score_options, index=4)
+set2 = st.selectbox("Set 2", score_options, index=4)
+set3 = st.selectbox("Set 3 (optional)", [""] + score_options, index=0)
 
 winner = st.radio("Winner", ["Team 1", "Team 2"])
 
@@ -141,9 +154,9 @@ if st.button("Submit Match"):
     matches = pd.concat([matches, pd.DataFrame([new_match])], ignore_index=True)
     save_matches(matches)
     st.success("Match submitted.")
-    st.rerun()
+    st.experimental_rerun()
 
-# Match Records
+# Match display
 st.header("Match Records")
 if not matches.empty:
     display = matches.copy()
@@ -158,6 +171,7 @@ if not matches.empty:
         else f"🏆 {row['team2_player1']} & {row['team2_player2']}",
         axis=1
     )
+    # Select and rename columns for display
     display = display[["Date", "Players", "set1", "set2", "set3", "Winner"]]
     display.columns = ["Date", "Match", "Set 1", "Set 2", "Set 3", "Winner"]
     st.dataframe(display, use_container_width=True)
@@ -179,7 +193,7 @@ if stats:
 st.header("Player Insights")
 selected_player = st.selectbox("Select Player", players)
 if selected_player:
-    data = stats.get(selected_player, {"points": 0, "wins": 0, "losses": 0, "matches": 0})
+    data = stats.get(selected_player, {"points": 0, "wins": 0, "losses": 0, "matches": 0, "partners": {}})
     st.write(f"**Points:** {data['points']}")
     st.write(f"**Wins:** {data['wins']}")
     st.write(f"**Losses:** {data['losses']}")
@@ -187,18 +201,14 @@ if selected_player:
     win_pct = (data["wins"] / data["matches"] * 100) if data["matches"] else 0
     st.write(f"**Win %:** {win_pct:.1f}%")
 
-    # Partner insights
-    partners = []
-    for _, row in matches.iterrows():
-        if selected_player in [row["team1_player1"], row["team1_player2"]]:
-            partners.append(row["team1_player2"] if row["team1_player1"] == selected_player else row["team1_player1"])
-        elif selected_player in [row["team2_player1"], row["team2_player2"]]:
-            partners.append(row["team2_player2"] if row["team2_player1"] == selected_player else row["team2_player1"])
-
+    # Show partners and most effective partner
+    partners = data.get("partners", {})
     if partners:
-        partner_counts = Counter(partners)
-        most_effective_partner = partner_counts.most_common(1)[0][0]
-        st.write(f"**Partners Played With:** {', '.join(partner_counts.keys())}")
-        st.write(f"**Most Frequent Partner:** {most_effective_partner}")
+        st.write("### Partners Played With:")
+        for partner, count in sorted(partners.items(), key=lambda x: x[1], reverse=True):
+            st.write(f"- {partner}: {count} match{'es' if count > 1 else ''}")
+        best_partner = max(partners.items(), key=lambda x: x[1])[0]
+        st.write(f"**Most Effective Partner:** {best_partner}")
     else:
-        st.write("No matches recorded for this player.")
+        st.write("No partner data available.")
+
