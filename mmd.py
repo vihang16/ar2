@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import uuid
@@ -23,12 +22,28 @@ spreadsheet = client.open(SHEET_NAME)
 def get_or_create_worksheet(sheet, name, rows=1000, cols=20):
     try:
         return sheet.worksheet(name)
-    except:
+    except gspread.exceptions.WorksheetNotFound:
         return sheet.add_worksheet(title=name, rows=str(rows), cols=str(cols))
+    except Exception as e:
+        st.error(f"Error accessing Google Sheet: {str(e)}")
+        return None
 
 players_sheet = get_or_create_worksheet(spreadsheet, players_sheet_name)
 matches_sheet = get_or_create_worksheet(spreadsheet, matches_sheet_name)
 bookings_sheet = get_or_create_worksheet(spreadsheet, bookings_sheet_name)
+
+# Initialize bookings sheet with headers
+def initialize_bookings_sheet():
+    headers = ["booking_id", "date", "time", "court", "players"]
+    try:
+        current_headers = bookings_sheet.row_values(1)
+        if not current_headers:
+            bookings_sheet.update([headers])
+    except Exception as e:
+        st.error(f"Error initializing bookings sheet: {str(e)}")
+
+if bookings_sheet:
+    initialize_bookings_sheet()
 
 # Booking court list
 court_list = [
@@ -43,35 +58,63 @@ court_list = [
 time_slots = [f"{h}:00 {'AM' if h < 12 else 'PM'}" for h in range(6, 22)]
 
 def load_bookings():
-    df = pd.DataFrame(bookings_sheet.get_all_records())
-    if "booking_id" not in df.columns:
-        df["booking_id"] = [f"BOOK-{i}" for i in range(len(df))]
-    return df
+    try:
+        df = pd.DataFrame(bookings_sheet.get_all_records())
+        # Define expected columns
+        expected_columns = ["booking_id", "date", "time", "court", "players"]
+        # If DataFrame is empty or missing columns, initialize with expected columns
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""
+        # Generate booking_id if missing
+        if not df.empty and "booking_id" not in df.columns:
+            df["booking_id"] = [f"BOOK-{i}" for i in range(len(df))]
+        return df
+    except Exception as e:
+        st.error(f"Error loading bookings: {str(e)}")
+        return pd.DataFrame(columns=["booking_id", "date", "time", "court", "players"])
 
 def save_bookings(df):
-    bookings_sheet.clear()
-    bookings_sheet.update([df.columns.tolist()] + df.values.tolist())
+    try:
+        bookings_sheet.clear()
+        bookings_sheet.update([df.columns.tolist()] + df.values.tolist())
+    except Exception as e:
+        st.error(f"Error saving bookings: {str(e)}")
 
 def load_players():
-    df = pd.DataFrame(players_sheet.get_all_records())
-    if "Player" not in df.columns:
+    try:
+        df = pd.DataFrame(players_sheet.get_all_records())
+        if "Player" not in df.columns:
+            return []
+        return df["Player"].dropna().str.upper().tolist()
+    except Exception as e:
+        st.error(f"Error loading players: {str(e)}")
         return []
-    return df["Player"].dropna().str.upper().tolist()
 
 def save_players(players):
-    df = pd.DataFrame({"Player": players})
-    players_sheet.clear()
-    players_sheet.update([df.columns.tolist()] + df.values.tolist())
+    try:
+        df = pd.DataFrame({"Player": players})
+        players_sheet.clear()
+        players_sheet.update([df.columns.tolist()] + df.values.tolist())
+    except Exception as e:
+        st.error(f"Error saving players: {str(e)}")
 
 def load_matches():
-    df = pd.DataFrame(matches_sheet.get_all_records())
-    if "match_id" not in df.columns:
-        df["match_id"] = [f"MIRA-OLD-{i}" for i in range(len(df))]
-    return df
+    try:
+        df = pd.DataFrame(matches_sheet.get_all_records())
+        if "match_id" not in df.columns:
+            df["match_id"] = [f"MIRA-OLD-{i}" for i in range(len(df))]
+        return df
+    except Exception as e:
+        st.error(f"Error loading matches: {str(e)}")
+        return pd.DataFrame()
 
 def save_matches(df):
-    matches_sheet.clear()
-    matches_sheet.update([df.columns.tolist()] + df.values.tolist())
+    try:
+        matches_sheet.clear()
+        matches_sheet.update([df.columns.tolist()] + df.values.tolist())
+    except Exception as e:
+        st.error(f"Error saving matches: {str(e)}")
 
 def compute_stats(matches):
     stats = defaultdict(lambda: {"points": 0, "wins": 0, "losses": 0, "matches": 0, "partners": defaultdict(int)})
@@ -137,9 +180,7 @@ if "match_id" not in matches.columns or matches["match_id"].isnull().any():
     save_matches(matches)
 
 # Tabs
-#tab1, tab2, tab3, tab4 = st.tabs(["Post Match", "Match Records", "Rankings", "Player Stats"])
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["Post Match", "Match Records", "Rankings", "Player Stats", "Game Bookings"])
-
 
 with tab1:
     st.header("Enter Match Result")
@@ -211,7 +252,7 @@ with tab2:
         available_players.remove(p1)
         p2 = st.selectbox("Team 1 - Player 2", available_players, index=available_players.index(selected_row["team1_player2"]))
         available_players.remove(p2)
-        p3 = st.selectbox("Team 2 - Player 1", available_players, index=available_players.index(selected_row["team2_player1"]))
+        p3 = st.selectbox("Team 2 - Player 1", available_players, index=available_players.index(selected_row["team1_player1"]))
         available_players.remove(p3)
         p4 = st.selectbox("Team 2 - Player 2", available_players, index=available_players.index(selected_row["team2_player2"]))
 
@@ -270,7 +311,7 @@ with tab4:
         rankings_df["RankKey"] = rankings_df.apply(lambda r: (-r["Points"], -r["Wins"]), axis=1)
         rankings_df = rankings_df.sort_values(by="RankKey").reset_index(drop=True)
         rankings_df["Rank"] = rankings_df.index + 1
-        player_rank = rankings_df[rankings_df["Player"] == selected_player]["Rank"].values[0]
+        player_rank = rankings_df[rankings_df["Player"] == selected_player]["Rank"].values[0] if not rankings_df[rankings_df["Player"] == selected_player].empty else "N/A"
 
         st.write(f"**🏅 Player Ranking:** #{player_rank}")
         st.write(f"**Points:** {player_stats['points']}")
@@ -286,6 +327,7 @@ with tab4:
                 st.write(f"- {partner} ({count} matches)")
             best_partner = max(player_stats['partners'], key=player_stats['partners'].get)
             st.write(f"**Most Effective Partner:** {best_partner}")
+
 with tab5:
     st.header("🎾 Game Bookings")
 
@@ -301,28 +343,39 @@ with tab5:
         if not selected_players:
             st.warning("Please select at least one player.")
         else:
-            new_booking = {
-                "booking_id": f"BOOK-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}",
-                "date": selected_date.strftime("%Y-%m-%d"),
-                "time": selected_time,
-                "court": selected_court,
-                "players": ", ".join(selected_players)
-            }
-            bookings = pd.concat([bookings, pd.DataFrame([new_booking])], ignore_index=True)
-            save_bookings(bookings)
-            st.success("Booking submitted.")
-            st.rerun()
+            # Check for conflicting bookings
+            conflict = bookings[
+                (bookings["date"] == selected_date.strftime("%Y-%m-%d")) &
+                (bookings["time"] == selected_time) &
+                (bookings["court"] == selected_court)
+            ]
+            if not conflict.empty:
+                st.error("This court is already booked for the selected date and time.")
+            else:
+                new_booking = {
+                    "booking_id": f"BOOK-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}",
+                    "date": selected_date.strftime("%Y-%m-%d"),
+                    "time": selected_time,
+                    "court": selected_court,
+                    "players": ", ".join(selected_players)
+                }
+                bookings = pd.concat([bookings, pd.DataFrame([new_booking])], ignore_index=True)
+                save_bookings(bookings)
+                st.success("Booking submitted.")
+                st.rerun()
 
     st.subheader("📅 Manage Bookings")
 
-    bookings["date"] = pd.to_datetime(bookings["date"], errors='coerce')
-    bookings = bookings.sort_values(by=["date", "time"])
-    bookings["Date"] = bookings["date"].dt.strftime("%d %b %Y")
-    bookings["Players"] = bookings["players"]
-    bookings_display = bookings[["Date", "time", "court", "Players", "booking_id"]]
-    bookings_display.columns = ["Date", "Time", "Court", "Players", "Booking ID"]
-
-    st.dataframe(bookings_display.style.hide(axis="index"), use_container_width=True)
+    if bookings.empty:
+        st.write("No bookings available.")
+    else:
+        bookings["date"] = pd.to_datetime(bookings["date"], errors='coerce')
+        bookings = bookings.sort_values(by=["date", "time"])
+        bookings["Date"] = bookings["date"].dt.strftime("%d %b %Y")
+        bookings["Players"] = bookings["players"]
+        bookings_display = bookings[["Date", "time", "court", "Players", "booking_id"]]
+        bookings_display.columns = ["Date", "Time", "Court", "Players", "Booking ID"]
+        st.dataframe(bookings_display.style.hide(axis="index"), use_container_width=True)
 
     st.subheader("Edit/Delete Booking")
     booking_ids = bookings["booking_id"].dropna().tolist()
@@ -331,9 +384,9 @@ with tab5:
     if selected_booking_id:
         row = bookings[bookings["booking_id"] == selected_booking_id].iloc[0]
         edit_court = st.selectbox("Edit Court", court_list, index=court_list.index(row["court"]))
-        edit_date = st.date_input("Edit Date", row["date"])
+        edit_date = st.date_input("Edit Date", pd.to_datetime(row["date"]))
         edit_time = st.selectbox("Edit Time", time_slots, index=time_slots.index(row["time"]))
-        current_players = row["players"].split(", ")
+        current_players = row["players"].split(", ") if row["players"] else []
         edit_players = st.multiselect("Edit Players", players, default=current_players)
 
         if st.button("Update Booking"):
@@ -351,10 +404,6 @@ with tab5:
             save_bookings(bookings)
             st.success("Booking deleted.")
             st.rerun()
-
-
-
-
 
 with st.sidebar:
     st.header("Manage Players")
