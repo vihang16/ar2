@@ -258,3 +258,25 @@ with tab4:
                 st.write(f"- {partner} ({count} matches)")
             best_partner = max(player_stats['partners'], key=player_stats['partners'].get)
             st.write(f"**Most Effective Partner:** {best_partner}")
+
+with st.sidebar:
+    st.header("Manage Players")
+    new_player = st.text_input("Add Player").strip().upper()
+    if st.button("Add Player"):
+        if new_player and new_player not in players:
+            players.append(new_player)
+            players = sorted(set(players))
+            save_players(players)
+            st.success(f"{new_player} added.")
+            st.rerun()
+        elif new_player in players:
+            st.warning(f"{new_player} is already in the list.")
+
+    remove_player = st.selectbox("Remove Player", [""] + players)
+    if st.button("Remove Selected Player"):
+        if remove_player:
+            players = [p for p in players if p != remove_player]
+            save_players(players)
+            st.success(f"{remove_player} removed.")
+            st.rerun()
+
