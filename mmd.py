@@ -102,12 +102,20 @@ def save_players(players):
 def load_matches():
     try:
         df = pd.DataFrame(matches_sheet.get_all_records())
-        if "match_id" not in df.columns:
+        # Define expected columns
+        expected_columns = ["match_id", "date", "team1_player1", "team1_player2", 
+                          "team2_player1", "team2_player2", "set1", "set2", "set3", "winner"]
+        # If DataFrame is empty or missing columns, initialize with expected columns
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""
+        # Generate match_id if missing
+        if not df.empty and "match_id" not in df.columns:
             df["match_id"] = [f"MIRA-OLD-{i}" for i in range(len(df))]
         return df
     except Exception as e:
         st.error(f"Error loading matches: {str(e)}")
-        return pd.DataFrame()
+        return pd.DataFrame(columns=expected_columns)
 
 def save_matches(df):
     try:
@@ -118,11 +126,21 @@ def save_matches(df):
 
 def compute_stats(matches):
     stats = defaultdict(lambda: {"points": 0, "wins": 0, "losses": 0, "matches": 0, "partners": defaultdict(int)})
+    if matches.empty:
+        return stats
+    # Ensure required columns exist
+    required_columns = ["team1_player1", "team1_player2", "team2_player1", "team2_player2", "winner"]
+    if not all(col in matches.columns for col in required_columns):
+        return stats
     for _, row in matches.iterrows():
+        # Skip rows with missing player data
+        if not all(row.get(col) for col in required_columns[:-1]):
+            continue
         team1 = [row["team1_player1"], row["team1_player2"]]
         team2 = [row["team2_player1"], row["team2_player2"]]
         winner = row["winner"]
-
+        if not winner:
+            continue
         if winner == "Team 1":
             for p in team1:
                 stats[p]["points"] += 3
@@ -140,15 +158,12 @@ def compute_stats(matches):
         elif winner == "Tie":
             for p in team1 + team2:
                 stats[p]["points"] += 1.5
-
         for p in team1 + team2:
             stats[p]["matches"] += 1
-
         stats[team1[0]]["partners"][team1[1]] += 1
         stats[team1[1]]["partners"][team1[0]] += 1
         stats[team2[0]]["partners"][team2[1]] += 1
         stats[team2[1]]["partners"][team2[0]] += 1
-
     return stats
 
 def tennis_scores():
@@ -173,7 +188,7 @@ players = load_players()
 matches = load_matches()
 
 # Ensure match_id exists
-if "match_id" not in matches.columns or matches["match_id"].isnull().any():
+if not matches.empty and ("match_id" not in matches.columns or matches["match_id"].isnull().any()):
     for i in matches.index:
         if pd.isna(matches.at[i, "match_id"]):
             matches.at[i, "match_id"] = f"MIRA-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
@@ -219,68 +234,70 @@ with tab1:
 
 with tab2:
     st.header("Match Records & Edit/Delete")
+    if matches.empty:
+        st.write("No match records available.")
+    else:
+        matches["Date"] = pd.to_datetime(matches["date"], errors='coerce')
+        matches = matches.sort_values(by="Date", ascending=False)
+        matches["Date"] = matches["Date"].dt.strftime("%d %b %Y")
 
-    matches["Date"] = pd.to_datetime(matches["date"], errors='coerce')
-    matches = matches.sort_values(by="Date", ascending=False)
-    matches["Date"] = matches["Date"].dt.strftime("%d %b %Y")
+        def format_winner(row):
+            if row["winner"] == "Team 1":
+                return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
+            elif row["winner"] == "Team 2":
+                return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
+            else:
+                return "🤝 Tie"
 
-    def format_winner(row):
-        if row["winner"] == "Team 1":
-            return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
-        elif row["winner"] == "Team 2":
-            return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
-        else:
-            return "🤝 Tie"
+        matches["Winner"] = matches.apply(format_winner, axis=1)
+        matches["Match"] = matches.apply(lambda r: f"{r['team1_player1']} & {r['team1_player2']} vs {r['team2_player1']} & {r['team2_player2']}", axis=1)
 
-    matches["Winner"] = matches.apply(format_winner, axis=1)
-    matches["Match"] = matches.apply(lambda r: f"{r['team1_player1']} & {r['team1_player2']} vs {r['team2_player1']} & {r['team2_player2']}", axis=1)
+        display = matches[["Date", "Match", "set1", "set2", "set3", "Winner", "match_id"]].copy()
+        display.columns = ["Date", "Match", "Set 1", "Set 2", "Set 3", "Winner", "Match ID"]
+        st.dataframe(display.style.hide(axis="index"), use_container_width=True)
 
-    display = matches[["Date", "Match", "set1", "set2", "set3", "Winner", "match_id"]].copy()
-    display.columns = ["Date", "Match", "Set 1", "Set 2", "Set 3", "Winner", "Match ID"]
-    st.dataframe(display.style.hide(axis="index"), use_container_width=True)
+        st.subheader("Edit/Delete Match")
+        match_ids = matches["match_id"].dropna().tolist()
+        selected_id = st.selectbox("Select Match ID", [""] + match_ids)
 
-    st.subheader("Edit/Delete Match")
-    match_ids = matches["match_id"].dropna().tolist()
-    selected_id = st.selectbox("Select Match ID", [""] + match_ids)
+        if selected_id:
+            selected_row = matches[matches["match_id"] == selected_id].iloc[0]
+            st.markdown("### Edit Match Details")
 
-    if selected_id:
-        selected_row = matches[matches["match_id"] == selected_id].iloc[0]
-        st.markdown("### Edit Match Details")
+            available_players = players.copy()
+            p1 = st.selectbox("Team 1 - Player 1", available_players, index=available_players.index(selected_row["team1_player1"]) if selected_row["team1_player1"] in available_players else 0)
+            available_players.remove(p1)
+            p2 = st.selectbox("Team 1 - Player 2", available_players, index=available_players.index(selected_row["team1_player2"]) if selected_row["team1_player2"] in available_players else 0)
+            available_players.remove(p2)
+            p3 = st.selectbox("Team 2 - Player 1", available_players, index=available_players.index(selected_row["team2_player1"]) if selected_row["team2_player1"] in available_players else 0)
+            available_players.remove(p3)
+            p4 = st.selectbox("Team 2 - Player 2", available_players, index=available_players.index(selected_row["team2_player2"]) if selected_row["team2_player2"] in available_players else 0)
 
-        available_players = players.copy()
-        p1 = st.selectbox("Team 1 - Player 1", available_players, index=available_players.index(selected_row["team1_player1"]))
-        available_players.remove(p1)
-        p2 = st.selectbox("Team 1 - Player 2", available_players, index=available_players.index(selected_row["team1_player2"]))
-        available_players.remove(p2)
-        p3 = st.selectbox("Team 2 - Player 1", available_players, index=available_players.index(selected_row["team1_player1"]))
-        available_players.remove(p3)
-        p4 = st.selectbox("Team 2 - Player 2", available_players, index=available_players.index(selected_row["team2_player2"]))
+            set1 = st.selectbox("Set 1", tennis_scores(), index=tennis_scores().index(selected_row["set1"]) if selected_row["set1"] in tennis_scores() else 0)
+            set2 = st.selectbox("Set 2", tennis_scores(), index=tennis_scores().index(selected_row["set2"]) if selected_row["set2"] in tennis_scores() else 0)
+            set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), index=([""] + tennis_scores()).index(selected_row["set3"] if selected_row["set3"] else ""))
 
-        set1 = st.selectbox("Set 1", tennis_scores(), index=tennis_scores().index(selected_row["set1"]))
-        set2 = st.selectbox("Set 2", tennis_scores(), index=tennis_scores().index(selected_row["set2"]))
-        set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), index=([""] + tennis_scores()).index(selected_row["set3"] if selected_row["set3"] else ""))
+            winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(selected_row["winner"]) if selected_row["winner"] in ["Team 1", "Team 2", "Tie"] else 0)
 
-        winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(selected_row["winner"]))
+            if st.button("Update Match"):
+                match_index = matches[matches["match_id"] == selected_id].index[0]
+                matches.at[match_index, "team1_player1"] = p1
+                matches.at[match_index, "team1_player2"] = p2
+                matches.at[match_index, "team2_player1"] = p3
+                matches.at[match_index, "team2_player2"] = p4
+                matches.at[match_index, "set1"] = set1
+                matches.at[match_index, "set2"] = set2
+                matches.at[match_index, "set3"] = set3
+                matches.at[match_index, "winner"] = winner
+                save_matches(matches)
+                st.success("Match updated.")
+                st.rerun()
 
-        if st.button("Update Match"):
-            match_index = matches[matches["match_id"] == selected_id].index[0]
-            matches.at[match_index, "team1_player1"] = p1
-            matches.at[match_index, "team1_player2"] = p2
-            matches.at[match_index, "team2_player1"] = p3
-            matches.at[match_index, "team2_player2"] = p4
-            matches.at[match_index, "set1"] = set1
-            matches.at[match_index, "set2"] = set2
-            matches.at[match_index, "set3"] = set3
-            matches.at[match_index, "winner"] = winner
-            save_matches(matches)
-            st.success("Match updated.")
-            st.rerun()
-
-        if st.button("Delete Match"):
-            matches = matches[matches["match_id"] != selected_id]
-            save_matches(matches)
-            st.success("Match deleted.")
-            st.rerun()
+            if st.button("Delete Match"):
+                matches = matches[matches["match_id"] != selected_id]
+                save_matches(matches)
+                st.success("Match deleted.")
+                st.rerun()
 
 with tab3:
     st.header("Player Rankings")
@@ -295,6 +312,8 @@ with tab3:
         rankings.index = range(1, len(rankings) + 1)
         rankings.index.name = "Rank"
         st.dataframe(rankings)
+    else:
+        st.write("No rankings available. Add matches to generate rankings.")
 
 with tab4:
     st.header("Player Insights")
@@ -302,37 +321,43 @@ with tab4:
 
     if selected_player:
         stats = compute_stats(matches)
-        player_stats = stats.get(selected_player, {"points": 0, "wins": 0, "losses": 0, "matches": 0, "partners": {}})
+        # Ensure player_stats has all required keys
+        default_stats = {"points": 0, "wins": 0, "losses": 0, "matches": 0, "partners": defaultdict(int)}
+        player_stats = stats.get(selected_player, default_stats)
 
         rankings_df = pd.DataFrame([
             {"Player": p, "Points": d["points"], "Wins": d["wins"], "Matches": d["matches"]}
             for p, d in stats.items()
         ])
-        rankings_df["RankKey"] = rankings_df.apply(lambda r: (-r["Points"], -r["Wins"]), axis=1)
-        rankings_df = rankings_df.sort_values(by="RankKey").reset_index(drop=True)
-        rankings_df["Rank"] = rankings_df.index + 1
-        player_rank = rankings_df[rankings_df["Player"] == selected_player]["Rank"].values[0] if not rankings_df[rankings_df["Player"] == selected_player].empty else "N/A"
+        if not rankings_df.empty:
+            rankings_df["RankKey"] = rankings_df.apply(lambda r: (-r["Points"], -r["Wins"]), axis=1)
+            rankings_df = rankings_df.sort_values(by="RankKey").reset_index(drop=True)
+            rankings_df["Rank"] = rankings_df.index + 1
+            player_rank = rankings_df[rankings_df["Player"] == selected_player]["Rank"].values[0] if not rankings_df[rankings_df["Player"] == selected_player].empty else "N/A"
+        else:
+            player_rank = "N/A"
 
-        st.write(f"**🏅 Player Ranking:** #{player_rank}")
-        st.write(f"**Points:** {player_stats['points']}")
-        st.write(f"**Wins:** {player_stats['wins']}")
-        st.write(f"**Losses:** {player_stats['losses']}")
-        st.write(f"**Matches Played:** {player_stats['matches']}")
-        win_pct = (player_stats["wins"] / player_stats["matches"] * 100) if player_stats["matches"] else 0
-        st.write(f"**Win %:** {win_pct:.1f}%")
+        if player_stats["matches"] == 0:
+            st.write(f"No match data available for {selected_player}.")
+        else:
+            st.write(f"**🏅 Player Ranking:** #{player_rank}")
+            st.write(f"**Points:** {player_stats['points']}")
+            st.write(f"**Wins:** {player_stats['wins']}")
+            st.write(f"**Losses:** {player_stats['losses']}")
+            st.write(f"**Matches Played:** {player_stats['matches']}")
+            win_pct = (player_stats["wins"] / player_stats["matches"] * 100) if player_stats["matches"] else 0
+            st.write(f"**Win %:** {win_pct:.1f}%")
 
-        if player_stats['partners']:
-            st.write("**Partners Played With:**")
-            for partner, count in sorted(player_stats['partners'].items(), key=lambda x: -x[1]):
-                st.write(f"- {partner} ({count} matches)")
-            best_partner = max(player_stats['partners'], key=player_stats['partners'].get)
-            st.write(f"**Most Effective Partner:** {best_partner}")
+            if player_stats['partners']:
+                st.write("**Partners Played With:**")
+                for partner, count in sorted(player_stats['partners'].items(), key=lambda x: -x[1]):
+                    st.write(f"- {partner} ({count} matches)")
+                best_partner = max(player_stats['partners'], key=player_stats['partners'].get)
+                st.write(f"**Most Effective Partner:** {best_partner}")
 
 with tab5:
     st.header("🎾 Game Bookings")
-
     bookings = load_bookings()
-
     st.subheader("New Booking")
     selected_court = st.selectbox("Select Court", court_list)
     selected_date = st.date_input("Select Date")
@@ -365,7 +390,6 @@ with tab5:
                 st.rerun()
 
     st.subheader("📅 Manage Bookings")
-
     if bookings.empty:
         st.write("No bookings available.")
     else:
@@ -383,11 +407,11 @@ with tab5:
 
     if selected_booking_id:
         row = bookings[bookings["booking_id"] == selected_booking_id].iloc[0]
-        edit_court = st.selectbox("Edit Court", court_list, index=court_list.index(row["court"]))
-        edit_date = st.date_input("Edit Date", pd.to_datetime(row["date"]))
-        edit_time = st.selectbox("Edit Time", time_slots, index=time_slots.index(row["time"]))
+        edit_court = st.selectbox("Edit Court", court_list, index=court_list.index(row["court"]) if row["court"] in court_list else 0)
+        edit_date = st.date_input("Edit Date", pd.to_datetime(row["date"]) if pd.notnull(row["date"]) else datetime.now())
+        edit_time = st.selectbox("Edit Time", time_slots, index=time_slots.index(row["time"]) if row["time"] in time_slots else 0)
         current_players = row["players"].split(", ") if row["players"] else []
-        edit_players = st.multiselect("Edit Players", players, default=current_players)
+        edit_players = st.multiselect("Edit Players", players, default=[p for p in current_players if p in players])
 
         if st.button("Update Booking"):
             index = bookings[bookings["booking_id"] == selected_booking_id].index[0]
@@ -417,6 +441,8 @@ with st.sidebar:
             st.rerun()
         elif new_player in players:
             st.warning(f"{new_player} is already in the list.")
+        else:
+            st.warning("Please enter a valid player name.")
 
     remove_player = st.selectbox("Remove Player", [""] + players)
     if st.button("Remove Selected Player"):
