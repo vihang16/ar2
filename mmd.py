@@ -137,7 +137,8 @@ with tab1:
     set2 = st.selectbox("Set 2", tennis_scores(), index=4)
     set3 = st.selectbox("Set 3 (optional)", ["", *tennis_scores()])
 
-    winner = st.radio("Winner", ["Team 1", "Team 2"])
+    winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"])
+
 
     if st.button("Submit Match"):
         new_match = {
