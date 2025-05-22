@@ -54,6 +54,7 @@ def compute_stats(matches):
         team1 = [row["team1_player1"], row["team1_player2"]]
         team2 = [row["team2_player1"], row["team2_player2"]]
         winner = row["winner"]
+
         if winner == "Team 1":
             for p in team1:
                 stats[p]["points"] += 3
@@ -61,20 +62,27 @@ def compute_stats(matches):
             for p in team2:
                 stats[p]["points"] += 1
                 stats[p]["losses"] += 1
-        else:
+        elif winner == "Team 2":
             for p in team2:
                 stats[p]["points"] += 3
                 stats[p]["wins"] += 1
             for p in team1:
                 stats[p]["points"] += 1
                 stats[p]["losses"] += 1
+        elif winner == "Tie":
+            for p in team1 + team2:
+                stats[p]["points"] += 1.5
+
         for p in team1 + team2:
             stats[p]["matches"] += 1
+
         stats[team1[0]]["partners"][team1[1]] += 1
         stats[team1[1]]["partners"][team1[0]] += 1
         stats[team2[0]]["partners"][team2[1]] += 1
         stats[team2[1]]["partners"][team2[0]] += 1
+
     return stats
+
 
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
@@ -156,10 +164,18 @@ with tab2:
     matches = matches.sort_values(by="Date", ascending=False)
     matches["Date"] = matches["Date"].dt.strftime("%d %b %Y")
 
+    #def format_winner(row):
+    #    if row["winner"] == "Team 1":
+    #        return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
+    #    return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
     def format_winner(row):
-        if row["winner"] == "Team 1":
-            return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
+    if row["winner"] == "Team 1":
+        return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
+    elif row["winner"] == "Team 2":
         return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
+    else:
+        return "🤝 Tie"
+
 
     matches["Winner"] = matches.apply(format_winner, axis=1)
     matches["Match"] = matches.apply(lambda r: f"{r['team1_player1']} & {r['team1_player2']} vs {r['team2_player1']} & {r['team2_player2']}", axis=1)
@@ -189,7 +205,7 @@ with tab2:
         set2 = st.selectbox("Set 2", tennis_scores(), index=tennis_scores().index(selected_row["set2"]))
         set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), index=([""] + tennis_scores()).index(selected_row["set3"] if selected_row["set3"] else ""))
 
-        winner = st.radio("Winner", ["Team 1", "Team 2"], index=0 if selected_row["winner"] == "Team 1" else 1)
+        winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"])
 
         if st.button("Update Match"):
             match_index = matches[matches["match_id"] == selected_id].index[0]
