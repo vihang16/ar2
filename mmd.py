@@ -57,6 +57,7 @@ court_list = [
 
 time_slots = [f"{h}:00 {'AM' if h < 12 else 'PM'}" for h in range(6, 22)]
 
+@st.cache_data(ttl=300)
 def load_bookings():
     try:
         df = pd.DataFrame(bookings_sheet.get_all_records())
@@ -75,12 +76,14 @@ def load_bookings():
         return pd.DataFrame(columns=["booking_id", "date", "time", "court", "players"])
 
 def save_bookings(df):
+    st.cache_data.clear()
     try:
         bookings_sheet.clear()
         bookings_sheet.update([df.columns.tolist()] + df.values.tolist())
     except Exception as e:
         st.error(f"Error saving bookings: {str(e)}")
 
+@st.cache_data(ttl=300)
 def load_players():
     try:
         df = pd.DataFrame(players_sheet.get_all_records())
@@ -92,6 +95,7 @@ def load_players():
         return []
 
 def save_players(players):
+    st.cache_data.clear()
     try:
         df = pd.DataFrame({"Player": players})
         players_sheet.clear()
@@ -99,6 +103,7 @@ def save_players(players):
     except Exception as e:
         st.error(f"Error saving players: {str(e)}")
 
+@st.cache_data(ttl=300)
 def load_matches():
     try:
         df = pd.DataFrame(matches_sheet.get_all_records())
@@ -118,6 +123,7 @@ def load_matches():
         return pd.DataFrame(columns=expected_columns)
 
 def save_matches(df):
+    st.cache_data.clear()
     try:
         matches_sheet.clear()
         matches_sheet.update([df.columns.tolist()] + df.values.tolist())
