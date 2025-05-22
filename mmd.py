@@ -141,8 +141,9 @@ with tab1:
 with tab2:
     st.header("Match Records & Edit/Delete")
 
-    matches["Date"] = pd.to_datetime(matches["date"], errors='coerce').dt.strftime("%d %b %Y")
-    matches = matches.sort_values(by="date", ascending=False)
+    matches["Date"] = pd.to_datetime(matches["date"], errors='coerce')
+    matches = matches.sort_values(by="Date", ascending=False)
+    matches["Date"] = matches["Date"].dt.strftime("%d %b %Y")
 
     def format_winner(row):
         if row["winner"] == "Team 1":
@@ -159,8 +160,40 @@ with tab2:
     st.subheader("Edit/Delete Match")
     match_ids = matches["match_id"].dropna().tolist()
     selected_id = st.selectbox("Select Match ID", [""] + match_ids)
+
     if selected_id:
         selected_row = matches[matches["match_id"] == selected_id].iloc[0]
+        st.markdown("### Edit Match Details")
+
+        available_players = players.copy()
+        p1 = st.selectbox("Team 1 - Player 1", available_players, index=available_players.index(selected_row["team1_player1"]))
+        available_players.remove(p1)
+        p2 = st.selectbox("Team 1 - Player 2", available_players, index=available_players.index(selected_row["team1_player2"]))
+        available_players.remove(p2)
+        p3 = st.selectbox("Team 2 - Player 1", available_players, index=available_players.index(selected_row["team2_player1"]))
+        available_players.remove(p3)
+        p4 = st.selectbox("Team 2 - Player 2", available_players, index=available_players.index(selected_row["team2_player2"]))
+
+        set1 = st.selectbox("Set 1", tennis_scores(), index=tennis_scores().index(selected_row["set1"]))
+        set2 = st.selectbox("Set 2", tennis_scores(), index=tennis_scores().index(selected_row["set2"]))
+        set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), index=([""] + tennis_scores()).index(selected_row["set3"] if selected_row["set3"] else ""))
+
+        winner = st.radio("Winner", ["Team 1", "Team 2"], index=0 if selected_row["winner"] == "Team 1" else 1)
+
+        if st.button("Update Match"):
+            match_index = matches[matches["match_id"] == selected_id].index[0]
+            matches.at[match_index, "team1_player1"] = p1
+            matches.at[match_index, "team1_player2"] = p2
+            matches.at[match_index, "team2_player1"] = p3
+            matches.at[match_index, "team2_player2"] = p4
+            matches.at[match_index, "set1"] = set1
+            matches.at[match_index, "set2"] = set2
+            matches.at[match_index, "set3"] = set3
+            matches.at[match_index, "winner"] = winner
+            save_matches(matches)
+            st.success("Match updated.")
+            st.rerun()
+
         if st.button("Delete Match"):
             matches = matches[matches["match_id"] != selected_id]
             save_matches(matches)
