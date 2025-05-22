@@ -88,6 +88,17 @@ st.markdown('''
     </style>
 ''', unsafe_allow_html=True)
 
+# Display centered image at the top
+image_url = "https://raw.githubusercontent.com/mahadevbk/mmd/main/mmd.png"
+st.markdown(
+    f"""
+    <div style='text-align: center;'>
+        <img src='{image_url}' style='width: 250px;'/>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 st.title("Mira Mixed Doubles Tennis Group 🎾")
 
 players = load_players()
