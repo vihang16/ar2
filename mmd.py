@@ -83,10 +83,10 @@ def compute_stats(matches):
 
     return stats
 
-
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
+# Custom CSS and header
 st.markdown('''
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
@@ -96,23 +96,15 @@ st.markdown('''
     </style>
 ''', unsafe_allow_html=True)
 
-# Display centered image at the top
 image_url = "https://raw.githubusercontent.com/mahadevbk/mmd/main/mmd.png"
-st.markdown(
-    f"""
-    <div style='text-align: center;'>
-        <img src='{image_url}' style='width: 150px;'/>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown(f"<div style='text-align: center;'><img src='{image_url}' style='width: 150px;'/></div>", unsafe_allow_html=True)
 
 st.title("Mira Mixed Doubles Tennis Group 🎾")
 
 players = load_players()
 matches = load_matches()
 
-# Assign match_id if missing
+# Ensure match_id exists
 if "match_id" not in matches.columns or matches["match_id"].isnull().any():
     for i in matches.index:
         if pd.isna(matches.at[i, "match_id"]):
@@ -135,10 +127,9 @@ with tab1:
 
     set1 = st.selectbox("Set 1", tennis_scores(), index=4)
     set2 = st.selectbox("Set 2", tennis_scores(), index=4)
-    set3 = st.selectbox("Set 3 (optional)", ["", *tennis_scores()])
+    set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores())
 
     winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"])
-
 
     if st.button("Submit Match"):
         new_match = {
@@ -165,18 +156,13 @@ with tab2:
     matches = matches.sort_values(by="Date", ascending=False)
     matches["Date"] = matches["Date"].dt.strftime("%d %b %Y")
 
-    #def format_winner(row):
-    #    if row["winner"] == "Team 1":
-    #        return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
-    #    return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
-def format_winner(row):
-    if row["winner"] == "Team 1":
-        return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
-    elif row["winner"] == "Team 2":
-        return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
-    else:
-        return "🤝 Tie"
-
+    def format_winner(row):
+        if row["winner"] == "Team 1":
+            return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
+        elif row["winner"] == "Team 2":
+            return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
+        else:
+            return "🤝 Tie"
 
     matches["Winner"] = matches.apply(format_winner, axis=1)
     matches["Match"] = matches.apply(lambda r: f"{r['team1_player1']} & {r['team1_player2']} vs {r['team2_player1']} & {r['team2_player2']}", axis=1)
@@ -206,7 +192,7 @@ def format_winner(row):
         set2 = st.selectbox("Set 2", tennis_scores(), index=tennis_scores().index(selected_row["set2"]))
         set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), index=([""] + tennis_scores()).index(selected_row["set3"] if selected_row["set3"] else ""))
 
-        winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"])
+        winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(selected_row["winner"]))
 
         if st.button("Update Match"):
             match_index = matches[matches["match_id"] == selected_id].index[0]
@@ -250,7 +236,6 @@ with tab4:
         stats = compute_stats(matches)
         player_stats = stats.get(selected_player, {"points": 0, "wins": 0, "losses": 0, "matches": 0, "partners": {}})
 
-        # Build rankings for player ranking info
         rankings_df = pd.DataFrame([
             {"Player": p, "Points": d["points"], "Wins": d["wins"], "Matches": d["matches"]}
             for p, d in stats.items()
@@ -260,7 +245,6 @@ with tab4:
         rankings_df["Rank"] = rankings_df.index + 1
         player_rank = rankings_df[rankings_df["Player"] == selected_player]["Rank"].values[0]
 
-        # Display insights
         st.write(f"**🏅 Player Ranking:** #{player_rank}")
         st.write(f"**Points:** {player_stats['points']}")
         st.write(f"**Wins:** {player_stats['wins']}")
@@ -296,4 +280,3 @@ with st.sidebar:
             save_players(players)
             st.success(f"{remove_player} removed.")
             st.rerun()
-
