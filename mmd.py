@@ -195,7 +195,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
     save_matches(matches)
 
 # Tabs
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Post Match", "Match Records", "Rankings", "Player Stats", "Game Bookings"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Post a Match", "Match Records", "Rankings", "Player Stats", "Game Bookings"])
 
 with tab1:
     st.header("Enter Match Result")
