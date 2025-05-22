@@ -3,7 +3,7 @@ import pandas as pd
 import uuid
 from datetime import datetime
 import gspread
-from collections import defaultdict
+from collections import defaultdict, Counter
 from oauth2client.service_account import ServiceAccountCredentials
 
 # Google Sheets setup
@@ -16,8 +16,8 @@ SHEET_NAME = "RLTG Data"
 players_sheet_name = "Mira Players"
 matches_sheet_name = "Mira Matches"
 
-# Ensure worksheets exist
 spreadsheet = client.open(SHEET_NAME)
+
 def get_or_create_worksheet(sheet, name, rows=1000, cols=20):
     try:
         return sheet.worksheet(name)
@@ -42,15 +42,14 @@ def save_players(players):
 
 # Load matches
 def load_matches():
-    df = pd.DataFrame(matches_sheet.get_all_records())
-    return df
+    return pd.DataFrame(matches_sheet.get_all_records())
 
 # Save matches
 def save_matches(df):
     matches_sheet.clear()
     matches_sheet.update([df.columns.tolist()] + df.values.tolist())
 
-# Compute points
+# Compute points and stats
 def compute_stats(matches):
     stats = defaultdict(lambda: {"points": 0, "wins": 0, "losses": 0, "matches": 0})
     for _, row in matches.iterrows():
@@ -79,6 +78,7 @@ def compute_stats(matches):
 st.markdown('''
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
+
     html, body, [class*="st-"], [class^="css"], h1, h2, h3, h4, h5, h6, .stText, .stMarkdown {
         font-family: 'Offside', sans-serif !important;
     }
@@ -90,6 +90,7 @@ st.title("Mira Mixed Doubles Tennis Group 🎾")
 players = load_players()
 matches = load_matches()
 
+# Sidebar - Player management
 with st.sidebar:
     st.header("Manage Players")
     new_player = st.text_input("Add New Player").upper()
@@ -104,8 +105,8 @@ with st.sidebar:
         save_players(players)
         st.rerun()
 
+# Match entry
 st.header("Enter Match Result")
-
 available_players = players.copy()
 p1 = st.selectbox("Team 1 - Player 1", available_players, key="t1p1")
 available_players = [p for p in available_players if p != p1]
@@ -115,15 +116,12 @@ p3 = st.selectbox("Team 2 - Player 1", available_players, key="t2p1")
 available_players = [p for p in available_players if p != p3]
 p4 = st.selectbox("Team 2 - Player 2", available_players, key="t2p2")
 
-valid_scores = [
-    "6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6",
-    "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"
-]
+valid_scores = ['6-0', '6-1', '6-2', '6-3', '6-4', '6-5', '7-5', '7-6', '0-6', '1-6', '2-6', '3-6', '4-6', '5-6', '5-7', '6-7']
 
 st.markdown("**Select Set Scores**")
-set1 = st.selectbox("Set 1", valid_scores, index=4)
-set2 = st.selectbox("Set 2", valid_scores, index=4)
-set3 = st.selectbox("Set 3 (optional)", [""] + valid_scores, index=0)
+set1 = st.selectbox("Set 1", valid_scores, key="set1")
+set2 = st.selectbox("Set 2", valid_scores, key="set2")
+set3 = st.selectbox("Set 3 (optional)", [""] + valid_scores, key="set3")
 
 winner = st.radio("Winner", ["Team 1", "Team 2"])
 
@@ -145,6 +143,7 @@ if st.button("Submit Match"):
     st.success("Match submitted.")
     st.rerun()
 
+# Match Records
 st.header("Match Records")
 if not matches.empty:
     display = matches.copy()
@@ -153,9 +152,17 @@ if not matches.empty:
         axis=1
     )
     display["Date"] = pd.to_datetime(display["date"]).dt.strftime("%d %b %Y")
-    display = display[["Date", "Players", "set1", "set2", "set3", "winner"]]
-    st.dataframe(display)
+    display["Winner"] = display.apply(
+        lambda row: f"🏆 {row['team1_player1']} & {row['team1_player2']}"
+        if row["winner"] == "Team 1"
+        else f"🏆 {row['team2_player1']} & {row['team2_player2']}",
+        axis=1
+    )
+    display = display[["Date", "Players", "set1", "set2", "set3", "Winner"]]
+    display.columns = ["Date", "Match", "Set 1", "Set 2", "Set 3", "Winner"]
+    st.dataframe(display, use_container_width=True)
 
+# Rankings
 st.header("Player Rankings")
 stats = compute_stats(matches)
 if stats:
@@ -168,6 +175,7 @@ if stats:
     rankings.index.name = "Rank"
     st.dataframe(rankings)
 
+# Player insights
 st.header("Player Insights")
 selected_player = st.selectbox("Select Player", players)
 if selected_player:
@@ -179,33 +187,18 @@ if selected_player:
     win_pct = (data["wins"] / data["matches"] * 100) if data["matches"] else 0
     st.write(f"**Win %:** {win_pct:.1f}%")
 
-    # Partner stats
-    partner_matches = []
+    # Partner insights
+    partners = []
     for _, row in matches.iterrows():
         if selected_player in [row["team1_player1"], row["team1_player2"]]:
-            teammate = row["team1_player2"] if selected_player == row["team1_player1"] else row["team1_player1"]
-            same_team = "Team 1"
+            partners.append(row["team1_player2"] if row["team1_player1"] == selected_player else row["team1_player1"])
         elif selected_player in [row["team2_player1"], row["team2_player2"]]:
-            teammate = row["team2_player2"] if selected_player == row["team2_player1"] else row["team2_player1"]
-            same_team = "Team 2"
-        else:
-            continue
-        won = row["winner"] == same_team
-        partner_matches.append((teammate, won))
+            partners.append(row["team2_player2"] if row["team2_player1"] == selected_player else row["team2_player1"])
 
-    partner_stats = defaultdict(lambda: {"matches": 0, "wins": 0})
-    for partner, won in partner_matches:
-        partner_stats[partner]["matches"] += 1
-        if won:
-            partner_stats[partner]["wins"] += 1
-
-    if partner_stats:
-        st.subheader("Partner History")
-        for partner, stat in partner_stats.items():
-            pct = (stat["wins"] / stat["matches"] * 100) if stat["matches"] else 0
-            st.markdown(f"- {partner}: {stat['wins']} Wins / {stat['matches']} Matches ({pct:.1f}%)")
-
-        best_partner = max(partner_stats.items(), key=lambda x: (x[1]["wins"] / x[1]["matches"] if x[1]["matches"] > 0 else 0))
-        best_partner_name = best_partner[0]
-        win_pct = (best_partner[1]["wins"] / best_partner[1]["matches"]) * 100
-        st.markdown(f"**Most Effective Partner:** {best_partner_name} ({win_pct:.1f}% win rate)")
+    if partners:
+        partner_counts = Counter(partners)
+        most_effective_partner = partner_counts.most_common(1)[0][0]
+        st.write(f"**Partners Played With:** {', '.join(partner_counts.keys())}")
+        st.write(f"**Most Frequent Partner:** {most_effective_partner}")
+    else:
+        st.write("No matches recorded for this player.")
