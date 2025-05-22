@@ -93,7 +93,7 @@ image_url = "https://raw.githubusercontent.com/mahadevbk/mmd/main/mmd.png"
 st.markdown(
     f"""
     <div style='text-align: center;'>
-        <img src='{image_url}' style='width: 250px;'/>
+        <img src='{image_url}' style='width: 150px;'/>
     </div>
     """,
     unsafe_allow_html=True
