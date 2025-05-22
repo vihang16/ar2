@@ -1,15 +1,22 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
 import uuid
+from datetime import datetime
 import gspread
+from collections import defaultdict
 from oauth2client.service_account import ServiceAccountCredentials
 
-# Setup Google Sheets
+# Google Sheets setup
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("your-google-credentials.json", scope)
+creds_dict = st.secrets["gcp_service_account"]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
-spreadsheet = client.open("Tennis Matches")
+
+SHEET_NAME = "RLTG Data"
+players_sheet_name = "Mira Players"
+matches_sheet_name = "Mira Matches"
+
+spreadsheet = client.open(SHEET_NAME)
 
 # Helper to get or create worksheet
 def get_or_create_worksheet(spreadsheet, sheet_name):
