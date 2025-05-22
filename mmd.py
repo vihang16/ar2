@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import uuid
@@ -15,6 +16,7 @@ client = gspread.authorize(creds)
 SHEET_NAME = "RLTG Data"
 players_sheet_name = "Mira Players"
 matches_sheet_name = "Mira Matches"
+bookings_sheet_name = "Mira Bookings"
 
 spreadsheet = client.open(SHEET_NAME)
 
@@ -26,6 +28,29 @@ def get_or_create_worksheet(sheet, name, rows=1000, cols=20):
 
 players_sheet = get_or_create_worksheet(spreadsheet, players_sheet_name)
 matches_sheet = get_or_create_worksheet(spreadsheet, matches_sheet_name)
+bookings_sheet = get_or_create_worksheet(spreadsheet, bookings_sheet_name)
+
+# Booking court list
+court_list = [
+    "Mira 2", "Mira 4", "Mira 5 A", "Mira 5 B",
+    "Mira Oasis 1", "Mira Oasis 2", "Mira Oasis 3 A", "Mira Oasis 3 B", "Mira Oasis 3C",
+    "AR Palmera 2", "AR Palmera 4", "AR Alvorada 1", "AR Alvorada 2",
+    "AR Mirador La Collecion", "AR Hattan", "AR Saheel", "AR Alma", "AR Al Mahra", "AR Mirador",
+    "AR Reem 1", "AR Reem 2", "AR Reem 3", "Mudon Main (Rahat)", "Mudon Arabella", "Mudon Arabella 3",
+    "AR2 Rosa", "AR2 Palma", "AR2 Fitness First"
+]
+
+time_slots = [f"{h}:00 {'AM' if h < 12 else 'PM'}" for h in range(6, 22)]
+
+def load_bookings():
+    df = pd.DataFrame(bookings_sheet.get_all_records())
+    if "booking_id" not in df.columns:
+        df["booking_id"] = [f"BOOK-{i}" for i in range(len(df))]
+    return df
+
+def save_bookings(df):
+    bookings_sheet.clear()
+    bookings_sheet.update([df.columns.tolist()] + df.values.tolist())
 
 def load_players():
     df = pd.DataFrame(players_sheet.get_all_records())
@@ -112,7 +137,9 @@ if "match_id" not in matches.columns or matches["match_id"].isnull().any():
     save_matches(matches)
 
 # Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["Post Match", "Match Records", "Rankings", "Player Stats"])
+#tab1, tab2, tab3, tab4 = st.tabs(["Post Match", "Match Records", "Rankings", "Player Stats"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Post Match", "Match Records", "Rankings", "Player Stats", "Game Bookings"])
+
 
 with tab1:
     st.header("Enter Match Result")
@@ -259,6 +286,75 @@ with tab4:
                 st.write(f"- {partner} ({count} matches)")
             best_partner = max(player_stats['partners'], key=player_stats['partners'].get)
             st.write(f"**Most Effective Partner:** {best_partner}")
+with tab5:
+    st.header("🎾 Game Bookings")
+
+    bookings = load_bookings()
+
+    st.subheader("New Booking")
+    selected_court = st.selectbox("Select Court", court_list)
+    selected_date = st.date_input("Select Date")
+    selected_time = st.selectbox("Select Time Slot", time_slots)
+    selected_players = st.multiselect("Select Players", players)
+
+    if st.button("Submit Booking"):
+        if not selected_players:
+            st.warning("Please select at least one player.")
+        else:
+            new_booking = {
+                "booking_id": f"BOOK-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}",
+                "date": selected_date.strftime("%Y-%m-%d"),
+                "time": selected_time,
+                "court": selected_court,
+                "players": ", ".join(selected_players)
+            }
+            bookings = pd.concat([bookings, pd.DataFrame([new_booking])], ignore_index=True)
+            save_bookings(bookings)
+            st.success("Booking submitted.")
+            st.rerun()
+
+    st.subheader("📅 Manage Bookings")
+
+    bookings["date"] = pd.to_datetime(bookings["date"], errors='coerce')
+    bookings = bookings.sort_values(by=["date", "time"])
+    bookings["Date"] = bookings["date"].dt.strftime("%d %b %Y")
+    bookings["Players"] = bookings["players"]
+    bookings_display = bookings[["Date", "time", "court", "Players", "booking_id"]]
+    bookings_display.columns = ["Date", "Time", "Court", "Players", "Booking ID"]
+
+    st.dataframe(bookings_display.style.hide(axis="index"), use_container_width=True)
+
+    st.subheader("Edit/Delete Booking")
+    booking_ids = bookings["booking_id"].dropna().tolist()
+    selected_booking_id = st.selectbox("Select Booking ID", [""] + booking_ids)
+
+    if selected_booking_id:
+        row = bookings[bookings["booking_id"] == selected_booking_id].iloc[0]
+        edit_court = st.selectbox("Edit Court", court_list, index=court_list.index(row["court"]))
+        edit_date = st.date_input("Edit Date", row["date"])
+        edit_time = st.selectbox("Edit Time", time_slots, index=time_slots.index(row["time"]))
+        current_players = row["players"].split(", ")
+        edit_players = st.multiselect("Edit Players", players, default=current_players)
+
+        if st.button("Update Booking"):
+            index = bookings[bookings["booking_id"] == selected_booking_id].index[0]
+            bookings.at[index, "court"] = edit_court
+            bookings.at[index, "date"] = edit_date.strftime("%Y-%m-%d")
+            bookings.at[index, "time"] = edit_time
+            bookings.at[index, "players"] = ", ".join(edit_players)
+            save_bookings(bookings)
+            st.success("Booking updated.")
+            st.rerun()
+
+        if st.button("Delete Booking"):
+            bookings = bookings[bookings["booking_id"] != selected_booking_id]
+            save_bookings(bookings)
+            st.success("Booking deleted.")
+            st.rerun()
+
+
+
+
 
 with st.sidebar:
     st.header("Manage Players")
