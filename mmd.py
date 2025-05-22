@@ -16,8 +16,8 @@ SHEET_NAME = "RLTG Data"
 players_sheet_name = "Mira Players"
 matches_sheet_name = "Mira Matches"
 
-# Ensure worksheets exist
 spreadsheet = client.open(SHEET_NAME)
+
 def get_or_create_worksheet(sheet, name, rows=1000, cols=20):
     try:
         return sheet.worksheet(name)
@@ -27,7 +27,6 @@ def get_or_create_worksheet(sheet, name, rows=1000, cols=20):
 players_sheet = get_or_create_worksheet(spreadsheet, players_sheet_name)
 matches_sheet = get_or_create_worksheet(spreadsheet, matches_sheet_name)
 
-# Load and save players
 def load_players():
     df = pd.DataFrame(players_sheet.get_all_records())
     if "Player" not in df.columns:
@@ -39,38 +38,16 @@ def save_players(players):
     players_sheet.clear()
     players_sheet.update([df.columns.tolist()] + df.values.tolist())
 
-# Load and save matches
 def load_matches():
     df = pd.DataFrame(matches_sheet.get_all_records())
     if "match_id" not in df.columns:
-        df["match_id"] = ""
-
-    # Fix missing or empty match_ids by generating new ones
-    updated = False
-    for idx, row in df.iterrows():
-        if not row["match_id"]:
-            date_str = row.get("date", datetime.now().strftime("%Y-%m-%d"))
-            # fallback: if date parsing fails, just use now
-            try:
-                date_parsed = pd.to_datetime(date_str)
-            except:
-                date_parsed = datetime.now()
-            new_id = f"MIRA-{date_parsed.strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
-            df.at[idx, "match_id"] = new_id
-            updated = True
-
-    # If we added any IDs, save back to sheet
-    if updated:
-        matches_sheet.clear()
-        matches_sheet.update([df.columns.tolist()] + df.values.tolist())
-
+        df["match_id"] = [f"MIRA-OLD-{i}" for i in range(len(df))]
     return df
 
 def save_matches(df):
     matches_sheet.clear()
     matches_sheet.update([df.columns.tolist()] + df.values.tolist())
 
-# Compute stats
 def compute_stats(matches):
     stats = defaultdict(lambda: {"points": 0, "wins": 0, "losses": 0, "matches": 0, "partners": defaultdict(int)})
     for _, row in matches.iterrows():
@@ -99,11 +76,9 @@ def compute_stats(matches):
         stats[team2[1]]["partners"][team2[0]] += 1
     return stats
 
-# Score options
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
-# Font style
 st.markdown('''
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
@@ -118,20 +93,18 @@ st.title("Mira Mixed Doubles Tennis Group 🎾")
 players = load_players()
 matches = load_matches()
 
-# Sort matches by date (parse dates properly)
-if not matches.empty and "date" in matches.columns:
-    matches["date_parsed"] = pd.to_datetime(matches["date"], errors='coerce')
-    matches = matches.sort_values(by="date_parsed", ascending=False).reset_index(drop=True)
-else:
-    matches["date_parsed"] = pd.NaT
+# Assign match_id if missing
+if "match_id" not in matches.columns or matches["match_id"].isnull().any():
+    for i in matches.index:
+        if pd.isna(matches.at[i, "match_id"]):
+            matches.at[i, "match_id"] = f"MIRA-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+    save_matches(matches)
 
-# Setup tabs
-tab1, tab2, tab3, tab4 = st.tabs(["🎾 Enter Match", "📖 Match Records", "🏆 Rankings", "👤 Player Stats"])
+# Tabs
+tab1, tab2, tab3, tab4 = st.tabs(["Post Match", "Match Records", "Rankings", "Player Stats"])
 
-# TAB 1 - Enter Match
 with tab1:
     st.header("Enter Match Result")
-
     available_players = players.copy()
     p1 = st.selectbox("Team 1 - Player 1", available_players, key="t1p1")
     available_players.remove(p1)
@@ -141,10 +114,9 @@ with tab1:
     available_players.remove(p3)
     p4 = st.selectbox("Team 2 - Player 2", available_players, key="t2p2")
 
-    score_options = tennis_scores()
-    set1 = st.selectbox("Set 1", score_options, index=4, key="set1")
-    set2 = st.selectbox("Set 2", score_options, index=4, key="set2")
-    set3 = st.selectbox("Set 3 (optional)", ["", *score_options], key="set3")
+    set1 = st.selectbox("Set 1", tennis_scores(), index=4)
+    set2 = st.selectbox("Set 2", tennis_scores(), index=4)
+    set3 = st.selectbox("Set 3 (optional)", ["", *tennis_scores()])
 
     winner = st.radio("Winner", ["Team 1", "Team 2"])
 
@@ -164,47 +136,37 @@ with tab1:
         matches = pd.concat([matches, pd.DataFrame([new_match])], ignore_index=True)
         save_matches(matches)
         st.success("Match submitted.")
-        st.experimental_rerun()
+        st.rerun()
 
-# TAB 2 - Match Records & Edit/Delete
 with tab2:
-    st.header("Match Records")
+    st.header("Match Records & Edit/Delete")
 
-    if matches.empty:
-        st.write("No matches recorded yet.")
-    else:
-        # Display matches with formatted columns
-        matches["Date"] = matches["date_parsed"].dt.strftime("%d %b %Y")
-        for col in ["set1", "set2", "set3", "match_id"]:
-            if col not in matches.columns:
-                matches[col] = ""
+    matches["Date"] = pd.to_datetime(matches["date"], errors='coerce').dt.strftime("%d %b %Y")
+    matches = matches.sort_values(by="date", ascending=False)
 
-        def format_winner(row):
-            if row["winner"] == "Team 1":
-                return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
-            return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
+    def format_winner(row):
+        if row["winner"] == "Team 1":
+            return f"🏆 {row['team1_player1']} & {row['team1_player2']}"
+        return f"🏆 {row['team2_player1']} & {row['team2_player2']}"
 
-        matches["Winner"] = matches.apply(format_winner, axis=1)
-        matches["Match"] = matches.apply(lambda r: f"{r['team1_player1']} & {r['team1_player2']} vs {r['team2_player1']} & {r['team2_player2']}", axis=1)
+    matches["Winner"] = matches.apply(format_winner, axis=1)
+    matches["Match"] = matches.apply(lambda r: f"{r['team1_player1']} & {r['team1_player2']} vs {r['team2_player1']} & {r['team2_player2']}", axis=1)
 
-        display = matches[["Date", "Match", "set1", "set2", "set3", "Winner", "match_id"]].copy()
-        display.columns = ["Date", "Match", "Set 1", "Set 2", "Set 3", "Winner", "Match ID"]
-        st.dataframe(display, use_container_width=True)
+    display = matches[["Date", "Match", "set1", "set2", "set3", "Winner", "match_id"]].copy()
+    display.columns = ["Date", "Match", "Set 1", "Set 2", "Set 3", "Winner", "Match ID"]
+    st.dataframe(display.style.hide(axis="index"), use_container_width=True)
 
-        # Edit/Delete match
-        st.subheader("Edit/Delete Match")
-        match_ids = matches["match_id"].dropna().tolist()
-        selected_id = st.selectbox("Select Match ID", [""] + match_ids)
-        if selected_id:
-            selected_row = matches[matches["match_id"] == selected_id].iloc[0]
+    st.subheader("Edit/Delete Match")
+    match_ids = matches["match_id"].dropna().tolist()
+    selected_id = st.selectbox("Select Match ID", [""] + match_ids)
+    if selected_id:
+        selected_row = matches[matches["match_id"] == selected_id].iloc[0]
+        if st.button("Delete Match"):
+            matches = matches[matches["match_id"] != selected_id]
+            save_matches(matches)
+            st.success("Match deleted.")
+            st.rerun()
 
-            if st.button("Delete Match"):
-                matches = matches[matches["match_id"] != selected_id]
-                save_matches(matches)
-                st.success("Match deleted.")
-                st.experimental_rerun()
-
-# TAB 3 - Rankings
 with tab3:
     st.header("Player Rankings")
     stats = compute_stats(matches)
@@ -218,10 +180,7 @@ with tab3:
         rankings.index = range(1, len(rankings) + 1)
         rankings.index.name = "Rank"
         st.dataframe(rankings)
-    else:
-        st.write("No player stats available yet.")
 
-# TAB 4 - Player Stats
 with tab4:
     st.header("Player Insights")
     selected_player = st.selectbox("Select Player", players)
@@ -239,18 +198,3 @@ with tab4:
                 st.write(f"- {partner} ({count} matches)")
             best_partner = max(data['partners'], key=data['partners'].get)
             st.write(f"**Most Effective Partner:** {best_partner}")
-
-# Sidebar - Player management
-with st.sidebar:
-    st.header("Manage Players")
-    new_player = st.text_input("Add New Player").upper()
-    if st.button("Add Player") and new_player and new_player not in players:
-        players.append(new_player)
-        save_players(players)
-        st.experimental_rerun()
-
-    remove_player = st.selectbox("Remove Player", [""] + players)
-    if st.button("Remove Selected Player") and remove_player:
-        players.remove(remove_player)
-        save_players(players)
-        st.experimental_rerun()
