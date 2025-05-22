@@ -228,17 +228,33 @@ with tab3:
 with tab4:
     st.header("Player Insights")
     selected_player = st.selectbox("Select Player", players)
+
     if selected_player:
-        data = stats.get(selected_player, {"points": 0, "wins": 0, "losses": 0, "matches": 0, "partners": {}})
-        st.write(f"**Points:** {data['points']}")
-        st.write(f"**Wins:** {data['wins']}")
-        st.write(f"**Losses:** {data['losses']}")
-        st.write(f"**Matches Played:** {data['matches']}")
-        win_pct = (data["wins"] / data["matches"] * 100) if data["matches"] else 0
+        stats = compute_stats(matches)
+        player_stats = stats.get(selected_player, {"points": 0, "wins": 0, "losses": 0, "matches": 0, "partners": {}})
+
+        # Build rankings for player ranking info
+        rankings_df = pd.DataFrame([
+            {"Player": p, "Points": d["points"], "Wins": d["wins"], "Matches": d["matches"]}
+            for p, d in stats.items()
+        ])
+        rankings_df["RankKey"] = rankings_df.apply(lambda r: (-r["Points"], -r["Wins"]), axis=1)
+        rankings_df = rankings_df.sort_values(by="RankKey").reset_index(drop=True)
+        rankings_df["Rank"] = rankings_df.index + 1
+        player_rank = rankings_df[rankings_df["Player"] == selected_player]["Rank"].values[0]
+
+        # Display insights
+        st.write(f"**🏅 Player Ranking:** #{player_rank}")
+        st.write(f"**Points:** {player_stats['points']}")
+        st.write(f"**Wins:** {player_stats['wins']}")
+        st.write(f"**Losses:** {player_stats['losses']}")
+        st.write(f"**Matches Played:** {player_stats['matches']}")
+        win_pct = (player_stats["wins"] / player_stats["matches"] * 100) if player_stats["matches"] else 0
         st.write(f"**Win %:** {win_pct:.1f}%")
-        if data['partners']:
+
+        if player_stats['partners']:
             st.write("**Partners Played With:**")
-            for partner, count in sorted(data['partners'].items(), key=lambda x: -x[1]):
+            for partner, count in sorted(player_stats['partners'].items(), key=lambda x: -x[1]):
                 st.write(f"- {partner} ({count} matches)")
-            best_partner = max(data['partners'], key=data['partners'].get)
+            best_partner = max(player_stats['partners'], key=player_stats['partners'].get)
             st.write(f"**Most Effective Partner:** {best_partner}")
