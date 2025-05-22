@@ -53,10 +53,15 @@ time_slots = [f"{h}:00 {'AM' if h < 12 else 'PM'}" for h in range(6, 22)]
 
 # Booking functions
 def load_bookings():
-    df = pd.DataFrame(bookings_sheet.get_all_records())
+    records = bookings_sheet.get_all_records()
+    if not records:
+        # Sheet is empty — initialize with required columns
+        return pd.DataFrame(columns=["booking_id", "date", "time", "court", "players"])
+    df = pd.DataFrame(records)
     if "booking_id" not in df.columns:
         df["booking_id"] = [f"BOOK-{i}" for i in range(len(df))]
     return df
+
 
 def save_bookings(df):
     bookings_sheet.clear()
