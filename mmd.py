@@ -2,48 +2,23 @@ import streamlit as st
 import pandas as pd
 import uuid
 from datetime import datetime
-import gspread
 from collections import defaultdict
-from oauth2client.service_account import ServiceAccountCredentials
+from supabase import create_client, Client
 
-# Google Sheets setup
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds_dict = st.secrets["gcp_service_account"]
-creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-client = gspread.authorize(creds)
+# Supabase setup
+supabase_url = st.secrets["supabase_url"]
+supabase_key = st.secrets["supabase_key"]
+supabase: Client = create_client(supabase_url, supabase_key)
 
-SHEET_NAME = "RLTG Data"
-players_sheet_name = "Mira Players"
-matches_sheet_name = "Mira Matches"
-bookings_sheet_name = "Mira Bookings"
+# Table names
+players_table_name = "players"
+matches_table_name = "matches"
+bookings_table_name = "bookings"
 
-spreadsheet = client.open(SHEET_NAME)
-
-def get_or_create_worksheet(sheet, name, rows=1000, cols=20):
-    try:
-        return sheet.worksheet(name)
-    except gspread.exceptions.WorksheetNotFound:
-        return sheet.add_worksheet(title=name, rows=str(rows), cols=str(cols))
-    except Exception as e:
-        st.error(f"Error accessing Google Sheet: {str(e)}")
-        return None
-
-players_sheet = get_or_create_worksheet(spreadsheet, players_sheet_name)
-matches_sheet = get_or_create_worksheet(spreadsheet, matches_sheet_name)
-bookings_sheet = get_or_create_worksheet(spreadsheet, bookings_sheet_name)
-
-# Initialize bookings sheet with headers
-def initialize_bookings_sheet():
-    headers = ["booking_id", "date", "time", "court", "players"]
-    try:
-        current_headers = bookings_sheet.row_values(1)
-        if not current_headers:
-            bookings_sheet.update([headers])
-    except Exception as e:
-        st.error(f"Error initializing bookings sheet: {str(e)}")
-
-if bookings_sheet:
-    initialize_bookings_sheet()
+# Initialize bookings table with headers (not needed for Supabase, as schema is predefined)
+def initialize_bookings_table():
+    # Supabase tables are assumed to be created with the correct schema
+    pass
 
 # Booking court list
 court_list = [
@@ -59,7 +34,8 @@ time_slots = [f"{h}:00 {'AM' if h < 12 else 'PM'}" for h in range(6, 22)]
 
 def load_bookings():
     try:
-        df = pd.DataFrame(bookings_sheet.get_all_records())
+        response = supabase.table(bookings_table_name).select("*").execute()
+        df = pd.DataFrame(response.data)
         # Define expected columns
         expected_columns = ["booking_id", "date", "time", "court", "players"]
         # If DataFrame is empty or missing columns, initialize with expected columns
@@ -76,32 +52,37 @@ def load_bookings():
 
 def save_bookings(df):
     try:
-        bookings_sheet.clear()
-        bookings_sheet.update([df.columns.tolist()] + df.values.tolist())
+        # Clear existing data and insert new data
+        supabase.table(bookings_table_name).delete().neq("booking_id", "").execute()  # Clear table
+        data = df.to_dict("records")
+        supabase.table(bookings_table_name).insert(data).execute()
     except Exception as e:
         st.error(f"Error saving bookings: {str(e)}")
 
 def load_players():
     try:
-        df = pd.DataFrame(players_sheet.get_all_records())
-        if "Player" not in df.columns:
+        response = supabase.table(players_table_name).select("name").execute()
+        df = pd.DataFrame(response.data)
+        if "name" not in df.columns:
             return []
-        return df["Player"].dropna().str.upper().tolist()
+        return df["name"].dropna().str.upper().tolist()
     except Exception as e:
         st.error(f"Error loading players: {str(e)}")
         return []
 
 def save_players(players):
     try:
-        df = pd.DataFrame({"Player": players})
-        players_sheet.clear()
-        players_sheet.update([df.columns.tolist()] + df.values.tolist())
+        # Clear existing players and insert new ones
+        supabase.table(players_table_name).delete().neq("name", "").execute()  # Clear table
+        data = [{"name": player} for player in players]
+        supabase.table(players_table_name).insert(data).execute()
     except Exception as e:
         st.error(f"Error saving players: {str(e)}")
 
 def load_matches():
     try:
-        df = pd.DataFrame(matches_sheet.get_all_records())
+        response = supabase.table(matches_table_name).select("*").execute()
+        df = pd.DataFrame(response.data)
         # Define expected columns
         expected_columns = ["match_id", "date", "team1_player1", "team1_player2", 
                            "team2_player1", "team2_player2", "set1", "set2", "set3", "winner"]
@@ -119,8 +100,10 @@ def load_matches():
 
 def save_matches(df):
     try:
-        matches_sheet.clear()
-        matches_sheet.update([df.columns.tolist()] + df.values.tolist())
+        # Clear existing matches and insert new ones
+        supabase.table(matches_table_name).delete().neq("match_id", "").execute()  # Clear table
+        data = df.to_dict("records")
+        supabase.table(matches_table_name).insert(data).execute()
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
 
