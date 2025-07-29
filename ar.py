@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import uuid
@@ -153,7 +152,7 @@ with tab2:
         row = matches[matches["match_id"] == selected_id].iloc[0]
         idx = matches[matches["match_id"] == selected_id].index[0]
 
-        with st.expander("Edit Match"):
+        with st.expander("Edit Match ➔"):
             match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1)
             p1 = st.text_input("Team 1 - Player 1", value=row["team1_player1"])
             p2 = st.text_input("Team 1 - Player 2", value=row["team1_player2"])
