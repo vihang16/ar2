@@ -13,6 +13,7 @@ supabase: Client = create_client(supabase_url, supabase_key)
 # Table names
 players_table_name = "players"
 matches_table_name = "matches"
+bookings_table_name = "bookings"
 
 def load_players():
     try:
@@ -127,6 +128,7 @@ with tab1:
 # ----- MATCH RECORDS -----
 with tab2:
     st.header("Match History")
+
     match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True)
 
     filtered_matches = matches.copy()
@@ -134,22 +136,22 @@ with tab2:
         filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
 
     def format_match_label(row):
-        # Format: date | players | scores | match_id
+        # Format: date | players details | set scores | match_id
         if row["match_type"] == "Singles":
             players_desc = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
         else:
             players_desc = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
-        scores_desc = f"{row['set1']} | {row['set2']}" + (f" | {row['set3']}" if row['set3'] else "")
-        return f"{row['date']} | {players_desc} | {scores_desc} | {row['match_id']}"
+
+        sets = f"{row['set1']} | {row['set2']}" + (f" | {row['set3']}" if row['set3'] else "")
+        return f"{row['date']} | {players_desc} | {sets} | {row['match_id']}"
 
     if filtered_matches.empty:
         st.info("No matches found for the selected filter.")
     else:
-        st.dataframe(filtered_matches[["date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_id"]], use_container_width=True)
+        # Display matches with spacing before selection
+        st.dataframe(filtered_matches[["date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_id"]])
 
-        # Add 10 blank lines space
-        for _ in range(10):
-            st.write("")
+        st.text("\n" * 10)  # 10 blank lines space
 
         selected_label = st.selectbox("Select a match to edit or delete", filtered_matches.apply(format_match_label, axis=1).tolist())
         selected_id = selected_label.split(" | ")[-1]
@@ -200,25 +202,31 @@ with tab3:
     scores = defaultdict(float)
     partners = defaultdict(list)
     for _, row in matches.iterrows():
-        t1 = [row['team1_player1']]
-        t2 = [row['team2_player1']]
-        if row['match_type'] == 'Doubles':
-            t1.append(row['team1_player2'])
-            t2.append(row['team2_player2'])
-
         if row['winner'] == 'Tie':
+            t1 = [row['team1_player1']]
+            t2 = [row['team2_player1']]
+            if row['match_type'] == 'Doubles':
+                t1.append(row['team1_player2'])
+                t2.append(row['team2_player2'])
             for p in t1 + t2:
                 scores[p] += 1.5
-        elif row['winner'] == 'Team 1':
-            for p in t1:
-                scores[p] += 3
-            for p in t2:
-                scores[p] += 1
         else:
-            for p in t2:
-                scores[p] += 3
-            for p in t1:
-                scores[p] += 1
+            t1 = [row['team1_player1']]
+            t2 = [row['team2_player1']]
+            if row['match_type'] == 'Doubles':
+                t1.append(row['team1_player2'])
+                t2.append(row['team2_player2'])
+
+            if row['winner'] == 'Team 1':
+                for p in t1:
+                    scores[p] += 3
+                for p in t2:
+                    scores[p] += 1
+            else:
+                for p in t2:
+                    scores[p] += 3
+                for p in t1:
+                    scores[p] += 1
 
         if row['match_type'] == 'Doubles':
             if row['team1_player1'] and row['team1_player2']:
