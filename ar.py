@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import uuid
@@ -54,80 +55,12 @@ def save_matches(df):
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
-# Debug to check for stray text
-st.markdown("<!-- Debug: No stray text should appear above -->", unsafe_allow_html=True)
-st.write("Debug: Checking for 'keyboard_double_arrow_right' rendering issues in sidebar expander")
-
-# JavaScript to log elements containing 'keyboard_double_arrow_right'
-st.markdown("""
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const elements = document.querySelectorAll('*');
-        elements.forEach(el => {
-            if (el.textContent.includes('keyboard_double_arrow_right')) {
-                console.log('Found keyboard_double_arrow_right in:', el);
-            }
-        });
-    });
-    </script>
-""", unsafe_allow_html=True)
-
 # Custom CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
-    }
-    /* Aggressively hide any Material Icons or stray text */
-    [class*="material-icons"], [class*="Icon"], [class*="icon"], [data-testid="stExpander"] *, [data-testid="stSidebar"] * {
-        font-family: unset !important;
-        content: none !important;
-        display: none !important;
-    }
-    /* Specifically hide 'keyboard_double_arrow_right' text */
-    *:not(input):not(textarea):not(select):not(button) {
-        content: none !important;
-    }
-    *:not(input):not(textarea):not(select):not(button)::before,
-    *:not(input):not(textarea):not(select):not(button)::after {
-        content: none !important;
-        display: none !important;
-    }
-    /* Hide default expander markers */
-    [data-testid="stExpander"] details summary::marker,
-    [data-testid="stExpander"] details summary::-webkit-details-marker,
-    [data-testid="stSidebar"] [data-testid="stExpander"] details summary::marker,
-    [data-testid="stSidebar"] [data-testid="stExpander"] details summary::-webkit-details-marker {
-        display: none !important;
-    }
-    /* Custom expander toggle icon with Unicode emoji */
-    [data-testid="stExpander"] details summary::before,
-    [data-testid="stSidebar"] [data-testid="stExpander"] details summary::before {
-        content: "➔";
-        display: inline-block;
-        font-size: 20px;
-        vertical-align: middle;
-        margin-right: 10px;
-        margin-left: 5px;
-        transform: rotate(0deg);
-        transition: transform 0.3s ease-in-out;
-        color: #333;
-        position: relative;
-        z-index: 1;
-    }
-    [data-testid="stExpander"] details[open] summary::before,
-    [data-testid="stSidebar"] [data-testid="stExpander"] details[open] summary::before {
-        transform: rotate(90deg);
-    }
-    /* Ensure sidebar expander and its contents stay in place */
-    [data-testid="stSidebar"] [data-testid="stExpander"],
-    [data-testid="stSidebar"] [data-testid="stExpander"] details,
-    [data-testid="stSidebar"] [data-testid="stExpander"] summary {
-        position: relative !important;
-        top: 0 !important;
-        left: 0 !important;
-        z-index: 1 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -220,7 +153,7 @@ with tab2:
         row = matches[matches["match_id"] == selected_id].iloc[0]
         idx = matches[matches["match_id"] == selected_id].index[0]
 
-        with st.expander("Edit Match ➔"):
+        with st.expander("Edit Match"):
             match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1)
             p1 = st.text_input("Team 1 - Player 1", value=row["team1_player1"])
             p2 = st.text_input("Team 1 - Player 2", value=row["team1_player2"])
@@ -296,26 +229,25 @@ with tab3:
 
 # ----- SIDEBAR -----
 with st.sidebar:
-    with st.expander("Manage Players ➔"):
-        st.header("🎾 Manage Players")
-        new_player = st.text_input("Add Player").strip()
-        if st.button("Add Player"):
-            if new_player:
-                if new_player not in players:
-                    players.append(new_player)
-                    save_players(players)
-                    st.success(f"{new_player} added.")
-                    st.rerun()
-                else:
-                    st.warning(f"{new_player} already exists.")
-
-        remove_player = st.selectbox("Remove Player", [""] + players)
-        if st.button("Remove Selected Player"):
-            if remove_player:
-                players = [p for p in players if p != remove_player]
+    st.header("🎾 Manage Players")
+    new_player = st.text_input("Add Player").strip()
+    if st.button("Add Player"):
+        if new_player:
+            if new_player not in players:
+                players.append(new_player)
                 save_players(players)
-                st.success(f"{remove_player} removed.")
+                st.success(f"{new_player} added.")
                 st.rerun()
+            else:
+                st.warning(f"{new_player} already exists.")
+
+    remove_player = st.selectbox("Remove Player", [""] + players)
+    if st.button("Remove Selected Player"):
+        if remove_player:
+            players = [p for p in players if p != remove_player]
+            save_players(players)
+            st.success(f"{remove_player} removed.")
+            st.rerun()
 
 st.markdown("""
 <div style='background-color: #292481; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
