@@ -144,47 +144,52 @@ with tab2:
     if filtered_matches.empty:
         st.info("No matches found for the selected filter.")
     else:
-        selected_label = st.selectbox("Select a match to edit or delete", filtered_matches.apply(format_match_label, axis=1).tolist())
-        selected_id = selected_label.split(" — ")[0]
-        selected_row = filtered_matches[filtered_matches["match_id"] == selected_id].iloc[0]
-        idx = matches[matches["match_id"] == selected_id].index[0]
+        for _, row in filtered_matches.iterrows():
+            st.markdown(f"- **{format_match_label(row)}**")
 
-        with st.form(key=f"edit_form_{selected_id}"):
-            st.markdown(f"### ✏️ Edit Match {selected_id}")
-            match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0 if selected_row["match_type"] == "Doubles" else 1)
-            p1 = st.text_input("Team 1 - Player 1", value=selected_row["team1_player1"])
-            p2 = st.text_input("Team 1 - Player 2", value=selected_row["team1_player2"])
-            p3 = st.text_input("Team 2 - Player 1", value=selected_row["team2_player1"])
-            p4 = st.text_input("Team 2 - Player 2", value=selected_row["team2_player2"])
-            set1 = st.text_input("Set 1", value=selected_row["set1"])
-            set2 = st.text_input("Set 2", value=selected_row["set2"])
-            set3 = st.text_input("Set 3", value=selected_row["set3"])
-            winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(selected_row["winner"]))
+        st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
 
-            col1, col2 = st.columns(2)
-            if col1.form_submit_button("Save"):
-                matches.loc[idx] = {
-                    "match_id": selected_id,
-                    "date": selected_row["date"],
-                    "match_type": match_type,
-                    "team1_player1": p1,
-                    "team1_player2": p2,
-                    "team2_player1": p3,
-                    "team2_player2": p4,
-                    "set1": set1,
-                    "set2": set2,
-                    "set3": set3,
-                    "winner": winner
-                }
-                save_matches(matches)
-                st.success("Match updated.")
-                st.rerun()
+        with st.expander("✏️ Edit or Delete a Match"):
+            selected_label = st.selectbox("Select a match to edit or delete", filtered_matches.apply(format_match_label, axis=1).tolist())
+            selected_id = selected_label.split(" — ")[0]
+            selected_row = filtered_matches[filtered_matches["match_id"] == selected_id].iloc[0]
+            idx = matches[matches["match_id"] == selected_id].index[0]
 
-            if col2.form_submit_button("🗑️ Delete Match"):
-                matches = matches[matches["match_id"] != selected_id].reset_index(drop=True)
-                save_matches(matches)
-                st.success("Match deleted.")
-                st.rerun()
+            with st.form(key=f"edit_form_{selected_id}"):
+                match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0 if selected_row["match_type"] == "Doubles" else 1)
+                p1 = st.text_input("Team 1 - Player 1", value=selected_row["team1_player1"])
+                p2 = st.text_input("Team 1 - Player 2", value=selected_row["team1_player2"])
+                p3 = st.text_input("Team 2 - Player 1", value=selected_row["team2_player1"])
+                p4 = st.text_input("Team 2 - Player 2", value=selected_row["team2_player2"])
+                set1 = st.text_input("Set 1", value=selected_row["set1"])
+                set2 = st.text_input("Set 2", value=selected_row["set2"])
+                set3 = st.text_input("Set 3", value=selected_row["set3"])
+                winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(selected_row["winner"]))
+
+                col1, col2 = st.columns(2)
+                if col1.form_submit_button("Save"):
+                    matches.loc[idx] = {
+                        "match_id": selected_id,
+                        "date": selected_row["date"],
+                        "match_type": match_type,
+                        "team1_player1": p1,
+                        "team1_player2": p2,
+                        "team2_player1": p3,
+                        "team2_player2": p4,
+                        "set1": set1,
+                        "set2": set2,
+                        "set3": set3,
+                        "winner": winner
+                    }
+                    save_matches(matches)
+                    st.success("Match updated.")
+                    st.rerun()
+
+                if col2.form_submit_button("🗑️ Delete Match"):
+                    matches = matches[matches["match_id"] != selected_id].reset_index(drop=True)
+                    save_matches(matches)
+                    st.success("Match deleted.")
+                    st.rerun()
 
 # ----- RANKINGS -----
 with tab3:
