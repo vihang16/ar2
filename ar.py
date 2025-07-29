@@ -227,27 +227,41 @@ with tab3:
             best = Counter(partners[selected]).most_common(1)[0][0]
             st.markdown(f"**Most Frequent Partner**: {best}")
 
-# ----- SIDEBAR -----
-with st.sidebar:
-    st.header("🎾 Manage Players")
-    new_player = st.text_input("Add Player").strip()
-    if st.button("Add Player"):
-        if new_player:
-            if new_player not in players:
-                players.append(new_player)
-                save_players(players)
-                st.success(f"{new_player} added.")
-                st.rerun()
-            else:
-                st.warning(f"{new_player} already exists.")
+# Initialize sidebar visibility state if not set
+if "sidebar_visible" not in st.session_state:
+    st.session_state.sidebar_visible = True
 
-    remove_player = st.selectbox("Remove Player", [""] + players)
-    if st.button("Remove Selected Player"):
-        if remove_player:
-            players = [p for p in players if p != remove_player]
-            save_players(players)
-            st.success(f"{remove_player} removed.")
-            st.rerun()
+# Toggle button on main page (above everything else)
+toggle_label = "<<" if st.session_state.sidebar_visible else ">>"
+if st.button(toggle_label):
+    st.session_state.sidebar_visible = not st.session_state.sidebar_visible
+    st.experimental_rerun()
+
+# Conditionally render sidebar content
+if st.session_state.sidebar_visible:
+    with st.sidebar:
+        st.header("🎾 Manage Players")
+        new_player = st.text_input("Add Player").strip()
+        if st.button("Add Player"):
+            if new_player:
+                if new_player not in players:
+                    players.append(new_player)
+                    save_players(players)
+                    st.success(f"{new_player} added.")
+                    st.experimental_rerun()
+                else:
+                    st.warning(f"{new_player} already exists.")
+
+        remove_player = st.selectbox("Remove Player", [""] + players)
+        if st.button("Remove Selected Player"):
+            if remove_player:
+                players = [p for p in players if p != remove_player]
+                save_players(players)
+                st.success(f"{remove_player} removed.")
+                st.experimental_rerun()
+else:
+    st.info("Sidebar is hidden. Click >> to show it.")
+
 
 st.markdown("""
 <div style='background-color: #292481; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
