@@ -64,21 +64,37 @@ st.markdown("""
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
     }
-    /* Hide any stray keyboard_double_arrow_right text */
-    [data-testid="stExpander"] [class*="material-icons"], [data-testid="stExpander"] [class*="icon"] {
+    /* Hide any stray keyboard_double_arrow_right text globally */
+    [class*="material-icons"], [class*="icon"], [data-testid="stExpander"] * {
+        font-family: unset !important;
+        content: none !important;
+    }
+    /* Hide any elements containing the exact text 'keyboard_double_arrow_right' */
+    [data-testid="stExpander"] *:not(input):not(textarea):not(select)::after,
+    [data-testid="stExpander"] *:not(input):not(textarea):not(select)::before,
+    [data-testid="stSidebar"] *:not(input):not(textarea):not(select)::after,
+    [data-testid="stSidebar"] *:not(input):not(textarea):not(select)::before {
+        content: none !important;
+    }
+    /* Style the expander toggle icon with a Unicode emoji for main content and sidebar */
+    [data-testid="stExpander"] details summary::marker,
+    [data-testid="stExpander"] details summary::-webkit-details-marker,
+    [data-testid="stSidebar"] [data-testid="stExpander"] details summary::marker,
+    [data-testid="stSidebar"] [data-testid="stExpander"] details summary::-webkit-details-marker {
         display: none !important;
     }
-    /* Style the expander toggle icon with a Unicode emoji */
-    [data-testid="stExpander"] details summary::before {
+    [data-testid="stExpander"] details summary::before,
+    [data-testid="stSidebar"] [data-testid="stExpander"] details summary::before {
         content: "➔";
         display: inline-block;
-        font-size: 24px;
+        font-size: 20px;
         vertical-align: middle;
         margin-right: 8px;
         transform: rotate(0deg);
         transition: transform 0.2s ease-in-out;
     }
-    [data-testid="stExpander"] details[open] summary::before {
+    [data-testid="stExpander"] details[open] summary::before,
+    [data-testid="stSidebar"] [data-testid="stExpander"] details[open] summary::before {
         transform: rotate(90deg);
     }
     </style>
@@ -106,7 +122,7 @@ with tab1:
     if match_type == "Doubles":
         p1 = st.selectbox("Team 1 - Player 1", available_players, key="t1p1")
         available_players.remove(p1)
-        p2 = st.selectbox("Team 1 - Player 2", available_players, key="t1p2")
+        p2 = st.selectbox("Team 1 - Player 2", available_players, key="t1p1")
         available_players.remove(p2)
         p3 = st.selectbox("Team 2 - Player 1", available_players, key="t2p1")
         available_players.remove(p3)
