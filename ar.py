@@ -65,7 +65,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-#st.markdown("<div style='text-align: center;'><img src='https://raw.githubusercontent.com/mahadevbk/mmd/main/mmd.png' style='width: 150px;'/></div>", unsafe_allow_html=True)
 st.title("AR2 Tennis Group 🎾")
 
 players = load_players()
@@ -89,19 +88,15 @@ with tab1:
 
     if match_type == "Doubles":
         p1 = st.selectbox("Team 1 - Player 1", available_players, key="t1p1")
-        if p1 in available_players:
-            available_players.remove(p1)
+        available_players.remove(p1)
         p2 = st.selectbox("Team 1 - Player 2", available_players, key="t1p2")
-        if p2 in available_players:
-            available_players.remove(p2)
+        available_players.remove(p2)
         p3 = st.selectbox("Team 2 - Player 1", available_players, key="t2p1")
-        if p3 in available_players:
-            available_players.remove(p3)
+        available_players.remove(p3)
         p4 = st.selectbox("Team 2 - Player 2", available_players, key="t2p2")
     else:
         p1 = st.selectbox("Player 1", available_players, key="s1p1")
-        if p1 in available_players:
-            available_players.remove(p1)
+        available_players.remove(p1)
         p3 = st.selectbox("Player 2", available_players, key="s1p2")
         p2 = ""
         p4 = ""
@@ -140,14 +135,71 @@ with tab2:
     if match_filter != "All":
         filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
 
-    st.dataframe(filtered_matches.sort_values(by="date", ascending=False), use_container_width=True)
+    if "editing_match_id" not in st.session_state:
+        st.session_state["editing_match_id"] = None
+
+    for idx, row in filtered_matches.sort_values(by="date", ascending=False).iterrows():
+        match_id = row["match_id"]
+
+        if st.session_state["editing_match_id"] == match_id:
+            with st.form(key=f"edit_form_{match_id}"):
+                st.markdown(f"### ✏️ Edit Match {match_id}")
+                match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1)
+                p1 = st.text_input("Team 1 - Player 1", value=row["team1_player1"])
+                p2 = st.text_input("Team 1 - Player 2", value=row["team1_player2"])
+                p3 = st.text_input("Team 2 - Player 1", value=row["team2_player1"])
+                p4 = st.text_input("Team 2 - Player 2", value=row["team2_player2"])
+                set1 = st.text_input("Set 1", value=row["set1"])
+                set2 = st.text_input("Set 2", value=row["set2"])
+                set3 = st.text_input("Set 3", value=row["set3"])
+                winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]))
+
+                col1, col2 = st.columns(2)
+                if col1.form_submit_button("Save"):
+                    matches.loc[idx] = {
+                        "match_id": match_id,
+                        "date": row["date"],
+                        "match_type": match_type,
+                        "team1_player1": p1,
+                        "team1_player2": p2,
+                        "team2_player1": p3,
+                        "team2_player2": p4,
+                        "set1": set1,
+                        "set2": set2,
+                        "set3": set3,
+                        "winner": winner
+                    }
+                    save_matches(matches)
+                    st.success("Match updated.")
+                    st.session_state["editing_match_id"] = None
+                    st.rerun()
+
+                if col2.form_submit_button("Cancel"):
+                    st.session_state["editing_match_id"] = None
+                    st.rerun()
+
+        else:
+            if row["match_type"] == "Singles":
+                match_display = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
+            else:
+                match_display = f"{row['team1_player1']} and {row['team1_player2']} def. {row['team2_player1']} and {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} and {row['team2_player2']} def. {row['team1_player1']} and {row['team1_player2']}"
+
+            st.markdown(f"**{row['date']}** — {match_display} &nbsp; &nbsp; `[{row['set1']}, {row['set2']}, {row['set3']}]`")
+            col1, col2 = st.columns(2)
+            if col1.button("✏️ Edit", key=f"edit_{match_id}"):
+                st.session_state["editing_match_id"] = match_id
+                st.rerun()
+            if col2.button("🗑️ Delete", key=f"delete_{match_id}"):
+                matches = matches[matches["match_id"] != match_id].reset_index(drop=True)
+                save_matches(matches)
+                st.success("Match deleted.")
+                st.rerun()
 
 # ----- RANKINGS -----
 with tab3:
     st.header("Player Rankings")
     scores = defaultdict(int)
     partners = defaultdict(list)
-    results = []
 
     for _, row in matches.iterrows():
         if row['winner'] == 'Tie':
@@ -230,4 +282,3 @@ st.markdown("""
     <a href='https://devs-scripts.streamlit.app/' style='color: #fff500;'>Other Scripts by dev</a> on Streamlit.
 </div>
 """, unsafe_allow_html=True)
-
