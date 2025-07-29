@@ -58,6 +58,20 @@ def tennis_scores():
 st.markdown("<!-- Debug: No stray text should appear above -->", unsafe_allow_html=True)
 st.write("Debug: Checking for 'keyboard_double_arrow_right' rendering issues in sidebar expander")
 
+# JavaScript to log elements containing 'keyboard_double_arrow_right'
+st.markdown("""
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const elements = document.querySelectorAll('*');
+        elements.forEach(el => {
+            if (el.textContent.includes('keyboard_double_arrow_right')) {
+                console.log('Found keyboard_double_arrow_right in:', el);
+            }
+        });
+    });
+    </script>
+""", unsafe_allow_html=True)
+
 # Custom CSS
 st.markdown("""
     <style>
@@ -65,16 +79,18 @@ st.markdown("""
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
     }
-    /* Globally hide any Material Icons or stray text */
-    [class*="material-icons"], [class*="icon"], [data-testid="stExpander"] *, [data-testid="stSidebar"] * {
+    /* Aggressively hide any Material Icons or stray text */
+    [class*="material-icons"], [class*="Icon"], [class*="icon"], [data-testid="stExpander"] *, [data-testid="stSidebar"] * {
         font-family: unset !important;
         content: none !important;
+        display: none !important;
     }
     /* Specifically hide 'keyboard_double_arrow_right' text */
-    [data-testid="stExpander"] *:not(input):not(textarea):not(select)::before,
-    [data-testid="stExpander"] *:not(input):not(textarea):not(select)::after,
-    [data-testid="stSidebar"] *:not(input):not(textarea):not(select)::before,
-    [data-testid="stSidebar"] *:not(input):not(textarea):not(select)::after {
+    *:not(input):not(textarea):not(select):not(button) {
+        content: none !important;
+    }
+    *:not(input):not(textarea):not(select):not(button)::before,
+    *:not(input):not(textarea):not(select):not(button)::after {
         content: none !important;
         display: none !important;
     }
@@ -97,16 +113,21 @@ st.markdown("""
         transform: rotate(0deg);
         transition: transform 0.3s ease-in-out;
         color: #333;
+        position: relative;
+        z-index: 1;
     }
     [data-testid="stExpander"] details[open] summary::before,
     [data-testid="stSidebar"] [data-testid="stExpander"] details[open] summary::before {
         transform: rotate(90deg);
     }
-    /* Ensure sidebar expander text is not mispositioned */
-    [data-testid="stSidebar"] [data-testid="stExpander"] {
+    /* Ensure sidebar expander and its contents stay in place */
+    [data-testid="stSidebar"] [data-testid="stExpander"],
+    [data-testid="stSidebar"] [data-testid="stExpander"] details,
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary {
         position: relative !important;
         top: 0 !important;
         left: 0 !important;
+        z-index: 1 !important;
     }
     </style>
 """, unsafe_allow_html=True)
