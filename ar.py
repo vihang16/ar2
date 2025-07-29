@@ -122,7 +122,7 @@ with tab1:
     if match_type == "Doubles":
         p1 = st.selectbox("Team 1 - Player 1", available_players, key="t1p1")
         available_players.remove(p1)
-        p2 = st.selectbox("Team 1 - Player 2", available_players, key="t1p1")
+        p2 = st.selectbox("Team 1 - Player 2", available_players, key="t1p2")  # Fixed duplicate key
         available_players.remove(p2)
         p3 = st.selectbox("Team 2 - Player 1", available_players, key="t2p1")
         available_players.remove(p3)
