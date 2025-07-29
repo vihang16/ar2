@@ -1,10 +1,10 @@
+
 import streamlit as st
 import pandas as pd
 import uuid
 from datetime import datetime
 from collections import defaultdict, Counter
 from supabase import create_client, Client
-import plotly.express as px
 
 # Supabase setup
 supabase_url = st.secrets["supabase"]["supabase_url"]
@@ -14,7 +14,6 @@ supabase: Client = create_client(supabase_url, supabase_key)
 # Table names
 players_table_name = "players"
 matches_table_name = "matches"
-bookings_table_name = "bookings"
 
 def load_players():
     try:
@@ -56,21 +55,13 @@ def save_matches(df):
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
-st.set_page_config(layout="wide")
-
-# Theme Toggle
-if "theme_mode" not in st.session_state:
-    st.session_state.theme_mode = "light"
-if st.sidebar.button("🌙 Toggle Dark/Light Mode"):
-    st.session_state.theme_mode = "dark" if st.session_state.theme_mode == "light" else "light"
-
-st.markdown(f"""
+# Custom CSS
+st.markdown("""
     <style>
-    html, body, [class*="st-"] {{
+    @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
+    html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
-        background-color: {'#0e1117' if st.session_state.theme_mode == 'dark' else 'white'};
-        color: {'white' if st.session_state.theme_mode == 'dark' else 'black'};
-    }}
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -87,12 +78,10 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
 
 tab1, tab2, tab3 = st.tabs(["Post Match", "Match Records", "Rankings"])
 
-# POST MATCH
+# ----- POST MATCH -----
 with tab1:
     st.header("Enter Match Result")
-
     match_type = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True)
-    date_input = st.date_input("Match Date", value=datetime.today())
     available_players = players.copy()
 
     if match_type == "Doubles":
@@ -118,7 +107,7 @@ with tab1:
     if st.button("Submit Match"):
         new_match = {
             "match_id": f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}",
-            "date": date_input.strftime("%Y-%m-%d"),
+            "date": datetime.now().strftime("%Y-%m-%d"),
             "match_type": match_type,
             "team1_player1": p1,
             "team1_player2": p2,
@@ -134,82 +123,101 @@ with tab1:
         st.success("Match submitted.")
         st.rerun()
 
-# MATCH RECORDS
+# ----- MATCH RECORDS -----
 with tab2:
     st.header("Match History")
-
-    with st.expander("🔎 Filters"):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True)
-        with col2:
-            selected_players = st.multiselect("Filter by Players", players)
-        with col3:
-            date_range = st.date_input("Date Range", [])
-
-    filtered = matches.copy()
+    match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True)
+    filtered_matches = matches.copy()
     if match_filter != "All":
-        filtered = filtered[filtered["match_type"] == match_filter]
-    if selected_players:
-        filtered = filtered[filtered.apply(lambda row: any(p in selected_players for p in [row['team1_player1'], row['team1_player2'], row['team2_player1'], row['team2_player2']]), axis=1)]
-    if len(date_range) == 2:
-        filtered = filtered[(pd.to_datetime(filtered["date"]) >= pd.to_datetime(date_range[0])) &
-                            (pd.to_datetime(filtered["date"]) <= pd.to_datetime(date_range[1]))]
+        filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
 
-    if not filtered.empty:
-        filtered_display = filtered[["date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_id"]]
-        st.dataframe(filtered_display.sort_values("date", ascending=False), use_container_width=True)
+    def format_match_label(row):
+        score = f"{row['set1']}, {row['set2']}" + (f", {row['set3']}" if row['set3'] else "")
+        if row["match_type"] == "Singles":
+            desc = f"{row['date']} | {row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['date']} | {row['team2_player1']} def. {row['team1_player1']}"
+        else:
+            desc = f"{row['date']} | {row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['date']} | {row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+        return f"{desc} | {score} | {row['match_id']}"
+
+    if filtered_matches.empty:
+        st.info("No matches found.")
     else:
-        st.info("No matches found for the selected filters.")
+        for _, row in filtered_matches.iterrows():
+            st.markdown(f"- {format_match_label(row)}")
+        
+        st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
+        st.markdown("### ✏️ Manage Match")
+        match_options = filtered_matches.apply(format_match_label, axis=1).tolist()
+        selected = st.selectbox("Select a match to edit or delete", match_options)
+        selected_id = selected.split(" | ")[-1]
+        row = matches[matches["match_id"] == selected_id].iloc[0]
+        idx = matches[matches["match_id"] == selected_id].index[0]
 
-# RANKINGS
+        with st.expander("Edit Match"):
+            match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1)
+            p1 = st.text_input("Team 1 - Player 1", value=row["team1_player1"])
+            p2 = st.text_input("Team 1 - Player 2", value=row["team1_player2"])
+            p3 = st.text_input("Team 2 - Player 1", value=row["team2_player1"])
+            p4 = st.text_input("Team 2 - Player 2", value=row["team2_player2"])
+            set1 = st.text_input("Set 1", value=row["set1"])
+            set2 = st.text_input("Set 2", value=row["set2"])
+            set3 = st.text_input("Set 3", value=row["set3"])
+            winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]))
+
+            if st.button("Save Changes"):
+                matches.loc[idx] = {
+                    "match_id": selected_id,
+                    "date": row["date"],
+                    "match_type": match_type,
+                    "team1_player1": p1,
+                    "team1_player2": p2,
+                    "team2_player1": p3,
+                    "team2_player2": p4,
+                    "set1": set1,
+                    "set2": set2,
+                    "set3": set3,
+                    "winner": winner
+                }
+                save_matches(matches)
+                st.success("Match updated.")
+                st.rerun()
+
+        if st.button("🗑️ Delete This Match"):
+            matches = matches[matches["match_id"] != selected_id].reset_index(drop=True)
+            save_matches(matches)
+            st.success("Match deleted.")
+            st.rerun()
+
+# ----- RANKINGS -----
 with tab3:
     st.header("Player Rankings")
-    scores = defaultdict(int)
+    scores = defaultdict(float)
     partners = defaultdict(list)
-
     for _, row in matches.iterrows():
-        t1 = [row['team1_player1']]
-        t2 = [row['team2_player1']]
         if row['match_type'] == 'Doubles':
-            t1.append(row['team1_player2'])
-            t2.append(row['team2_player2'])
+            t1 = [row['team1_player1'], row['team1_player2']]
+            t2 = [row['team2_player1'], row['team2_player2']]
+        else:
+            t1 = [row['team1_player1']]
+            t2 = [row['team2_player1']]
 
-        if row['winner'] == 'Tie':
-            for p in t1 + t2:
-                scores[p] += 1.5
-        elif row['winner'] == 'Team 1':
-            for p in t1:
-                scores[p] += 3
-            for p in t2:
-                scores[p] += 1
-        elif row['winner'] == 'Team 2':
-            for p in t2:
-                scores[p] += 3
-            for p in t1:
-                scores[p] += 1
+        if row["winner"] == "Team 1":
+            for p in t1: scores[p] += 3
+            for p in t2: scores[p] += 1
+        elif row["winner"] == "Team 2":
+            for p in t2: scores[p] += 3
+            for p in t1: scores[p] += 1
+        else:
+            for p in t1 + t2: scores[p] += 1.5
 
         if row['match_type'] == 'Doubles':
-            if row['team1_player1'] and row['team1_player2']:
-                partners[row['team1_player1']].append(row['team1_player2'])
-                partners[row['team1_player2']].append(row['team1_player1'])
-            if row['team2_player1'] and row['team2_player2']:
-                partners[row['team2_player1']].append(row['team2_player2'])
-                partners[row['team2_player2']].append(row['team2_player1'])
+            partners[row['team1_player1']].append(row['team1_player2'])
+            partners[row['team1_player2']].append(row['team1_player1'])
+            partners[row['team2_player1']].append(row['team2_player2'])
+            partners[row['team2_player2']].append(row['team2_player1'])
 
-    rank_df = pd.DataFrame(scores.items(), columns=["Player", "Points"])
-    rank_df = rank_df.sort_values(by="Points", ascending=False).reset_index(drop=True)
-
+    rank_df = pd.DataFrame(scores.items(), columns=["Player", "Points"]).sort_values(by="Points", ascending=False).reset_index(drop=True)
     st.dataframe(rank_df, use_container_width=True)
-    st.subheader("Top 3 Players 🏆")
-    for i in range(min(3, len(rank_df))):
-        badge = ["🥇", "🥈", "🥉"][i]
-        st.metric(label=f"#{i+1} {rank_df.iloc[i]['Player']}", value=f"{rank_df.iloc[i]['Points']} pts", delta=badge)
-
-    st.subheader("Ranking Progression")
-    if len(rank_df) > 0:
-        fig = px.bar(rank_df, x="Player", y="Points", color="Player", title="Current Rankings", text="Points")
-        st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Player Insights")
     selected = st.selectbox("Select a player", players)
@@ -219,12 +227,31 @@ with tab3:
             best = Counter(partners[selected]).most_common(1)[0][0]
             st.markdown(f"**Most Frequent Partner**: {best}")
 
-# Footer
-st.markdown("<br><br><hr style='border-top: 1px solid #fff500;'>", unsafe_allow_html=True)
-st.markdown(
-    "<div style='text-align: center; color: #ffffff;'>"
-    "Built with ❤️ using <a href='https://streamlit.io/' target='_blank' style='color: #fff500;'>Streamlit</a> — free and open source. "
-    "<a href='https://devs-scripts.streamlit.app/' target='_blank' style='color: #fff500;'>Other Scripts by dev</a>"
-    "</div>",
-    unsafe_allow_html=True
-)
+# ----- SIDEBAR -----
+with st.sidebar:
+    st.header("🎾 Manage Players")
+    new_player = st.text_input("Add Player").strip()
+    if st.button("Add Player"):
+        if new_player:
+            if new_player not in players:
+                players.append(new_player)
+                save_players(players)
+                st.success(f"{new_player} added.")
+                st.rerun()
+            else:
+                st.warning(f"{new_player} already exists.")
+
+    remove_player = st.selectbox("Remove Player", [""] + players)
+    if st.button("Remove Selected Player"):
+        if remove_player:
+            players = [p for p in players if p != remove_player]
+            save_players(players)
+            st.success(f"{remove_player} removed.")
+            st.rerun()
+
+st.markdown("""
+<div style='background-color: #292481; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
+Built with ❤️ using <a href='https://streamlit.io/' style='color: #fff500;'>Streamlit</a> — free and open source.
+<a href='https://devs-scripts.streamlit.app/' style='color: #fff500;'>Other Scripts by dev</a> on Streamlit.
+</div>
+""", unsafe_allow_html=True)
