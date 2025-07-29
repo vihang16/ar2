@@ -54,6 +54,9 @@ def save_matches(df):
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
+# Debug to check for stray text
+st.markdown("<!-- Debug: No stray text should appear above -->", unsafe_allow_html=True)
+
 # Custom CSS
 st.markdown("""
     <style>
@@ -161,7 +164,7 @@ with tab2:
             set1 = st.text_input("Set 1", value=row["set1"])
             set2 = st.text_input("Set 2", value=row["set2"])
             set3 = st.text_input("Set 3", value=row["set3"])
-            winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]))
+            winner = st.selectbox("StrWinner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]))
 
             if st.button("Save Changes"):
                 matches.loc[idx] = {
@@ -228,25 +231,26 @@ with tab3:
 
 # ----- SIDEBAR -----
 with st.sidebar:
-    st.header("🎾 Manage Players")
-    new_player = st.text_input("Add Player").strip()
-    if st.button("Add Player"):
-        if new_player:
-            if new_player not in players:
-                players.append(new_player)
-                save_players(players)
-                st.success(f"{new_player} added.")
-                st.rerun()
-            else:
-                st.warning(f"{new_player} already exists.")
+    with st.expander("Manage Players ➔"):
+        st.header("🎾 Manage Players")
+        new_player = st.text_input("Add Player").strip()
+        if st.button("Add Player"):
+            if new_player:
+                if new_player not in players:
+                    players.append(new_player)
+                    save_players(players)
+                    st.success(f"{new_player} added.")
+                    st.rerun()
+                else:
+                    st.warning(f"{new_player} already exists.")
 
-    remove_player = st.selectbox("Remove Player", [""] + players)
-    if st.button("Remove Selected Player"):
-        if remove_player:
-            players = [p for p in players if p != remove_player]
-            save_players(players)
-            st.success(f"{remove_player} removed.")
-            st.rerun()
+        remove_player = st.selectbox("Remove Player", [""] + players)
+        if st.button("Remove Selected Player"):
+            if remove_player:
+                players = [p for p in players if p != remove_player]
+                save_players(players)
+                st.success(f"{remove_player} removed.")
+                st.rerun()
 
 st.markdown("""
 <div style='background-color: #292481; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
