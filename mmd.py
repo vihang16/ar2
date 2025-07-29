@@ -189,3 +189,32 @@ with tab1:
         st.rerun()
 
 # You can continue using the same pattern for other tabs (Match Records, Rankings, Stats, Bookings, etc.)
+
+# ----- SIDEBAR -----
+with st.sidebar:
+    st.header("🎾 Manage Players")
+
+    new_player = st.text_input("Add Player").strip()
+    if st.button("Add Player"):
+        if new_player:
+            if new_player not in players:
+                players.append(new_player)
+                players = sorted(set(players))
+                save_players(players)
+                st.success(f"{new_player} added.")
+                st.rerun()
+            else:
+                st.warning(f"{new_player} is already in the list.")
+        else:
+            st.warning("Please enter a valid player name.")
+
+    st.markdown("---")
+
+    remove_player = st.selectbox("Remove Player", [""] + players)
+    if st.button("Remove Selected Player"):
+        if remove_player:
+            players = [p for p in players if p != remove_player]
+            save_players(players)
+            st.success(f"{remove_player} removed.")
+            st.rerun()
+
