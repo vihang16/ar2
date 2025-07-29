@@ -6,8 +6,11 @@ from collections import defaultdict
 from supabase import create_client, Client
 
 # Supabase setup
-supabase_url = st.secrets["supabase_url"]
-supabase_key = st.secrets["supabase_key"]
+import streamlit as st
+
+supabase_url = st.secrets["supabase"]["supabase_url"]
+supabase_key = st.secrets["supabase"]["supabase_key"]
+
 supabase: Client = create_client(supabase_url, supabase_key)
 
 # Table names
