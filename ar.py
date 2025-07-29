@@ -56,6 +56,7 @@ def tennis_scores():
 
 # Debug to check for stray text
 st.markdown("<!-- Debug: No stray text should appear above -->", unsafe_allow_html=True)
+st.write("Debug: Checking for 'keyboard_double_arrow_right' rendering issues in sidebar expander")
 
 # Custom CSS
 st.markdown("""
@@ -64,38 +65,48 @@ st.markdown("""
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
     }
-    /* Hide any stray keyboard_double_arrow_right text globally */
-    [class*="material-icons"], [class*="icon"], [data-testid="stExpander"] * {
+    /* Globally hide any Material Icons or stray text */
+    [class*="material-icons"], [class*="icon"], [data-testid="stExpander"] *, [data-testid="stSidebar"] * {
         font-family: unset !important;
         content: none !important;
     }
-    /* Hide any elements containing the exact text 'keyboard_double_arrow_right' */
-    [data-testid="stExpander"] *:not(input):not(textarea):not(select)::after,
+    /* Specifically hide 'keyboard_double_arrow_right' text */
     [data-testid="stExpander"] *:not(input):not(textarea):not(select)::before,
-    [data-testid="stSidebar"] *:not(input):not(textarea):not(select)::after,
-    [data-testid="stSidebar"] *:not(input):not(textarea):not(select)::before {
+    [data-testid="stExpander"] *:not(input):not(textarea):not(select)::after,
+    [data-testid="stSidebar"] *:not(input):not(textarea):not(select)::before,
+    [data-testid="stSidebar"] *:not(input):not(textarea):not(select)::after {
         content: none !important;
+        display: none !important;
     }
-    /* Style the expander toggle icon with a Unicode emoji for main content and sidebar */
+    /* Hide default expander markers */
     [data-testid="stExpander"] details summary::marker,
     [data-testid="stExpander"] details summary::-webkit-details-marker,
     [data-testid="stSidebar"] [data-testid="stExpander"] details summary::marker,
     [data-testid="stSidebar"] [data-testid="stExpander"] details summary::-webkit-details-marker {
         display: none !important;
     }
+    /* Custom expander toggle icon with Unicode emoji */
     [data-testid="stExpander"] details summary::before,
     [data-testid="stSidebar"] [data-testid="stExpander"] details summary::before {
         content: "➔";
         display: inline-block;
         font-size: 20px;
         vertical-align: middle;
-        margin-right: 8px;
+        margin-right: 10px;
+        margin-left: 5px;
         transform: rotate(0deg);
-        transition: transform 0.2s ease-in-out;
+        transition: transform 0.3s ease-in-out;
+        color: #333;
     }
     [data-testid="stExpander"] details[open] summary::before,
     [data-testid="stSidebar"] [data-testid="stExpander"] details[open] summary::before {
         transform: rotate(90deg);
+    }
+    /* Ensure sidebar expander text is not mispositioned */
+    [data-testid="stSidebar"] [data-testid="stExpander"] {
+        position: relative !important;
+        top: 0 !important;
+        left: 0 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -122,7 +133,7 @@ with tab1:
     if match_type == "Doubles":
         p1 = st.selectbox("Team 1 - Player 1", available_players, key="t1p1")
         available_players.remove(p1)
-        p2 = st.selectbox("Team 1 - Player 2", available_players, key="t1p2")  # Fixed duplicate key
+        p2 = st.selectbox("Team 1 - Player 2", available_players, key="t1p2")
         available_players.remove(p2)
         p3 = st.selectbox("Team 2 - Player 1", available_players, key="t2p1")
         available_players.remove(p3)
