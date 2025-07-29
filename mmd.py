@@ -65,7 +65,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<div style='text-align: center;'><img src='https://raw.githubusercontent.com/mahadevbk/mmd/main/mmd.png' style='width: 150px;'/></div>", unsafe_allow_html=True)
+#st.markdown("<div style='text-align: center;'><img src='https://raw.githubusercontent.com/mahadevbk/mmd/main/mmd.png' style='width: 150px;'/></div>", unsafe_allow_html=True)
 st.title("AR2 Tennis Group 🎾")
 
 players = load_players()
