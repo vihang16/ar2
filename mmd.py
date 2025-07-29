@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import uuid
 from datetime import datetime
-from collections import defaultdict
+from collections import defaultdict, Counter
 from supabase import create_client, Client
 
 # Supabase setup
@@ -77,7 +77,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
     save_matches(matches)
 
-tab1, tab2 = st.tabs(["Post Match", "Match Records"])
+tab1, tab2, tab3 = st.tabs(["Post Match", "Match Records", "Rankings"])
 
 # ----- POST MATCH -----
 with tab1:
@@ -141,6 +141,53 @@ with tab2:
         filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
 
     st.dataframe(filtered_matches.sort_values(by="date", ascending=False), use_container_width=True)
+
+# ----- RANKINGS -----
+with tab3:
+    st.header("Player Rankings")
+    scores = defaultdict(int)
+    partners = defaultdict(list)
+    results = []
+
+    for _, row in matches.iterrows():
+        if row['winner'] == 'Tie':
+            continue
+        t1 = [row['team1_player1']]
+        t2 = [row['team2_player1']]
+        if row['match_type'] == 'Doubles':
+            t1.append(row['team1_player2'])
+            t2.append(row['team2_player2'])
+
+        if row['winner'] == 'Team 1':
+            for p in t1:
+                scores[p] += 3
+            for p in t2:
+                scores[p] -= 1
+        else:
+            for p in t2:
+                scores[p] += 3
+            for p in t1:
+                scores[p] -= 1
+
+        if row['match_type'] == 'Doubles':
+            if row['team1_player1'] and row['team1_player2']:
+                partners[row['team1_player1']].append(row['team1_player2'])
+                partners[row['team1_player2']].append(row['team1_player1'])
+            if row['team2_player1'] and row['team2_player2']:
+                partners[row['team2_player1']].append(row['team2_player2'])
+                partners[row['team2_player2']].append(row['team2_player1'])
+
+    rank_df = pd.DataFrame(scores.items(), columns=["Player", "Points"])
+    rank_df = rank_df.sort_values(by="Points", ascending=False).reset_index(drop=True)
+    st.dataframe(rank_df, use_container_width=True)
+
+    st.subheader("Player Insights")
+    selected = st.selectbox("Select a player", players)
+    if selected:
+        st.markdown(f"**Partners Played With**: {dict(Counter(partners[selected]))}")
+        if partners[selected]:
+            best = Counter(partners[selected]).most_common(1)[0][0]
+            st.markdown(f"**Most Frequent Partner**: {best}")
 
 # ----- SIDEBAR -----
 with st.sidebar:
