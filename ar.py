@@ -64,6 +64,23 @@ st.markdown("""
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
     }
+    /* Hide any stray keyboard_double_arrow_right text */
+    [data-testid="stExpander"] [class*="material-icons"], [data-testid="stExpander"] [class*="icon"] {
+        display: none !important;
+    }
+    /* Style the expander toggle icon with a Unicode emoji */
+    [data-testid="stExpander"] details summary::before {
+        content: "➔";
+        display: inline-block;
+        font-size: 24px;
+        vertical-align: middle;
+        margin-right: 8px;
+        transform: rotate(0deg);
+        transition: transform 0.2s ease-in-out;
+    }
+    [data-testid="stExpander"] details[open] summary::before {
+        transform: rotate(90deg);
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -164,7 +181,7 @@ with tab2:
             set1 = st.text_input("Set 1", value=row["set1"])
             set2 = st.text_input("Set 2", value=row["set2"])
             set3 = st.text_input("Set 3", value=row["set3"])
-            winner = st.selectbox("StrWinner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]))
+            winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]))
 
             if st.button("Save Changes"):
                 matches.loc[idx] = {
