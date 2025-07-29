@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import uuid
@@ -13,7 +14,6 @@ supabase: Client = create_client(supabase_url, supabase_key)
 # Table names
 players_table_name = "players"
 matches_table_name = "matches"
-bookings_table_name = "bookings"
 
 def load_players():
     try:
@@ -55,6 +55,7 @@ def save_matches(df):
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
+# Custom CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
@@ -80,9 +81,7 @@ tab1, tab2, tab3 = st.tabs(["Post Match", "Match Records", "Rankings"])
 # ----- POST MATCH -----
 with tab1:
     st.header("Enter Match Result")
-
     match_type = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True)
-
     available_players = players.copy()
 
     if match_type == "Doubles":
@@ -103,7 +102,6 @@ with tab1:
     set1 = st.selectbox("Set 1", tennis_scores(), index=4)
     set2 = st.selectbox("Set 2", tennis_scores(), index=4)
     set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores())
-
     winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"])
 
     if st.button("Submit Match"):
@@ -123,78 +121,72 @@ with tab1:
         matches = pd.concat([matches, pd.DataFrame([new_match])], ignore_index=True)
         save_matches(matches)
         st.success("Match submitted.")
-        st.experimental_rerun()
+        st.rerun()
 
 # ----- MATCH RECORDS -----
 with tab2:
     st.header("Match History")
-
     match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True)
-
     filtered_matches = matches.copy()
     if match_filter != "All":
         filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
 
     def format_match_label(row):
-        # Format: date | players details | set scores | match_id
+        score = f"{row['set1']}, {row['set2']}" + (f", {row['set3']}" if row['set3'] else "")
         if row["match_type"] == "Singles":
-            players_desc = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
+            desc = f"{row['date']} | {row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['date']} | {row['team2_player1']} def. {row['team1_player1']}"
         else:
-            players_desc = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
-
-        sets = f"{row['set1']} | {row['set2']}" + (f" | {row['set3']}" if row['set3'] else "")
-        return f"{row['date']} | {players_desc} | {sets} | {row['match_id']}"
+            desc = f"{row['date']} | {row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['date']} | {row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+        return f"{desc} | {score} | {row['match_id']}"
 
     if filtered_matches.empty:
-        st.info("No matches found for the selected filter.")
+        st.info("No matches found.")
     else:
-        # Display matches with spacing before selection
-        st.dataframe(filtered_matches[["date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_id"]])
-
-        st.text("\n" * 10)  # 10 blank lines space
-
-        selected_label = st.selectbox("Select a match to edit or delete", filtered_matches.apply(format_match_label, axis=1).tolist())
-        selected_id = selected_label.split(" | ")[-1]
-        selected_row = filtered_matches[filtered_matches["match_id"] == selected_id].iloc[0]
+        for _, row in filtered_matches.iterrows():
+            st.markdown(f"- {format_match_label(row)}")
+        
+        st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
+        st.markdown("### ✏️ Manage Match")
+        match_options = filtered_matches.apply(format_match_label, axis=1).tolist()
+        selected = st.selectbox("Select a match to edit or delete", match_options)
+        selected_id = selected.split(" | ")[-1]
+        row = matches[matches["match_id"] == selected_id].iloc[0]
         idx = matches[matches["match_id"] == selected_id].index[0]
 
-        if st.button("Edit/Delete Match"):
-            with st.form(key=f"edit_form_{selected_id}"):
-                st.markdown(f"### ✏️ Edit Match {selected_id}")
-                match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0 if selected_row["match_type"] == "Doubles" else 1)
-                p1 = st.text_input("Team 1 - Player 1", value=selected_row["team1_player1"])
-                p2 = st.text_input("Team 1 - Player 2", value=selected_row["team1_player2"])
-                p3 = st.text_input("Team 2 - Player 1", value=selected_row["team2_player1"])
-                p4 = st.text_input("Team 2 - Player 2", value=selected_row["team2_player2"])
-                set1 = st.text_input("Set 1", value=selected_row["set1"])
-                set2 = st.text_input("Set 2", value=selected_row["set2"])
-                set3 = st.text_input("Set 3", value=selected_row["set3"])
-                winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(selected_row["winner"]))
+        with st.expander("Edit Match"):
+            match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1)
+            p1 = st.text_input("Team 1 - Player 1", value=row["team1_player1"])
+            p2 = st.text_input("Team 1 - Player 2", value=row["team1_player2"])
+            p3 = st.text_input("Team 2 - Player 1", value=row["team2_player1"])
+            p4 = st.text_input("Team 2 - Player 2", value=row["team2_player2"])
+            set1 = st.text_input("Set 1", value=row["set1"])
+            set2 = st.text_input("Set 2", value=row["set2"])
+            set3 = st.text_input("Set 3", value=row["set3"])
+            winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]))
 
-                col1, col2 = st.columns(2)
-                if col1.form_submit_button("Save"):
-                    matches.loc[idx] = {
-                        "match_id": selected_id,
-                        "date": selected_row["date"],
-                        "match_type": match_type,
-                        "team1_player1": p1,
-                        "team1_player2": p2,
-                        "team2_player1": p3,
-                        "team2_player2": p4,
-                        "set1": set1,
-                        "set2": set2,
-                        "set3": set3,
-                        "winner": winner
-                    }
-                    save_matches(matches)
-                    st.success("Match updated.")
-                    st.experimental_rerun()
+            if st.button("Save Changes"):
+                matches.loc[idx] = {
+                    "match_id": selected_id,
+                    "date": row["date"],
+                    "match_type": match_type,
+                    "team1_player1": p1,
+                    "team1_player2": p2,
+                    "team2_player1": p3,
+                    "team2_player2": p4,
+                    "set1": set1,
+                    "set2": set2,
+                    "set3": set3,
+                    "winner": winner
+                }
+                save_matches(matches)
+                st.success("Match updated.")
+                st.rerun()
 
-                if col2.form_submit_button("🗑️ Delete Match"):
-                    matches = matches[matches["match_id"] != selected_id].reset_index(drop=True)
-                    save_matches(matches)
-                    st.success("Match deleted.")
-                    st.experimental_rerun()
+        if st.button("🗑️ Delete This Match"):
+            matches = matches[matches["match_id"] != selected_id].reset_index(drop=True)
+            save_matches(matches)
+            st.success("Match deleted.")
+            st.rerun()
 
 # ----- RANKINGS -----
 with tab3:
@@ -202,42 +194,29 @@ with tab3:
     scores = defaultdict(float)
     partners = defaultdict(list)
     for _, row in matches.iterrows():
-        if row['winner'] == 'Tie':
-            t1 = [row['team1_player1']]
-            t2 = [row['team2_player1']]
-            if row['match_type'] == 'Doubles':
-                t1.append(row['team1_player2'])
-                t2.append(row['team2_player2'])
-            for p in t1 + t2:
-                scores[p] += 1.5
+        if row['match_type'] == 'Doubles':
+            t1 = [row['team1_player1'], row['team1_player2']]
+            t2 = [row['team2_player1'], row['team2_player2']]
         else:
             t1 = [row['team1_player1']]
             t2 = [row['team2_player1']]
-            if row['match_type'] == 'Doubles':
-                t1.append(row['team1_player2'])
-                t2.append(row['team2_player2'])
 
-            if row['winner'] == 'Team 1':
-                for p in t1:
-                    scores[p] += 3
-                for p in t2:
-                    scores[p] += 1
-            else:
-                for p in t2:
-                    scores[p] += 3
-                for p in t1:
-                    scores[p] += 1
+        if row["winner"] == "Team 1":
+            for p in t1: scores[p] += 3
+            for p in t2: scores[p] += 1
+        elif row["winner"] == "Team 2":
+            for p in t2: scores[p] += 3
+            for p in t1: scores[p] += 1
+        else:
+            for p in t1 + t2: scores[p] += 1.5
 
         if row['match_type'] == 'Doubles':
-            if row['team1_player1'] and row['team1_player2']:
-                partners[row['team1_player1']].append(row['team1_player2'])
-                partners[row['team1_player2']].append(row['team1_player1'])
-            if row['team2_player1'] and row['team2_player2']:
-                partners[row['team2_player1']].append(row['team2_player2'])
-                partners[row['team2_player2']].append(row['team2_player1'])
+            partners[row['team1_player1']].append(row['team1_player2'])
+            partners[row['team1_player2']].append(row['team1_player1'])
+            partners[row['team2_player1']].append(row['team2_player2'])
+            partners[row['team2_player2']].append(row['team2_player1'])
 
-    rank_df = pd.DataFrame(scores.items(), columns=["Player", "Points"])
-    rank_df = rank_df.sort_values(by="Points", ascending=False).reset_index(drop=True)
+    rank_df = pd.DataFrame(scores.items(), columns=["Player", "Points"]).sort_values(by="Points", ascending=False).reset_index(drop=True)
     st.dataframe(rank_df, use_container_width=True)
 
     st.subheader("Player Insights")
@@ -251,22 +230,16 @@ with tab3:
 # ----- SIDEBAR -----
 with st.sidebar:
     st.header("🎾 Manage Players")
-
     new_player = st.text_input("Add Player").strip()
     if st.button("Add Player"):
         if new_player:
             if new_player not in players:
                 players.append(new_player)
-                players = sorted(set(players))
                 save_players(players)
                 st.success(f"{new_player} added.")
-                st.experimental_rerun()
+                st.rerun()
             else:
-                st.warning(f"{new_player} is already in the list.")
-        else:
-            st.warning("Please enter a valid player name.")
-
-    st.markdown("---")
+                st.warning(f"{new_player} already exists.")
 
     remove_player = st.selectbox("Remove Player", [""] + players)
     if st.button("Remove Selected Player"):
@@ -274,18 +247,11 @@ with st.sidebar:
             players = [p for p in players if p != remove_player]
             save_players(players)
             st.success(f"{remove_player} removed.")
-            st.experimental_rerun()
+            st.rerun()
 
 st.markdown("""
-<div style='
-    background-color: #292481;
-    padding: 1rem;
-    border-left: 5px solid #fff500;
-    border-radius: 0.5rem;
-    color: white;
-    font-family: sans-serif;
-'>
-    Built with ❤️ using <a href='https://streamlit.io/' style='color: #fff500;'>Streamlit</a> — free and open source. 
-    <a href='https://devs-scripts.streamlit.app/' style='color: #fff500;'>Other Scripts by dev</a> on Streamlit.
+<div style='background-color: #292481; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
+Built with ❤️ using <a href='https://streamlit.io/' style='color: #fff500;'>Streamlit</a> — free and open source.
+<a href='https://devs-scripts.streamlit.app/' style='color: #fff500;'>Other Scripts by dev</a> on Streamlit.
 </div>
 """, unsafe_allow_html=True)
