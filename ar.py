@@ -229,25 +229,29 @@ with tab3:
 
 # ----- SIDEBAR -----
 with st.sidebar:
-    st.header("🎾 Manage Players")
-    new_player = st.text_input("Add Player").strip()
-    if st.button("Add Player"):
-        if new_player:
-            if new_player not in players:
-                players.append(new_player)
-                save_players(players)
-                st.success(f"{new_player} added.")
-                st.rerun()
-            else:
-                st.warning(f"{new_player} already exists.")
+st.header("🎾 Manage Players")
 
-    remove_player = st.selectbox("Remove Player", [""] + players)
-    if st.button("Remove Selected Player"):
-        if remove_player:
-            players = [p for p in players if p != remove_player]
-            save_players(players)
-            st.success(f"{remove_player} removed.")
-            st.rerun()
+# Add a button for revealing/concealing the sidebar with an icon
+st.markdown("<h2 style='font-size: 24px;'>🔄 Manage Players</h2>", unsafe_allow_html=True)
+
+new_player = st.text_input("Add Player").strip()
+if st.button("Add Player"):
+if new_player:
+if new_player not in players:
+players.append(new_player)
+save_players(players)
+st.success(f"{new_player} added.")
+st.rerun()
+else:
+st.warning(f"{new_player} already exists.")
+
+remove_player = st.selectbox("Remove Player", [""] + players)
+if st.button("Remove Selected Player"):
+if remove_player:
+players = [p for p in players if p != remove_player]
+save_players(players)
+st.success(f"{remove_player} removed.")
+st.rerun()
 
 st.markdown("""
 <div style='background-color: #292481; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
