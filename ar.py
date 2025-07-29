@@ -229,7 +229,8 @@ with tab3:
 
 # ----- SIDEBAR -----
 with st.sidebar:
-    st.header("🎾 Manage Players")
+    st.sidebar.title("Manage Players")
+    st.header("Players")
 
     # Add a button for revealing/concealing the sidebar with an icon
     st.markdown("<h2 style='font-size: 24px;'>🔄 Manage Players</h2>", unsafe_allow_html=True)
