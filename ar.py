@@ -71,7 +71,7 @@ def upload_image_to_supabase(file, match_id):
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
-# Custom CSS and JavaScript for modal
+# Custom CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
@@ -85,60 +85,7 @@ st.markdown("""
         cursor: pointer;
         border-radius: 5px;
     }
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.8);
-    }
-    .modal-content {
-        margin: auto;
-        display: block;
-        max-width: 90%;
-        max-height: 90%;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-    .close {
-        position: absolute;
-        top: 15px;
-        right: 35px;
-        color: #fff;
-        font-size: 40px;
-        font-weight: bold;
-        cursor: pointer;
-    }
     </style>
-    <script>
-    function openModal(modalId, imgSrc) {
-        var modal = document.getElementById(modalId);
-        var modalImg = modal.getElementsByClassName('modal-content')[0];
-        modal.style.display = "block";
-        modalImg.src = imgSrc;
-        console.log("Modal opened for: " + imgSrc); // Debug log
-    }
-    function closeModal(modalId) {
-        var modal = document.getElementById(modalId);
-        modal.style.display = "none";
-        console.log("Modal closed: " + modalId); // Debug log
-    }
-    window.onclick = function(event) {
-        var modals = document.getElementsByClassName('modal');
-        for (var i = 0; i < modals.length; i++) {
-            if (event.target == modals[i]) {
-                modals[i].style.display = "none";
-                console.log("Modal closed by clicking outside: " + modals[i].id); // Debug log
-            }
-        }
-    }
-    </script>
 """, unsafe_allow_html=True)
 
 st.title("AR Tennis Group 🎾")
@@ -225,22 +172,33 @@ with tab2:
     if filtered_matches.empty:
         st.info("No matches found.")
     else:
+        # Initialize session state to track which image is expanded
+        if "expanded_image" not in st.session_state:
+            st.session_state.expanded_image = None
+
         for _, row in filtered_matches.iterrows():
             match_label = format_match_label(row)
+            cols = st.columns([1, 10])  # Two columns: one for thumbnail, one for label
             if row["match_image_url"]:
-                modal_id = f"modal-{row['match_id']}"
-                st.markdown(f"""
-                <div style='display: flex; align-items: center;'>
-                    <img src='{row["match_image_url"]}' class='thumbnail' onclick='openModal("{modal_id}", "{row["match_image_url"]}")'>
-                    <span style='margin-left: 10px;'>- {match_label}</span>
-                </div>
-                <div id="{modal_id}" class="modal">
-                    <span class="close" onclick="closeModal('{modal_id}')">&times;</span>
-                    <img class="modal-content" src="{row["match_image_url"]}">
-                </div>
-                """, unsafe_allow_html=True)
+                with cols[0]:
+                    # Display thumbnail
+                    st.image(row["match_image_url"], width=50, caption="")
+                    # Button to toggle expander
+                    if st.button("🖼️", key=f"view_image_{row['match_id']}"):
+                        st.session_state.expanded_image = (
+                            row["match_id"]
+                            if st.session_state.expanded_image != row["match_id"]
+                            else None
+                        )
+                with cols[1]:
+                    st.markdown(f"- {match_label}")
+                # Show expander if this match's image is selected
+                if st.session_state.expanded_image == row["match_id"]:
+                    with st.expander("View Full Image"):
+                        st.image(row["match_image_url"], caption="Match Image", use_column_width=True)
             else:
-                st.markdown(f"- {match_label}")
+                with cols[1]:
+                    st.markdown(f"- {match_label}")
         
         st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
         st.markdown("### ✏️ Manage Match")
