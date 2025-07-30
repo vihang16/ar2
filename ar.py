@@ -290,13 +290,13 @@ with tab4:
     st.markdown("- [Reem 3](https://maps.google.com/?q=25.058895,55.288891)")
     st.markdown("- [Alma](https://maps.google.com/?q=25.052309,55.266460)")
     st.markdown("### Mira & Mira Oasis Tennis Courts")
-    st.markdown("- [Mira 2](https://maps.google.com/?q=25.003702,55.306740)")
-    st.markdown("- [Mira 4](https://maps.google.com/?q=25.010338,55.305798)")
-    st.markdown("- [Mira 5 A & B](https://maps.google.com/?q=25.007513,55.303432)")
-    st.markdown("- [Mira Oasis 1](https://maps.google.com/?q=25.010536,55.296654)")
-    st.markdown("- [Mira Oasis 2](https://maps.google.com/?q=25.016439,55.298626)")
-    st.markdown("- [Mira Oasis 3 A & B](https://maps.google.com/?q=25.012520,55.298313)")
-    st.markdown("- [Mira Oasis 3 C](https://maps.google.com/?q=25.015327,55.301998)")
+    st.markdown("- [Mira 2](https://maps.app.goo.gl/JeVmwiuRboCnzhnb9)")
+    st.markdown("- [Mira 4](https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A)")
+    st.markdown("- [Mira 5 A & B](https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6)")
+    st.markdown("- [Mira Oasis 1](https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8)")
+    st.markdown("- [Mira Oasis 2](https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9)")
+    st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
+    st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
 
 # ----- SIDEBAR -----
 with st.sidebar:
