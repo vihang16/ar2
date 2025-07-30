@@ -88,6 +88,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Display dubai.png above the title
+dubai_image_url = supabase.storage.from_("ar").get_public_url("dubai.png")
+st.image(dubai_image_url, height=100, caption="", use_column_width=False, cls="header-image")
+
+
 st.title("AR Tennis Group 🎾")
 
 players = load_players()
