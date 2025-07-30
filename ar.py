@@ -289,7 +289,7 @@ with tab4:
     st.markdown("- [Reem 2](https://maps.google.com/?q=25.057463,55.292751)")
     st.markdown("- [Reem 3](https://maps.google.com/?q=25.058895,55.288891)")
     st.markdown("- [Alma](https://maps.google.com/?q=25.052309,55.266460)")
-    st.markdown("### Mira & Mira Oasis & Arabian Ranches 1 Tennis Courts")
+    st.markdown("### Mira & Mira Oasis Tennis Courts")
     st.markdown("- [Mira 2](https://maps.google.com/?q=25.003702,55.306740)")
     st.markdown("- [Mira 4](https://maps.google.com/?q=25.010338,55.305798)")
     st.markdown("- [Mira 5 A & B](https://maps.google.com/?q=25.007513,55.303432)")
