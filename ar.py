@@ -35,7 +35,8 @@ def load_matches():
     try:
         response = supabase.table(matches_table_name).select("*").execute()
         df = pd.DataFrame(response.data)
-        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_image"]
+        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2",
+                            "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_image"]
         for col in expected_columns:
             if col not in df.columns:
                 df[col] = ""
@@ -108,10 +109,12 @@ with tab1:
 
     image_url = ""
     if uploaded_image:
-        from supabase.storage.client import StorageClient
-        storage = supabase.storage()
         file_path = f"match_images/{uuid.uuid4().hex}_{uploaded_image.name}"
-        storage.get_bucket("public").upload(file_path, uploaded_image)
+        supabase.storage.from_('public').upload(
+            file_path,
+            uploaded_image.getvalue(),
+            {"content-type": uploaded_image.type}
+        )
         image_url = f"{supabase_url}/storage/v1/object/public/{file_path}"
 
     if st.button("Submit Match"):
