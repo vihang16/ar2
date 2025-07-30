@@ -65,7 +65,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("AR2 Tennis Group 🎾")
+st.title("AR Tennis Group 🎾")
 
 players = load_players()
 matches = load_matches()
