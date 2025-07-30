@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import uuid
@@ -36,7 +35,7 @@ def load_matches():
     try:
         response = supabase.table(matches_table_name).select("*").execute()
         df = pd.DataFrame(response.data)
-        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner"]
+        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_image"]
         for col in expected_columns:
             if col not in df.columns:
                 df[col] = ""
@@ -104,6 +103,17 @@ with tab1:
     set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores())
     winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"])
 
+    st.markdown("**Optional:** Upload an image for this match (e.g. score sheet, group photo)")
+    uploaded_image = st.file_uploader("Match Image (optional)", type=["jpg", "jpeg", "png"])
+
+    image_url = ""
+    if uploaded_image:
+        from supabase.storage.client import StorageClient
+        storage = supabase.storage()
+        file_path = f"match_images/{uuid.uuid4().hex}_{uploaded_image.name}"
+        storage.get_bucket("public").upload(file_path, uploaded_image)
+        image_url = f"{supabase_url}/storage/v1/object/public/{file_path}"
+
     if st.button("Submit Match"):
         new_match = {
             "match_id": f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}",
@@ -116,7 +126,8 @@ with tab1:
             "set1": set1,
             "set2": set2,
             "set3": set3,
-            "winner": winner
+            "winner": winner,
+            "match_image": image_url
         }
         matches = pd.concat([matches, pd.DataFrame([new_match])], ignore_index=True)
         save_matches(matches)
@@ -144,8 +155,11 @@ with tab2:
     else:
         for _, row in filtered_matches.iterrows():
             st.markdown(f"- {format_match_label(row)}")
-        
-        st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
+            if row.get("match_image"):
+                st.image(row["match_image"], caption="Match Image", width=150)
+                with st.expander("Click to enlarge image"):
+                    st.image(row["match_image"], use_column_width=True)
+
         st.markdown("### ✏️ Manage Match")
         match_options = filtered_matches.apply(format_match_label, axis=1).tolist()
         selected = st.selectbox("Select a match to edit or delete", match_options)
@@ -164,6 +178,9 @@ with tab2:
             set3 = st.text_input("Set 3", value=row["set3"])
             winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]))
 
+            if row.get("match_image"):
+                st.image(row["match_image"], caption="Current Match Image", width=150)
+
             if st.button("Save Changes"):
                 matches.loc[idx] = {
                     "match_id": selected_id,
@@ -176,7 +193,8 @@ with tab2:
                     "set1": set1,
                     "set2": set2,
                     "set3": set3,
-                    "winner": winner
+                    "winner": winner,
+                    "match_image": row.get("match_image", "")
                 }
                 save_matches(matches)
                 st.success("Match updated.")
@@ -230,11 +248,6 @@ with tab3:
 # ----- SIDEBAR -----
 with st.sidebar:
     st.sidebar.title("Manage Players")
-    #st.header("Players")
-
-    # Add a button for revealing/concealing the sidebar with an icon
-    #st.markdown("<h2 style='font-size: 24px;'>🔄 Manage Players</h2>", unsafe_allow_html=True)
-
     new_player = st.text_input("Add Player").strip()
     if st.button("Add Player"):
         if new_player:
@@ -253,7 +266,6 @@ with st.sidebar:
             save_players(players)
             st.success(f"{remove_player} removed.")
             st.rerun()
-
 
 st.markdown("""
 <div style='background-color: #292481; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
