@@ -89,7 +89,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Display dubai.png from local GitHub repository
-st.image("dubai.png", height=100, caption="", use_column_width=False, cls="header-image")
+st.image("dubai.png", width=800, caption="", use_column_width=False, cls="header-image")
 
 
 st.title("AR Tennis Group 🎾")
