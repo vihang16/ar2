@@ -89,7 +89,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Display dubai.png from local GitHub repository
-st.markdown('<img src="dubai.png" class="header-image">', unsafe_allow_html=True)
+st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_column_width=True)
+
 
 
 
