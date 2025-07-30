@@ -95,7 +95,7 @@ st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_c
 
 
 
-st.title("AR Tennis Group 🎾")
+#st.title("AR Tennis Group 🎾")
 
 players = load_players()
 matches = load_matches()
