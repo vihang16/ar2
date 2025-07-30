@@ -172,30 +172,14 @@ with tab2:
     if filtered_matches.empty:
         st.info("No matches found.")
     else:
-        # Initialize session state to track which image is expanded
-        if "expanded_image" not in st.session_state:
-            st.session_state.expanded_image = None
-
         for _, row in filtered_matches.iterrows():
             match_label = format_match_label(row)
             cols = st.columns([1, 10])  # Two columns: one for thumbnail, one for label
             if row["match_image_url"]:
                 with cols[0]:
-                    # Display thumbnail
                     st.image(row["match_image_url"], width=50, caption="")
-                    # Button to toggle expander
-                    if st.button("🖼️", key=f"view_image_{row['match_id']}"):
-                        st.session_state.expanded_image = (
-                            row["match_id"]
-                            if st.session_state.expanded_image != row["match_id"]
-                            else None
-                        )
                 with cols[1]:
                     st.markdown(f"- {match_label}")
-                # Show expander if this match's image is selected
-                if st.session_state.expanded_image == row["match_id"]:
-                    with st.expander("View Full Image"):
-                        st.image(row["match_image_url"], caption="Match Image", use_column_width=True)
             else:
                 with cols[1]:
                     st.markdown(f"- {match_label}")
