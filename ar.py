@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import uuid
@@ -36,7 +35,7 @@ def load_matches():
     try:
         response = supabase.table(matches_table_name).select("*").execute()
         df = pd.DataFrame(response.data)
-        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner"]
+        expected_columns = ["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_image_url"]
         for col in expected_columns:
             if col not in df.columns:
                 df[col] = ""
@@ -52,6 +51,16 @@ def save_matches(df):
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
 
+def upload_image_to_supabase(file, match_id):
+    try:
+        file_path = f"match_images/{match_id}_{file.name}"
+        supabase.storage.from_("ar").upload(file_path, file.read(), {"content-type": file.type})
+        public_url = supabase.storage.from_("ar").get_public_url(file_path)
+        return public_url
+    except Exception as e:
+        st.error(f"Error uploading image: {str(e)}")
+        return ""
+
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
@@ -61,6 +70,13 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
+    }
+    .thumbnail {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        cursor: pointer;
+        border-radius: 5px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -103,10 +119,16 @@ with tab1:
     set2 = st.selectbox("Set 2", tennis_scores(), index=4)
     set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores())
     winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"])
+    match_image = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png"])
 
     if st.button("Submit Match"):
+        match_id = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        image_url = ""
+        if match_image:
+            image_url = upload_image_to_supabase(match_image, match_id)
+        
         new_match = {
-            "match_id": f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}",
+            "match_id": match_id,
             "date": datetime.now().strftime("%Y-%m-%d"),
             "match_type": match_type,
             "team1_player1": p1,
@@ -116,7 +138,8 @@ with tab1:
             "set1": set1,
             "set2": set2,
             "set3": set3,
-            "winner": winner
+            "winner": winner,
+            "match_image_url": image_url
         }
         matches = pd.concat([matches, pd.DataFrame([new_match])], ignore_index=True)
         save_matches(matches)
@@ -143,7 +166,16 @@ with tab2:
         st.info("No matches found.")
     else:
         for _, row in filtered_matches.iterrows():
-            st.markdown(f"- {format_match_label(row)}")
+            match_label = format_match_label(row)
+            if row["match_image_url"]:
+                st.markdown(f"""
+                <div style='display: flex; align-items: center;'>
+                    <img src='{row["match_image_url"]}' class='thumbnail' onclick='window.open("{row["match_image_url"]}", "_blank")'>
+                    <span style='margin-left: 10px;'>- {match_label}</span>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"- {match_label}")
         
         st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
         st.markdown("### ✏️ Manage Match")
@@ -163,8 +195,13 @@ with tab2:
             set2 = st.text_input("Set 2", value=row["set2"])
             set3 = st.text_input("Set 3", value=row["set3"])
             winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]))
+            match_image = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png"], key=f"edit_image_{selected_id}")
 
             if st.button("Save Changes"):
+                image_url = row["match_image_url"]
+                if match_image:
+                    image_url = upload_image_to_supabase(match_image, selected_id)
+                
                 matches.loc[idx] = {
                     "match_id": selected_id,
                     "date": row["date"],
@@ -176,7 +213,8 @@ with tab2:
                     "set1": set1,
                     "set2": set2,
                     "set3": set3,
-                    "winner": winner
+                    "winner": winner,
+                    "match_image_url": image_url
                 }
                 save_matches(matches)
                 st.success("Match updated.")
@@ -230,11 +268,6 @@ with tab3:
 # ----- SIDEBAR -----
 with st.sidebar:
     st.sidebar.title("Manage Players")
-    #st.header("Players")
-
-    # Add a button for revealing/concealing the sidebar with an icon
-    #st.markdown("<h2 style='font-size: 24px;'>🔄 Manage Players</h2>", unsafe_allow_html=True)
-
     new_player = st.text_input("Add Player").strip()
     if st.button("Add Player"):
         if new_player:
@@ -253,7 +286,6 @@ with st.sidebar:
             save_players(players)
             st.success(f"{remove_player} removed.")
             st.rerun()
-
 
 st.markdown("""
 <div style='background-color: #292481; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
