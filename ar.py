@@ -91,12 +91,6 @@ st.markdown("""
 # Display dubai.png from local GitHub repository
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
 
-
-
-
-
-#st.title("AR Tennis Group 🎾")
-
 players = load_players()
 matches = load_matches()
 
@@ -106,7 +100,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
     save_matches(matches)
 
-tab1, tab2, tab3 = st.tabs(["Post Match", "Match Records", "Rankings"])
+tab1, tab2, tab3, tab4 = st.tabs(["Post Match", "Match Records", "Rankings", "Court Locations"])
 
 # ----- POST MATCH -----
 with tab1:
@@ -278,6 +272,31 @@ with tab3:
         if partners[selected]:
             best = Counter(partners[selected]).most_common(1)[0][0]
             st.markdown(f"**Most Frequent Partner**: {best}")
+
+# ----- COURT LOCATIONS -----
+with tab4:
+    st.header("Court Locations")
+    st.markdown("### Arabian Ranches Tennis Courts")
+    st.markdown("- [Alvorado 1 & 2](https://maps.google.com/?q=25.041792,55.259258)")
+    st.markdown("- [Palmera 2](https://maps.google.com/?q=25.040747,55.261066)")
+    st.markdown("- [Palmera 4](https://maps.google.com/?q=25.042416,55.256306)")
+    st.markdown("- [Saheel](https://maps.google.com/?q=25.053766,55.263378)")
+    st.markdown("- [Hattan](https://maps.google.com/?q=25.046541,55.267799)")
+    st.markdown("- [MLC Mirador La Colleccion](https://maps.google.com/?q=25.046494,55.258507)")
+    st.markdown("- [Al Mahra](https://maps.google.com/?q=25.048929,55.275589)")
+    st.markdown("- [Mirador](https://maps.google.com/?q=25.057213,55.285477)")
+    st.markdown("- [Reem 1](https://maps.google.com/?q=25.059885,55.296978)")
+    st.markdown("- [Reem 2](https://maps.google.com/?q=25.057463,55.292751)")
+    st.markdown("- [Reem 3](https://maps.google.com/?q=25.058895,55.288891)")
+    st.markdown("- [Alma](https://maps.google.com/?q=25.052309,55.266460)")
+    st.markdown("### Mira & Mira Oasis & Arabian Ranches 1 Tennis Courts")
+    st.markdown("- [Mira 2](https://maps.google.com/?q=25.003702,55.306740)")
+    st.markdown("- [Mira 4](https://maps.google.com/?q=25.010338,55.305798)")
+    st.markdown("- [Mira 5 A & B](https://maps.google.com/?q=25.007513,55.303432)")
+    st.markdown("- [Mira Oasis 1](https://maps.google.com/?q=25.010536,55.296654)")
+    st.markdown("- [Mira Oasis 2](https://maps.google.com/?q=25.016439,55.298626)")
+    st.markdown("- [Mira Oasis 3 A & B](https://maps.google.com/?q=25.012520,55.298313)")
+    st.markdown("- [Mira Oasis 3 C](https://maps.google.com/?q=25.015327,55.301998)")
 
 # ----- SIDEBAR -----
 with st.sidebar:
