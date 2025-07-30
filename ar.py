@@ -117,15 +117,26 @@ st.markdown("""
     }
     </style>
     <script>
-    function openModal(imgSrc) {
-        var modal = document.getElementById("imageModal");
-        var modalImg = document.getElementById("modalImage");
+    function openModal(modalId, imgSrc) {
+        var modal = document.getElementById(modalId);
+        var modalImg = modal.getElementsByClassName('modal-content')[0];
         modal.style.display = "block";
         modalImg.src = imgSrc;
+        console.log("Modal opened for: " + imgSrc); // Debug log
     }
-    function closeModal() {
-        var modal = document.getElementById("imageModal");
+    function closeModal(modalId) {
+        var modal = document.getElementById(modalId);
         modal.style.display = "none";
+        console.log("Modal closed: " + modalId); // Debug log
+    }
+    window.onclick = function(event) {
+        var modals = document.getElementsByClassName('modal');
+        for (var i = 0; i < modals.length; i++) {
+            if (event.target == modals[i]) {
+                modals[i].style.display = "none";
+                console.log("Modal closed by clicking outside: " + modals[i].id); // Debug log
+            }
+        }
     }
     </script>
 """, unsafe_allow_html=True)
@@ -211,24 +222,21 @@ with tab2:
             desc = f"{row['date']} | {row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['date']} | {row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         return f"{desc} | {score} | {row['match_id']}"
 
-    # Modal HTML
-    st.markdown("""
-    <div id="imageModal" class="modal">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <img class="modal-content" id="modalImage">
-    </div>
-    """, unsafe_allow_html=True)
-
     if filtered_matches.empty:
         st.info("No matches found.")
     else:
         for _, row in filtered_matches.iterrows():
             match_label = format_match_label(row)
             if row["match_image_url"]:
+                modal_id = f"modal-{row['match_id']}"
                 st.markdown(f"""
                 <div style='display: flex; align-items: center;'>
-                    <img src='{row["match_image_url"]}' class='thumbnail' onclick='openModal("{row["match_image_url"]}")'>
+                    <img src='{row["match_image_url"]}' class='thumbnail' onclick='openModal("{modal_id}", "{row["match_image_url"]}")'>
                     <span style='margin-left: 10px;'>- {match_label}</span>
+                </div>
+                <div id="{modal_id}" class="modal">
+                    <span class="close" onclick="closeModal('{modal_id}')">&times;</span>
+                    <img class="modal-content" src="{row["match_image_url"]}">
                 </div>
                 """, unsafe_allow_html=True)
             else:
