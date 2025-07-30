@@ -54,7 +54,14 @@ def save_matches(df):
 def upload_image_to_supabase(file, match_id):
     try:
         file_path = f"match_images/{match_id}_{file.name}"
-        supabase.storage.from_("ar").upload(file_path, file.read(), {"content-type": file.type})
+        response = supabase.storage.from_("ar").upload(
+            file_path, 
+            file.read(), 
+            {"content-type": file.type}
+        )
+        if response.status_code >= 400:
+            st.error(f"Failed to upload image: {response.json()}")
+            return ""
         public_url = supabase.storage.from_("ar").get_public_url(file_path)
         return public_url
     except Exception as e:
@@ -64,7 +71,7 @@ def upload_image_to_supabase(file, match_id):
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
-# Custom CSS
+# Custom CSS and JavaScript for modal
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
@@ -78,7 +85,49 @@ st.markdown("""
         cursor: pointer;
         border-radius: 5px;
     }
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.8);
+    }
+    .modal-content {
+        margin: auto;
+        display: block;
+        max-width: 90%;
+        max-height: 90%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .close {
+        position: absolute;
+        top: 15px;
+        right: 35px;
+        color: #fff;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+    }
     </style>
+    <script>
+    function openModal(imgSrc) {
+        var modal = document.getElementById("imageModal");
+        var modalImg = document.getElementById("modalImage");
+        modal.style.display = "block";
+        modalImg.src = imgSrc;
+    }
+    function closeModal() {
+        var modal = document.getElementById("imageModal");
+        modal.style.display = "none";
+    }
+    </script>
 """, unsafe_allow_html=True)
 
 st.title("AR Tennis Group 🎾")
@@ -162,6 +211,14 @@ with tab2:
             desc = f"{row['date']} | {row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['date']} | {row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         return f"{desc} | {score} | {row['match_id']}"
 
+    # Modal HTML
+    st.markdown("""
+    <div id="imageModal" class="modal">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+    """, unsafe_allow_html=True)
+
     if filtered_matches.empty:
         st.info("No matches found.")
     else:
@@ -170,7 +227,7 @@ with tab2:
             if row["match_image_url"]:
                 st.markdown(f"""
                 <div style='display: flex; align-items: center;'>
-                    <img src='{row["match_image_url"]}' class='thumbnail' onclick='window.open("{row["match_image_url"]}", "_blank")'>
+                    <img src='{row["match_image_url"]}' class='thumbnail' onclick='openModal("{row["match_image_url"]}")'>
                     <span style='margin-left: 10px;'>- {match_label}</span>
                 </div>
                 """, unsafe_allow_html=True)
