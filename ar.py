@@ -159,19 +159,23 @@ st.markdown("""
         overflow-y: auto;
         margin: 0 !important;
     }
-    .stDataFrame {
-        width: 100%;
+    .stDataFrame, .stDataFrame [data-testid="stTable"], .stDataFrame table {
+        width: 100% !important;
         margin: 0 !important;
     }
     .stDataFrame table {
-        width: 100% !important;
         border-collapse: collapse;
     }
-    .stDataFrame th, .stDataFrame td {
+    .stDataFrame [data-testid="stTable"] th,
+    .stDataFrame [data-testid="stTable"] td,
+    .stDataFrame th,
+    .stDataFrame td {
         font-size: 21px !important;
-        padding: 8px;
+        padding: 8px !important;
         border-bottom: 1px solid #eee;
+        font-family: 'Offside', sans-serif !important;
     }
+    .stDataFrame [data-testid="stTable"] th,
     .stDataFrame th {
         background-color: #f5f5f5;
         color: #333;
@@ -182,22 +186,33 @@ st.markdown("""
         z-index: 1;
     }
     /* Style for Rank and Player columns */
-    .stDataFrame th:nth-child(1), /* Rank header */
-    .stDataFrame th:nth-child(3), /* Player header */
-    .stDataFrame td:nth-child(1), /* Rank cells */
-    .stDataFrame td:nth-child(3) { /* Player cells */
+    .stDataFrame [data-testid="stTable"] th:nth-child(1),
+    .stDataFrame [data-testid="stTable"] th:nth-child(3),
+    .stDataFrame [data-testid="stTable"] td:nth-child(1),
+    .stDataFrame [data-testid="stTable"] td:nth-child(3),
+    .stDataFrame th:nth-child(1),
+    .stDataFrame th:nth-child(3),
+    .stDataFrame td:nth-child(1),
+    .stDataFrame td:nth-child(3) {
         font-weight: bold !important;
         font-size: 24px !important;
     }
     @media (max-width: 640px) {
-        .stDataFrame th, .stDataFrame td {
+        .stDataFrame [data-testid="stTable"] th,
+        .stDataFrame [data-testid="stTable"] td,
+        .stDataFrame th,
+        .stDataFrame td {
             font-size: 18px !important;
-            padding: 6px;
+            padding: 6px !important;
         }
-        .stDataFrame th:nth-child(1), /* Rank header */
-        .stDataFrame th:nth-child(3), /* Player header */
-        .stDataFrame td:nth-child(1), /* Rank cells */
-        .stDataFrame td:nth-child(3) { /* Player cells */
+        .stDataFrame [data-testid="stTable"] th:nth-child(1),
+        .stDataFrame [data-testid="stTable"] th:nth-child(3),
+        .stDataFrame [data-testid="stTable"] td:nth-child(1),
+        .stDataFrame [data-testid="stTable"] td:nth-child(3),
+        .stDataFrame th:nth-child(1),
+        .stDataFrame th:nth-child(3),
+        .stDataFrame td:nth-child(1),
+        .stDataFrame td:nth-child(3) {
             font-weight: bold !important;
             font-size: 21px !important;
         }
@@ -214,7 +229,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Debug CSS application
-st.write("Debug: CSS for rankings table applied with font-size 21px (desktop) and 18px (mobile) for general content, 24px (desktop) and 21px (mobile) for Rank/Player columns.")
+st.write("""
+Debug: CSS for rankings table applied with font-size 21px (desktop) and 18px (mobile) for general content, 
+24px (desktop) and 21px (mobile) for Rank/Player columns. 
+Please inspect the table using browser developer tools (right-click table > Inspect) and check the 'font-size' 
+property for '.stDataFrame [data-testid="stTable"] th' or '.stDataFrame [data-testid="stTable"] td' elements. 
+If sizes are not applied, try clearing Streamlit cache (rerun app) or browser cache.
+""")
 
 # Display dubai.png from local GitHub repository
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
