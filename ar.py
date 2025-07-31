@@ -120,13 +120,15 @@ st.markdown("""
         border-radius: 50%;
         margin-right: 10px;
     }
-    .rankings-table-dataframe {
-        font-size: 10px !important;
+    .rankings-table .stMarkdown, .rankings-table .stButton > button {
+        font-size: 4px !important;
+        white-space: nowrap !important;
     }
-    .rankings-table-scroll {
-        max-height: 400px;
-        overflow-y: auto;
-        width: 100%;
+    .stButton > button {
+        white-space: nowrap !important;
+        min-width: 40px !important;
+        padding: 3px 6px !important;
+        text-align: center !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -147,11 +149,17 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
     save_matches(matches)
 
+# Initialize selected_player in session state
+if 'selected_player' not in st.session_state:
+    st.session_state.selected_player = ""
+
 # Reordered tabs: Rankings, Match Records, Post Match, Player Profile, Court Locations
 tab3, tab2, tab1, tab5, tab4 = st.tabs(["Rankings", "Match Records", "Post Match", "Player Profile", "Court Locations"])
 
 # ----- RANKINGS -----
 with tab3:
+    st.header("Player Rankings")
+    
     scores = defaultdict(float)
     wins = defaultdict(int)
     losses = defaultdict(int)
@@ -214,12 +222,12 @@ with tab3:
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
         rank_data.append({
-            "Rank": f"🏆 {len(rank_data) + 1}",
-            "Profile": profile_image,
             "Player": player,
+            "Select": player,
+            "Profile Image": profile_image,
             "Points": scores[player],
-            "Win %": round(win_percentage, 2),
-            "Matches": matches_played[player],
+            "Win Percentage": round(win_percentage, 2),
+            "Matches Played": matches_played[player],
             "Wins": wins[player],
             "Losses": losses[player],
             "Games Won": games_won[player]
@@ -227,40 +235,76 @@ with tab3:
 
     rank_df = pd.DataFrame(rank_data)
     rank_df = rank_df.sort_values(
-        by=["Points", "Win %", "Games Won", "Player"],
+        by=["Points", "Win Percentage", "Games Won", "Player"],
         ascending=[False, False, False, True]
     ).reset_index(drop=True)
-    rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
+    
+    rank_df.insert(0, "Rank", [f"🏆 {i}" for i in range(1, len(rank_df) + 1)])
 
-    # Display rankings table
+    # Display rankings table with headers
     st.markdown('<div class="rankings-table">', unsafe_allow_html=True)
-    st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
-    display_df = rank_df.copy()
-    display_df["Profile"] = display_df["Profile"].apply(lambda x: x if x else "No image")
+    
+    # Header row
+    header_cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1])
+    with header_cols[0]:
+        st.markdown("**Rank**")
+    with header_cols[1]:
+        st.markdown("**Profile**")
+    with header_cols[2]:
+        st.markdown("**Player**")
+    with header_cols[3]:
+        st.markdown("**Points**")
+    with header_cols[4]:
+        st.markdown("**Win %**")
+    with header_cols[5]:
+        st.markdown("**Matches**")
+    with header_cols[6]:
+        st.markdown("**Wins**")
+    with header_cols[7]:
+        st.markdown("**Losses**")
+    with header_cols[8]:
+        st.markdown("**Games Won**")
+    with header_cols[9]:
+        st.markdown("**Select**")
 
-    st.dataframe(
-        display_df[["Rank", "Profile", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Games Won"]],
-        column_config={
-            "Rank": st.column_config.TextColumn(width=80),
-            "Profile": st.column_config.ImageColumn(width=60),
-            "Player": st.column_config.TextColumn(width=100),
-            "Points": st.column_config.NumberColumn(width=40, format="%.1f"),
-            "Win %": st.column_config.NumberColumn(width=40, format="%.2f%%"),
-            "Matches": st.column_config.NumberColumn(width=40, format="%d"),
-            "Wins": st.column_config.NumberColumn(width=40, format="%d"),
-            "Losses": st.column_config.NumberColumn(width=40, format="%d"),
-            "Games Won": st.column_config.NumberColumn(width=40, format="%d")
-        },
-        height=400,
-        use_container_width=True,
-        hide_index=True
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Data rows
+    for idx, row in rank_df.iterrows():
+        cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1])
+        with cols[0]:
+            st.write(row["Rank"])
+        with cols[1]:
+            if row["Profile Image"]:
+                try:
+                    st.image(row["Profile Image"], width=50)
+                except Exception as e:
+                    st.write("No image")
+            else:
+                st.write("No image")
+        with cols[2]:
+            st.write(row["Player"])
+        with cols[3]:
+            st.write(f"{row['Points']:.1f}")
+        with cols[4]:
+            st.write(f"{row['Win Percentage']:.2f}%")
+        with cols[5]:
+            st.write(f"{int(row['Matches Played'])}")
+        with cols[6]:
+            st.write(f"{int(row['Wins'])}")
+        with cols[7]:
+            st.write(f"{int(row['Losses'])}")
+        with cols[8]:
+            st.write(f"{int(row['Games Won'])}")
+        with cols[9]:
+            if st.button("View", key=f"view_{row['Player']}_{idx}"):
+                st.session_state.selected_player = row["Player"]
+                st.rerun()
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Player Insights
     st.subheader("Player Insights")
-    selected = st.selectbox("Select a player", [""] + players, index=0, key="insights_player")
+    default_player = st.session_state.selected_player if st.session_state.selected_player in players else ""
+    selected = st.selectbox("Select a player", players, index=players.index(default_player) if default_player in players else 0, key="insights_player")
     if selected:
         def get_player_trend(player, matches, max_matches=5):
             player_matches = matches[
@@ -307,8 +351,8 @@ with tab3:
                 st.markdown(f"""
                     **Rank**: {player_data["Rank"]}  
                     **Points**: {player_data["Points"]}  
-                    **Win Percentage**: {player_data["Win %"]}%  
-                    **Matches Played**: {int(player_data["Matches"])}  
+                    **Win Percentage**: {player_data["Win Percentage"]}%  
+                    **Matches Played**: {int(player_data["Matches Played"])}  
                     **Wins**: {int(player_data["Wins"])}  
                     **Losses**: {int(player_data["Losses"])}  
                     **Games Won**: {int(player_data["Games Won"])}  
