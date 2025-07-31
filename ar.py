@@ -58,19 +58,29 @@ def save_matches(df):
 
 def upload_image_to_supabase(file, file_name, image_type="match"):
     try:
-        bucket = "ar"
-        buckets = supabase.storage.list_buckets()
-        bucket_names = [b["name"] for b in buckets]
-        if bucket not in bucket_names:
-            st.error(f"Storage bucket '{bucket}' does not exist. Please create it in Supabase Storage.")
-            return ""
+        bucket = "profile" if image_type == "profile" else "ar"
+        # Debug: Log bucket and image type
+        st.write(f"Debug: Attempting to upload {image_type} image to bucket '{bucket}'")
         
-        # Use folder based on image type
-        folder = "profiles/1ige2ga_1" if image_type == "profile" else "2ep_1"
-        file_path = f"{folder}/{file_name}"
-        # Debug: Log file extension
+        # Check bucket existence only for 'ar' bucket (since 'profile' is confirmed to exist)
+        if bucket == "ar":
+            try:
+                buckets = supabase.storage.list_buckets()
+                bucket_names = [b["name"] for b in buckets]
+                st.write(f"Debug: Available buckets: {bucket_names}")
+                if bucket not in bucket_names:
+                    st.error(f"Storage bucket '{bucket}' does not exist. Please create it in Supabase Storage.")
+                    return ""
+            except Exception as e:
+                st.warning(f"Failed to list buckets: {str(e)}. Proceeding with upload to '{bucket}' as it worked for match images.")
+        
+        # Use folder for match images, root for profile images
+        file_path = f"2ep_1/{file_name}" if image_type == "match" else file_name
+        # Debug: Log file extension and path
         file_ext = file.name.split('.')[-1].lower()
         st.write(f"Debug: Uploading file with extension: {file_ext} to {bucket}/{file_path}")
+        
+        # Upload file
         response = supabase.storage.from_(bucket).upload(
             file_path, 
             file.read(), 
@@ -80,11 +90,13 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
             error_message = response.get("error", "Unknown error") if isinstance(response, dict) else "Upload failed"
             st.error(f"Failed to upload image to bucket '{bucket}/{file_path}': {error_message}")
             return ""
+        
+        # Get public URL
         public_url = supabase.storage.from_(bucket).get_public_url(file_path)
         # Validate URL structure
-        expected_prefix = f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v1/object/public/ar/{folder}/"
+        expected_prefix = f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v1/object/public/{bucket}/"
         if not public_url.startswith(expected_prefix):
-            st.warning(f"Uploaded image URL does not match expected prefix: {expected_prefix}")
+            st.warning(f"Uploaded image URL does not match expected prefix: {expected_prefix}. Got: {public_url}")
         st.write(f"Debug: Uploaded image URL: {public_url}")
         return public_url
     except Exception as e:
@@ -433,7 +445,7 @@ with tab1:
             p2 = st.selectbox("Team 1 - Player 2", [""] + available_players_t1p2, key="t1p2")
             available_players_t2p1 = [p for p in available_players_t1p2 if p != p2] if p2 else available_players_t1p2
             p3 = st.selectbox("Team 2 - Player 1", [""] + available_players_t2p1, key="t2p1")
-            available_players_t2p2 = [p for p in available_players_t2p1 if p != p3] if p3 else available_players_t1p2
+            available_players_t2p2 = [p for p in available_players_t1p2 if p != p3] if p3 else available_players_t1p2
             p4 = st.selectbox("Team 2 - Player 2", [""] + available_players_t2p2, key="t2p2")
         else:
             p1 = st.selectbox("Player 1", [""] + available_players, key="s1p1")
