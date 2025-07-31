@@ -108,18 +108,24 @@ tab3, tab2, tab1, tab4 = st.tabs(["Rankings", "Match Records", "Post Match", "Co
 with tab3:
     st.header("Player Rankings")
     
-    # Initialize data structures for points, wins, losses, matches played, games won, and partner wins
+    # Initialize data structures for points, wins, losses, matches played, games won, and partner tracking
     scores = defaultdict(float)  # Points
     wins = defaultdict(int)     # Number of wins
     losses = defaultdict(int)   # Number of losses
     matches_played = defaultdict(int)  # Total matches played
     games_won = defaultdict(int)  # Total games won
     partner_wins = defaultdict(lambda: defaultdict(int))  # Wins per partner for doubles matches
+    partner_matches = defaultdict(lambda: defaultdict(int))  # All matches played with each partner
 
     for _, row in matches.iterrows():
         if row['match_type'] == 'Doubles':
             t1 = [row['team1_player1'], row['team1_player2']]
             t2 = [row['team2_player1'], row['team2_player2']]
+            # Track all partners in doubles matches
+            partner_matches[row['team1_player1']][row['team1_player2']] += 1
+            partner_matches[row['team1_player2']][row['team1_player1']] += 1
+            partner_matches[row['team2_player1']][row['team2_player2']] += 1
+            partner_matches[row['team2_player2']][row['team2_player1']] += 1
         else:
             t1 = [row['team1_player1']]
             t2 = [row['team2_player1']]
@@ -259,7 +265,7 @@ with tab3:
                 **Wins**: {int(player_data["Wins"])}  
                 **Losses**: {int(player_data["Losses"])}  
                 **Games Won**: {int(player_data["Games Won"])}  
-                **Partners Played With**: {dict(partner_wins[selected])}  
+                **Partners Played With**: {dict(partner_matches[selected])}  
                 **Recent Trend**: {trend}  
             """)
             if partner_wins[selected]:
@@ -268,7 +274,7 @@ with tab3:
         else:
             trend = get_player_trend(selected, matches)
             st.markdown(f"No match data available for {selected}.")  
-            st.markdown(f"**Partners Played With**: {dict(partner_wins[selected])}")
+            st.markdown(f"**Partners Played With**: {dict(partner_matches[selected])}")
             st.markdown(f"**Recent Trend**: {trend}")
 
 # ----- MATCH RECORDS -----
