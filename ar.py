@@ -106,95 +106,109 @@ st.markdown("""
         border-radius: 50%;
         margin-right: 10px;
     }
-    .rankings-table-container {
+    .rankings-table-container { /* Renamed for clarity, now a general container for custom ranking display */
         width: 100%;
-        overflow-x: auto;
         background: #ffffff;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-top: 0 !important;
-        padding: 0 !important;
+        margin-top: 20px;
+        padding: 10px;
     }
-    .rankings-table-scroll {
+    .rankings-table-scroll { /* For scrollable area if needed, though now less likely to be explicit table */
         max-height: 500px;
         overflow-y: auto;
-        margin: 0 !important;
     }
-    /* General font size for the entire DataFrame content */
-    .stDataFrame {
-        width: 100%;
-        margin: 0 !important;
-    }
-    /* Apply a base font size to all table data cells and any direct text content */
-    .stDataFrame td, .stDataFrame td p, .stDataFrame td span {
-        font-size: 1.2em !important; /* Base size for all content cells */
-    }
-    .stDataFrame th {
-        background-color: #f5f5f5;
-        color: #333;
-        font-weight: bold;
-        padding: 8px;
-        text-align: left;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        font-size: 1.2em !important; /* Base size for headers */
-    }
-    .stDataFrame td {
-        padding: 8px;
+    .ranking-row {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
         border-bottom: 1px solid #eee;
+        gap: 5px; /* Adjust gap between columns */
+    }
+    .ranking-row:last-child {
+        border-bottom: none;
+    }
+    .ranking-header-row {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        background-color: #f5f5f5;
+        font-weight: bold;
+        color: #333;
+        border-bottom: 2px solid #ddd;
+        gap: 5px; /* Adjust gap between columns */
+    }
+    .rank-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .profile-col {
+        flex-shrink: 0; /* Prevent items from shrinking */
+        text-align: left;
+        padding: 0 5px;
+        font-size: 1.2em; /* Base font size for all ranking details */
+    }
+    .rank-col {
+        width: 10%; /* Adjust width as needed */
+        min-width: 40px;
+        font-weight: bold;
+        font-size: 1.5em; /* Larger for rank */
+    }
+    .profile-col {
+        width: 10%; /* Adjust width for image */
+        min-width: 60px;
+        text-align: center;
+    }
+    .profile-col img {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+    .player-col {
+        width: 25%; /* Adjust width for player name */
+        min-width: 100px;
+        font-weight: bold;
+        font-size: 1.5em; /* Larger for player name */
+    }
+    .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col {
+        width: 10%; /* Distribute remaining width */
+        min-width: 40px;
+        text-align: center;
     }
 
-    /* Specific styles for Rank and Player columns - targeting both headers and data cells */
-    .stDataFrame th:nth-child(1), /* Rank header */
-    .stDataFrame th:nth-child(3) { /* Player header */
-        font-weight: bold !important;
-        font-size: 1.5em !important; /* Increased font size for Rank and Player headers */
-    }
-
-    /* Target the text content directly within cells for Rank and Player */
-    /* This targets any direct text or common wrapping elements like div/span within these specific columns */
-    .stDataFrame td:nth-child(1), /* Rank cells */
-    .stDataFrame td:nth-child(3) { /* Player cells */
-        font-weight: bold !important;
-        font-size: 1.5em !important; /* Increased font size for Rank and Player data cells */
-    }
-    .stDataFrame td:nth-child(1) *, /* Any element within Rank cells */
-    .stDataFrame td:nth-child(3) * { /* Any element within Player cells */
-        font-weight: inherit !important; /* Inherit bold from parent td */
-        font-size: inherit !important; /* Inherit increased size from parent td */
-    }
-
-
-    @media (max-width: 640px) {
-        .stDataFrame td, .stDataFrame td p, .stDataFrame td span {
-            font-size: 1em !important; /* Adjusted base font size for smaller screens */
+    @media (max-width: 768px) {
+        .ranking-row, .ranking-header-row {
+            flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+            justify-content: space-between; /* Distribute items */
         }
-        .stDataFrame th, .stDataFrame td {
-            padding: 6px;
+        .rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col {
+            font-size: 1em; /* Smaller base font size for mobile */
+            width: auto; /* Auto width for flexible wrapping */
+            min-width: unset; /* Remove min-width for flexibility */
+            padding: 2px 5px;
+            text-align: left; /* Default to left aligned for better readability on wrap */
         }
-        .stDataFrame th:nth-child(1), /* Rank header */
-        .stDataFrame th:nth-child(3) { /* Player header */
-            font-weight: bold !important;
-            font-size: 1.2em !important; /* Adjusted for smaller screens */
+        .rank-col, .player-col {
+            font-size: 1.2em; /* Maintain relative larger size for rank/player */
+            font-weight: bold;
         }
-        .stDataFrame td:nth-child(1), /* Rank cells */
-        .stDataFrame td:nth-child(3) { /* Player cells */
-            font-weight: bold !important;
-            font-size: 1.2em !important; /* Adjusted for smaller screens */
+        .profile-col {
+            text-align: left; /* Align profile image left on mobile */
+            padding-right: 10px;
         }
-        .stDataFrame td:nth-child(1) *, /* Any element within Rank cells */
-        .stDataFrame td:nth-child(3) * { /* Any element within Player cells */
-            font-weight: inherit !important;
-            font-size: inherit !important;
+        .profile-col img {
+            width: 30px;
+            height: 30px;
         }
-        .thumbnail {
-            width: 40px;
-            height: 40px;
+        /* Specific column adjustments for mobile layout */
+        .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col {
+            flex-basis: 48%; /* Each takes roughly half width */
+            margin-bottom: 5px; /* Add some space between wrapped items */
         }
-        .profile-thumbnail {
-            width: 80px;
-            height: 80px;
+        .ranking-header-row .points-col,
+        .ranking-header-row .win-percent-col,
+        .ranking-header-row .matches-col,
+        .ranking-header-row .wins-col,
+        .ranking-header-row .losses-col,
+        .ranking-header-row .games-won-col {
+            text-align: left; /* Align headers left on wrap */
         }
     }
     </style>
@@ -301,29 +315,43 @@ with tab3:
     ).reset_index(drop=True)
     rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
-    # Display rankings table
+    # Display rankings without st.dataframe
+    st.subheader("Current Rankings")
     st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
-    display_df = rank_df.copy()
-    display_df["Profile"] = display_df["Profile"].apply(lambda x: x if x else "No image")
 
-    st.dataframe(
-        display_df[["Rank", "Profile", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Games Won"]],
-        column_config={
-            "Rank": st.column_config.TextColumn(width="small"),
-            "Profile": st.column_config.ImageColumn(width="small"),
-            "Player": st.column_config.TextColumn(width="medium"),
-            "Points": st.column_config.NumberColumn(width="small", format="%.1f"),
-            "Win %": st.column_config.NumberColumn(width="small", format="%.1f%%"),
-            "Matches": st.column_config.NumberColumn(width="small", format="%d"),
-            "Wins": st.column_config.NumberColumn(width="small", format="%d"),
-            "Losses": st.column_config.NumberColumn(width="small", format="%d"),
-            "Games Won": st.column_config.NumberColumn(width="small", format="%d")
-        },
-        height=500,
-        use_container_width=True,
-        hide_index=True
-    )
+    # Header Row
+    st.markdown(f"""
+    <div class="ranking-header-row">
+        <div class="rank-col">Rank</div>
+        <div class="profile-col"></div>
+        <div class="player-col">Player</div>
+        <div class="points-col">Points</div>
+        <div class="win-percent-col">Win %</div>
+        <div class="matches-col">Matches</div>
+        <div class="wins-col">Wins</div>
+        <div class="losses-col">Losses</div>
+        <div class="games-won-col">Games Won</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Data Rows
+    for index, row in rank_df.iterrows():
+        profile_html = f'<img src="{row["Profile"]}" class="thumbnail" alt="Profile">' if row["Profile"] else ''
+        st.markdown(f"""
+        <div class="ranking-row">
+            <div class="rank-col">{row["Rank"]}</div>
+            <div class="profile-col">{profile_html}</div>
+            <div class="player-col">{row["Player"]}</div>
+            <div class="points-col">{row["Points"]:.1f}</div>
+            <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+            <div class="matches-col">{int(row["Matches"])}</div>
+            <div class="wins-col">{int(row["Wins"])}</div>
+            <div class="losses-col">{int(row["Losses"])}</div>
+            <div class="games-won-col">{int(row["Games Won"])}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
