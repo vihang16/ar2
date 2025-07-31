@@ -241,7 +241,7 @@ with tab3:
                 if player in team1 and row['winner'] == 'Team 1':
                     trend.append('W')
                 elif player in team2 and row['winner'] == 'Team 2':
-                    trend.append W')
+                    trend.append('W')
                 elif row['winner'] != 'Tie':
                     trend.append('L')
                 # Skip ties
