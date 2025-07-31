@@ -18,11 +18,10 @@ def load_players():
     try:
         response = supabase.table(players_table_name).select("name").execute()
         df = pd.DataFrame(response.data)
-        # Ensure all expected columns exist, filling missing ones with defaults
         expected_columns = ["name", "profile_image_url", "birthday"]
         for col in expected_columns:
             if col not in df.columns:
-                df[col] = ""  # Default to empty string for missing columns
+                df[col] = ""
         return df
     except Exception as e:
         st.error(f"Error loading players: {str(e)}")
@@ -30,7 +29,6 @@ def load_players():
 
 def save_players(players_df):
     try:
-        # Ensure only expected columns are saved to avoid schema mismatches
         expected_columns = ["name", "profile_image_url", "birthday"]
         players_df = players_df[expected_columns].copy()
         supabase.table(players_table_name).delete().neq("name", "").execute()
@@ -116,40 +114,8 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
     save_matches(matches)
 
-# Reordered tabs: Player Profile, Rankings, Match Records, Post Match, Court Locations
-tab5, tab3, tab2, tab1, tab4 = st.tabs(["Player Profile", "Rankings", "Match Records", "Post Match", "Court Locations"])
-
-# ----- PLAYER PROFILE -----
-with tab5:
-    st.header("Player Profile")
-    selected_player = st.selectbox("Select Player", [""] + players, key="profile_player")
-    
-    if selected_player:
-        player_data = players_df[players_df["name"] == selected_player].iloc[0]
-        current_image = player_data.get("profile_image_url", "")
-        current_birthday = player_data.get("birthday", "")
-        
-        st.subheader(f"Profile for {selected_player}")
-        if current_image:
-            st.image(current_image, width=100, caption="Current Profile Image")
-        else:
-            st.write("No profile image set.")
-        
-        with st.expander("Edit Profile"):
-            profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png"], key=f"profile_image_{selected_player}")
-            birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=int(current_birthday.split("-")[0]) if current_birthday else 1, key=f"birthday_day_{selected_player}")
-            birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=int(current_birthday.split("-")[1]) if current_birthday else 1, key=f"birthday_month_{selected_player}")
-            
-            if st.button("Save Profile Changes", key=f"save_profile_{selected_player}"):
-                image_url = current_image
-                if profile_image:
-                    image_url = upload_image_to_supabase(profile_image, f"profile_{selected_player}_{uuid.uuid4().hex[:6]}", bucket="profiles")
-                
-                players_df.loc[players_df["name"] == selected_player, "profile_image_url"] = image_url
-                players_df.loc[players_df["name"] == selected_player, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
-                save_players(players_df)
-                st.success("Profile updated.")
-                st.rerun()
+# Reordered tabs: Rankings, Match Records, Post Match, Player Profile, Court Locations
+tab3, tab2, tab1, tab5, tab4 = st.tabs(["Rankings", "Match Records", "Post Match", "Player Profile", "Court Locations"])
 
 # ----- RANKINGS -----
 with tab3:
@@ -462,6 +428,38 @@ with tab1:
                 matches = pd.concat([matches, pd.DataFrame([new_match])], ignore_index=True)
                 save_matches(matches)
                 st.success("Match submitted.")
+                st.rerun()
+
+# ----- PLAYER PROFILE -----
+with tab5:
+    st.header("Player Profile")
+    selected_player = st.selectbox("Select Player", [""] + players, key="profile_player")
+    
+    if selected_player:
+        player_data = players_df[players_df["name"] == selected_player].iloc[0]
+        current_image = player_data.get("profile_image_url", "")
+        current_birthday = player_data.get("birthday", "")
+        
+        st.subheader(f"Profile for {selected_player}")
+        if current_image:
+            st.image(current_image, width=100, caption="Current Profile Image")
+        else:
+            st.write("No profile image set.")
+        
+        with st.expander("Edit Profile"):
+            profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png"], key=f"profile_image_{selected_player}")
+            birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=int(current_birthday.split("-")[0]) if current_birthday else 1, key=f"birthday_day_{selected_player}")
+            birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=int(current_birthday.split("-")[1]) if current_birthday else 1, key=f"birthday_month_{selected_player}")
+            
+            if st.button("Save Profile Changes", key=f"save_profile_{selected_player}"):
+                image_url = current_image
+                if profile_image:
+                    image_url = upload_image_to_supabase(profile_image, f"profile_{selected_player}_{uuid.uuid4().hex[:6]}", bucket="profiles")
+                
+                players_df.loc[players_df["name"] == selected_player, "profile_image_url"] = image_url
+                players_df.loc[players_df["name"] == selected_player, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
+                save_players(players_df)
+                st.success("Profile updated.")
                 st.rerun()
 
 # ----- COURT LOCATIONS -----
