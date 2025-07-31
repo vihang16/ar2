@@ -159,28 +159,30 @@ st.markdown("""
         overflow-y: auto;
         margin: 0 !important;
     }
-    .stDataFrame, .stDataFrame [data-testid="stTable"], .stDataFrame table, [class*="st-emotion-cache"] table {
+    .custom-dataframe, .custom-dataframe [data-testid="stTable"], .custom-dataframe table, 
+    .stDataFrame, .stDataFrame [data-testid="stTable"], .stDataFrame table, 
+    [class*="emotion-cache"] table, div.stDataFrame [data-testid="stTable"] {
         width: 100% !important;
         margin: 0 !important;
     }
-    .stDataFrame table {
+    .custom-dataframe table, .stDataFrame table {
         border-collapse: collapse;
     }
-    .stDataFrame [data-testid="stTable"] th,
-    .stDataFrame [data-testid="stTable"] td,
-    .stDataFrame th,
-    .stDataFrame td,
-    [class*="st-emotion-cache"] th,
-    [class*="st-emotion-cache"] td,
-    .stDataFrame * {
+    .custom-dataframe th, .custom-dataframe td,
+    .custom-dataframe [data-testid="stTable"] th, .custom-dataframe [data-testid="stTable"] td,
+    .stDataFrame th, .stDataFrame td,
+    .stDataFrame [data-testid="stTable"] th, .stDataFrame [data-testid="stTable"] td,
+    [class*="emotion-cache"] th, [class*="emotion-cache"] td,
+    div.stDataFrame [data-testid="stTable"] th, div.stDataFrame [data-testid="stTable"] td,
+    .custom-dataframe *, .stDataFrame * {
         font-size: 21px !important;
         padding: 8px !important;
         border-bottom: 1px solid #eee;
         font-family: 'Offside', sans-serif !important;
     }
-    .stDataFrame [data-testid="stTable"] th,
-    .stDataFrame th,
-    [class*="st-emotion-cache"] th {
+    .custom-dataframe th, .custom-dataframe [data-testid="stTable"] th,
+    .stDataFrame th, .stDataFrame [data-testid="stTable"] th,
+    [class*="emotion-cache"] th, div.stDataFrame [data-testid="stTable"] th {
         background-color: #f5f5f5;
         color: #333;
         font-weight: bold;
@@ -190,44 +192,44 @@ st.markdown("""
         z-index: 1;
     }
     /* Style for Rank and Player columns */
-    .stDataFrame [data-testid="stTable"] th:nth-child(1),
-    .stDataFrame [data-testid="stTable"] th:nth-child(3),
-    .stDataFrame [data-testid="stTable"] td:nth-child(1),
-    .stDataFrame [data-testid="stTable"] td:nth-child(3),
-    .stDataFrame th:nth-child(1),
-    .stDataFrame th:nth-child(3),
-    .stDataFrame td:nth-child(1),
-    .stDataFrame td:nth-child(3),
-    [class*="st-emotion-cache"] th:nth-child(1),
-    [class*="st-emotion-cache"] th:nth-child(3),
-    [class*="st-emotion-cache"] td:nth-child(1),
-    [class*="st-emotion-cache"] td:nth-child(3) {
+    .custom-dataframe th:nth-child(1), .custom-dataframe th:nth-child(3),
+    .custom-dataframe td:nth-child(1), .custom-dataframe td:nth-child(3),
+    .custom-dataframe [data-testid="stTable"] th:nth-child(1), .custom-dataframe [data-testid="stTable"] th:nth-child(3),
+    .custom-dataframe [data-testid="stTable"] td:nth-child(1), .custom-dataframe [data-testid="stTable"] td:nth-child(3),
+    .stDataFrame th:nth-child(1), .stDataFrame th:nth-child(3),
+    .stDataFrame td:nth-child(1), .stDataFrame td:nth-child(3),
+    .stDataFrame [data-testid="stTable"] th:nth-child(1), .stDataFrame [data-testid="stTable"] th:nth-child(3),
+    .stDataFrame [data-testid="stTable"] td:nth-child(1), .stDataFrame [data-testid="stTable"] td:nth-child(3),
+    [class*="emotion-cache"] th:nth-child(1), [class*="emotion-cache"] th:nth-child(3),
+    [class*="emotion-cache"] td:nth-child(1), [class*="emotion-cache"] td:nth-child(3),
+    div.stDataFrame [data-testid="stTable"] th:nth-child(1), div.stDataFrame [data-testid="stTable"] th:nth-child(3),
+    div.stDataFrame [data-testid="stTable"] td:nth-child(1), div.stDataFrame [data-testid="stTable"] td:nth-child(3) {
         font-weight: bold !important;
         font-size: 24px !important;
     }
     @media (max-width: 640px) {
-        .stDataFrame [data-testid="stTable"] th,
-        .stDataFrame [data-testid="stTable"] td,
-        .stDataFrame th,
-        .stDataFrame td,
-        [class*="st-emotion-cache"] th,
-        [class*="st-emotion-cache"] td,
-        .stDataFrame * {
+        .custom-dataframe th, .custom-dataframe td,
+        .custom-dataframe [data-testid="stTable"] th, .custom-dataframe [data-testid="stTable"] td,
+        .stDataFrame th, .stDataFrame td,
+        .stDataFrame [data-testid="stTable"] th, .stDataFrame [data-testid="stTable"] td,
+        [class*="emotion-cache"] th, [class*="emotion-cache"] td,
+        div.stDataFrame [data-testid="stTable"] th, div.stDataFrame [data-testid="stTable"] td,
+        .custom-dataframe *, .stDataFrame * {
             font-size: 18px !important;
             padding: 6px !important;
         }
-        .stDataFrame [data-testid="stTable"] th:nth-child(1),
-        .stDataFrame [data-testid="stTable"] th:nth-child(3),
-        .stDataFrame [data-testid="stTable"] td:nth-child(1),
-        .stDataFrame [data-testid="stTable"] td:nth-child(3),
-        .stDataFrame th:nth-child(1),
-        .stDataFrame th:nth-child(3),
-        .stDataFrame td:nth-child(1),
-        .stDataFrame td:nth-child(3),
-        [class*="st-emotion-cache"] th:nth-child(1),
-        [class*="st-emotion-cache"] th:nth-child(3),
-        [class*="st-emotion-cache"] td:nth-child(1),
-        [class*="st-emotion-cache"] td:nth-child(3) {
+        .custom-dataframe th:nth-child(1), .custom-dataframe th:nth-child(3),
+        .custom-dataframe td:nth-child(1), .custom-dataframe td:nth-child(3),
+        .custom-dataframe [data-testid="stTable"] th:nth-child(1), .custom-dataframe [data-testid="stTable"] th:nth-child(3),
+        .custom-dataframe [data-testid="stTable"] td:nth-child(1), .custom-dataframe [data-testid="stTable"] td:nth-child(3),
+        .stDataFrame th:nth-child(1), .stDataFrame th:nth-child(3),
+        .stDataFrame td:nth-child(1), .stDataFrame td:nth-child(3),
+        .stDataFrame [data-testid="stTable"] th:nth-child(1), .stDataFrame [data-testid="stTable"] th:nth-child(3),
+        .stDataFrame [data-testid="stTable"] td:nth-child(1), .stDataFrame [data-testid="stTable"] td:nth-child(3),
+        [class*="emotion-cache"] th:nth-child(1), [class*="emotion-cache"] th:nth-child(3),
+        [class*="emotion-cache"] td:nth-child(1), [class*="emotion-cache"] td:nth-child(3),
+        div.stDataFrame [data-testid="stTable"] th:nth-child(1), div.stDataFrame [data-testid="stTable"] th:nth-child(3),
+        div.stDataFrame [data-testid="stTable"] td:nth-child(1), div.stDataFrame [data-testid="stTable"] td:nth-child(3) {
             font-weight: bold !important;
             font-size: 21px !important;
         }
@@ -244,16 +246,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Debug CSS application
-st.write("""
+st.markdown("""
 Debug: CSS for rankings table applied with font-size 21px (desktop) and 18px (mobile) for general content, 
 24px (desktop) and 21px (mobile) for Rank/Player columns. 
 Please inspect the table using browser developer tools (right-click table > Inspect) and check the 'font-size' 
-property for '.stDataFrame [data-testid="stTable"] th', '.stDataFrame [data-testid="stTable"] td', 
-or '[class*="st-emotion-cache"] th', '[class*="st-emotion-cache"] td' elements. 
-Note the applied font-size and any conflicting CSS rules (e.g., from Streamlit or a custom theme). 
-Try clearing Streamlit cache via the app's menu (Settings > Clear Cache) or run `streamlit cache clear` 
-in the terminal. If using a custom Streamlit theme, check .streamlit/config.toml for conflicting font settings.
-""")
+property for '.custom-dataframe th', '.custom-dataframe td', '.stDataFrame [data-testid="stTable"] th', 
+'.stDataFrame [data-testid="stTable"] td', or '[class*="emotion-cache"] th', '[class*="emotion-cache"] td' elements. 
+Note the applied font-size (e.g., 14px) and any conflicting CSS rules (e.g., from Streamlit or a custom theme). 
+Clear Streamlit cache via the app's menu (Settings > Clear Cache) or run `streamlit cache clear` in the terminal. 
+Check Streamlit version with `streamlit --version`. If using a custom theme, check .streamlit/config.toml for font settings.
+""", unsafe_allow_html=True)
 
 # Display dubai.png from local GitHub repository
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
@@ -356,8 +358,8 @@ with tab3:
     ).reset_index(drop=True)
     rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
-    # Display rankings table with inline styles
-    st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
+    # Display rankings table with custom container
+    st.markdown('<div class="rankings-table-container custom-dataframe">', unsafe_allow_html=True)
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
     display_df = rank_df.copy()
     display_df["Profile"] = display_df["Profile"].apply(lambda x: x if x else "No image")
@@ -377,15 +379,7 @@ with tab3:
         },
         height=500,
         use_container_width=True,
-        hide_index=True,
-        styles=[
-            {"selector": "th, td", "props": [("font-size", "21px"), ("padding", "8px"), ("font-family", "'Offside', sans-serif")]},
-            {"selector": "th:nth-child(1), td:nth-child(1), th:nth-child(3), td:nth-child(3)", "props": [("font-size", "24px"), ("font-weight", "bold")]},
-            {"selector": "@media (max-width: 640px)", "props": [
-                ("th, td", [("font-size", "18px"), ("padding", "6px")]),
-                ("th:nth-child(1), td:nth-child(1), th:nth-child(3), td:nth-child(3)", [("font-size", "21px"), ("font-weight", "bold")])
-            ]}
-        ]
+        hide_index=True
     )
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
