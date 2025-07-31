@@ -489,7 +489,7 @@ with tab1:
     available_players = players.copy() if players else []
 
     if not available_players:
-        st.warning("No players available. Please add players in the sidebar.")
+        st.warning("No players available. Please add players in the Player Profile tab.")
     else:
         if match_type == "Doubles":
             p1 = st.selectbox("Team 1 - Player 1", [""] + available_players, key="t1p1")
@@ -545,6 +545,35 @@ with tab1:
 # ----- PLAYER PROFILE -----
 with tab5:
     st.header("Player Profile")
+    
+    # Manage Players Section
+    st.subheader("Manage Players")
+    new_player = st.text_input("Add Player").strip()
+    if st.button("Add Player"):
+        if new_player:
+            if new_player not in players:
+                new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
+                players_df = pd.concat([players_df, pd.DataFrame([new_player_data])], ignore_index=True)
+                players.append(new_player)
+                save_players(players_df)
+                st.session_state.players_df = load_players()
+                st.success(f"{new_player} added.")
+                st.rerun()
+            else:
+                st.warning(f"{new_player} already exists.")
+
+    remove_player = st.selectbox("Remove Player", [""] + players)
+    if st.button("Remove Selected Player"):
+        if remove_player:
+            players_df = players_df[players_df["name"] != remove_player].reset_index(drop=True)
+            players = [p for p in players if p != remove_player]
+            save_players(players_df)
+            st.session_state.players_df = load_players()
+            st.success(f"{remove_player} removed.")
+            st.rerun()
+
+    # Existing Player Profile Section
+    st.subheader("Edit Player Profile")
     selected_player = st.selectbox("Select Player", [""] + players, key="profile_player")
     
     if selected_player:
@@ -605,30 +634,8 @@ with tab4:
 
 # ----- SIDEBAR -----
 with st.sidebar:
-    st.sidebar.title("Manage Players")
-    new_player = st.text_input("Add Player").strip()
-    if st.button("Add Player"):
-        if new_player:
-            if new_player not in players:
-                new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
-                players_df = pd.concat([players_df, pd.DataFrame([new_player_data])], ignore_index=True)
-                players.append(new_player)
-                save_players(players_df)
-                st.session_state.players_df = load_players()
-                st.success(f"{new_player} added.")
-                st.rerun()
-            else:
-                st.warning(f"{new_player} already exists.")
-
-    remove_player = st.selectbox("Remove Player", [""] + players)
-    if st.button("Remove Selected Player"):
-        if remove_player:
-            players_df = players_df[players_df["name"] != remove_player].reset_index(drop=True)
-            players = [p for p in players if p != remove_player]
-            save_players(players_df)
-            st.session_state.players_df = load_players()
-            st.success(f"{remove_player} removed.")
-            st.rerun()
+    st.sidebar.title("About")
+    st.sidebar.markdown("This app tracks tennis match results and player rankings for the Arabian Ranches community.")
 
 st.markdown("""
 <div style='background-color: #161e80; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
