@@ -243,8 +243,7 @@ with tab3:
             "Matches": matches_played[player],
             "Wins": wins[player],
             "Losses": losses[player],
-            "Games Won": games_won[player],
-            "Select": player
+            "Games Won": games_won[player]
         })
 
     rank_df = pd.DataFrame(rank_data)
@@ -282,14 +281,13 @@ with tab3:
         st.markdown("**Select**")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Scrollable dataframe
+    # Scrollable dataframe and radio buttons
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
     display_df = rank_df.copy()
     display_df["Profile"] = display_df["Profile"].apply(lambda x: x if x else "No image")
-    display_df["Select"] = [f"select_{row['Player']}_{idx}" for idx, row in display_df.iterrows()]
 
     st.dataframe(
-        display_df,
+        display_df[["Rank", "Profile", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Games Won"]],
         column_config={
             "Rank": st.column_config.TextColumn(width=80),
             "Profile": st.column_config.ImageColumn(width=60),
@@ -299,23 +297,19 @@ with tab3:
             "Matches": st.column_config.NumberColumn(width=40, format="%d"),
             "Wins": st.column_config.NumberColumn(width=40, format="%d"),
             "Losses": st.column_config.NumberColumn(width=40, format="%d"),
-            "Games Won": st.column_config.NumberColumn(width=40, format="%d"),
-            "Select": st.column_config.RadioColumn(
-                width=20,
-                options=[""],
-                default=""
-            )
+            "Games Won": st.column_config.NumberColumn(width=40, format="%d")
         },
         height=400,
         use_container_width=True
     )
 
-    # Handle radio button selection
-    for idx, row in display_df.iterrows():
-        if st.session_state.get(f"select_{row['Player']}_{idx}") == "":
-            st.session_state.selected_player = row["Player"]
-            st.rerun()
-            break
+    # Add radio buttons for selection
+    for idx, row in rank_df.iterrows():
+        cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 0.5])
+        with cols[9]:
+            if st.radio("", [""], key=f"select_{row['Player']}_{idx}", index=0 if st.session_state.selected_player != row["Player"] else None):
+                st.session_state.selected_player = row["Player"]
+                st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
@@ -527,7 +521,7 @@ with tab1:
                     image_url = upload_image_to_supabase(match_image, match_id, image_type="match")
                 
                 new_match = {
-                    "match_id": match_id,
+                    "match_id": rank_id,
                     "date": datetime.now().strftime("%Y-%m-%d"),
                     "match_type": match_type,
                     "team1_player1": p1,
