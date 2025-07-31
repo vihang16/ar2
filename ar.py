@@ -106,7 +106,7 @@ st.markdown("""
         border-radius: 50%;
         margin-right: 10px;
     }
-    .rankings-table-container { /* Renamed for clarity, now a general container for custom ranking display */
+    .rankings-table-container { 
         width: 100%;
         background: #ffffff;
         border-radius: 8px;
@@ -114,133 +114,77 @@ st.markdown("""
         margin-top: 20px;
         padding: 10px;
     }
-    .rankings-table-scroll { /* For scrollable area if needed */
+    .rankings-table-scroll { 
         max-height: 500px;
         overflow-y: auto;
     }
-    /* Desktop styles for ranking rows (flexbox for tabular layout) */
-    .ranking-header-row, .ranking-row {
-        display: flex;
-        align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px solid #eee;
-        gap: 5px; /* Adjust gap between columns */
-    }
+    
+    /* Card layout for all screen sizes */
     .ranking-header-row {
-        background-color: #f5f5f5;
-        font-weight: bold;
-        color: #333;
-        border-bottom: 2px solid #ddd;
+        display: none; /* Hide header row for card layout */
+    }
+    .ranking-row {
+        display: block; /* Stack elements vertically */
+        padding: 10px;
+        margin-bottom: 10px; /* Space between player cards */
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .ranking-row:last-child {
-        border-bottom: none;
+        margin-bottom: 0;
     }
 
-    /* Column sizing for desktop */
+    /* Adjust individual columns for card layout */
     .rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col {
-        flex-shrink: 0; /* Prevent items from shrinking */
-        text-align: left;
-        padding: 0 5px;
-        font-size: 1.2em; /* Base font size for all ranking details */
-    }
-    .rank-col {
-        width: 7%; /* Adjust width as needed */
-        min-width: 40px;
-        font-weight: bold;
-        font-size: 1.5em; /* Larger for rank */
+        width: 100%; /* Take full width */
+        text-align: left; /* Align text left */
+        padding: 2px 0;
+        font-size: 1em; /* Base font size */
+        margin-bottom: 5px; /* Space between fields */
     }
     .profile-col {
-        width: 8%; /* Adjust width for image */
-        min-width: 50px;
-        text-align: center;
+        text-align: left; /* Ensure image aligns left */
+        margin-bottom: 10px; /* More space after image */
     }
     .profile-col img {
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        border-radius: 5px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%; /* Round profile images */
+        margin-right: 10px;
+        vertical-align: middle;
     }
-    .player-col {
-        width: 25%; /* Adjust width for player name */
-        min-width: 100px;
+    .rank-col, .player-col {
+        font-size: 1.3em; /* Keep rank and player larger */
         font-weight: bold;
-        font-size: 1.5em; /* Larger for player name */
+        display: inline-block; /* Allow rank and player to be on same line if small text */
+        margin-right: 5px;
     }
-    .points-col { width: 10%; min-width: 50px; text-align: center; }
-    .win-percent-col { width: 10%; min-width: 50px; text-align: center; }
-    .matches-col { width: 10%; min-width: 50px; text-align: center; }
-    .wins-col { width: 10%; min-width: 50px; text-align: center; }
-    .losses-col { width: 10%; min-width: 50px; text-align: center; }
-    .games-won-col { width: 10%; min-width: 50px; text-align: center; }
-
-    /* Mobile-specific styles (max-width: 768px) */
-    @media (max-width: 768px) {
-        .ranking-header-row {
-            display: none; /* Hide header row on mobile for card layout */
-        }
-        .ranking-row {
-            display: block; /* Stack elements vertically */
-            padding: 10px;
-            margin-bottom: 10px; /* Space between player cards */
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .ranking-row:last-child {
-            margin-bottom: 0;
-        }
-
-        /* Adjust individual columns for mobile (full width and proper spacing) */
-        .rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col {
-            width: 100%; /* Take full width */
-            text-align: left; /* Align text left */
-            padding: 2px 0;
-            font-size: 1em; /* Smaller base font size for mobile */
-            margin-bottom: 5px; /* Space between fields */
-        }
-        .profile-col {
-            text-align: left; /* Ensure image aligns left */
-            margin-bottom: 10px; /* More space after image */
-        }
-        .profile-col img {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%; /* Round profile images on mobile */
-            margin-right: 10px;
-            vertical-align: middle;
-        }
-        .rank-col, .player-col {
-            font-size: 1.3em; /* Keep rank and player larger */
-            font-weight: bold;
-            display: inline-block; /* Allow rank and player to be on same line if small text */
-            margin-right: 5px;
-        }
-        /* Group Profile, Rank and Player together */
-        .rank-profile-player-group {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .rank-profile-player-group .rank-col {
-            width: auto; /* Shrink to fit content */
-            margin-right: 10px;
-        }
-        .rank-profile-player-group .player-col {
-            flex-grow: 1; /* Take remaining space */
-        }
-        .rank-profile-player-group .profile-col {
-             width: auto; /* Adjust to content */
-             margin-right: 10px;
-        }
-        
-        /* Add labels for stats on mobile */
-        .points-col::before { content: "Points: "; font-weight: bold; }
-        .win-percent-col::before { content: "Win %: "; font-weight: bold; }
-        .matches-col::before { content: "Matches: "; font-weight: bold; }
-        .wins-col::before { content: "Wins: "; font-weight: bold; }
-        .losses-col::before { content: "Losses: "; font-weight: bold; }
-        .games-won-col::before { content: "Games Won: "; font-weight: bold; }
+    /* Group Profile, Rank and Player together */
+    .rank-profile-player-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
     }
+    .rank-profile-player-group .rank-col {
+        width: auto; /* Shrink to fit content */
+        margin-right: 10px;
+    }
+    .rank-profile-player-group .player-col {
+        flex-grow: 1; /* Take remaining space */
+    }
+    .rank-profile-player-group .profile-col {
+         width: auto; /* Adjust to content */
+         margin-right: 10px;
+    }
+    
+    /* Add labels for stats */
+    .points-col::before { content: "Points: "; font-weight: bold; }
+    .win-percent-col::before { content: "Win %: "; font-weight: bold; }
+    .matches-col::before { content: "Matches: "; font-weight: bold; }
+    .wins-col::before { content: "Wins: "; font-weight: bold; }
+    .losses-col::before { content: "Losses: "; font-weight: bold; }
+    .games-won-col::before { content: "Games Won: "; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -350,7 +294,7 @@ with tab3:
     st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
 
-    # Header Row (only visible on desktop)
+    # Header Row (hidden for card layout)
     st.markdown(f"""
     <div class="ranking-header-row">
         <div class="rank-col">Rank</div>
