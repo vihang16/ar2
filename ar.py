@@ -252,9 +252,6 @@ st.markdown("""
         width: auto; /* Shrink to fit content */
         margin-right: 10px;
     }
-    .rank-profile-player-group .player-col {
-        flex-grow: 1; /* Take remaining space */
-    }
     .rank-profile-player-group .profile-col {
          width: auto; /* Adjust to content */
          margin-right: 10px;
@@ -291,6 +288,40 @@ st.markdown("""
         padding-top: 0 !important;
     }
 
+    /* Custom styles for tab buttons */
+    .stButton > button {
+        width: 100%; /* Make buttons fill their column */
+        border: 1px solid #ddd;
+        background-color: #f0f0f0;
+        color: #333;
+        padding: 10px 0;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    .stButton > button:hover {
+        background-color: #e0e0e0;
+    }
+
+    .stButton > button.active-tab {
+        background-color: #007bff; /* Active tab color */
+        color: white;
+        border-color: #007bff;
+    }
+
+    /* Adjust Streamlit's default container padding if necessary */
+    .st-emotion-cache-z5fcl4 { /* This is a common class for main container padding */
+        padding-top: 1rem;
+        padding-right: 1rem;
+        padding-bottom: 1rem;
+        padding-left: 1rem;
+    }
+
     </style>
 """, unsafe_allow_html=True)
 
@@ -310,11 +341,50 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
     save_matches(matches)
 
-# Reordered tabs: Rankings, Match Records, Post Match, Player Profile, Court Locations
-tab3, tab2, tab1, tab5, tab4 = st.tabs(["Rankings", "Match Records", "Post Match", "Player Profile", "Court Locations"])
+# --- Manual Tab Implementation ---
+tab_names = ["Rankings", "Match Records", "Post Match", "Player Profile", "Court Locations"]
 
-# ----- RANKINGS -----
-with tab3:
+if 'current_tab' not in st.session_state:
+    st.session_state.current_tab = "Rankings" # Default tab
+
+# Create columns for tabs (e.g., 3 tabs per row, then 2 tabs per row for the rest)
+col1, col2, col3 = st.columns(3)
+col4, col5 = st.columns(2) # Remaining tabs in a second row
+
+with col1:
+    if st.button("Rankings", key="tab_rankings"):
+        st.session_state.current_tab = "Rankings"
+with col2:
+    if st.button("Match Records", key="tab_match_records"):
+        st.session_state.current_tab = "Match Records"
+with col3:
+    if st.button("Post Match", key="tab_post_match"):
+        st.session_state.current_tab = "Post Match"
+with col4:
+    if st.button("Player Profile", key="tab_player_profile"):
+        st.session_state.current_tab = "Player Profile"
+with col5:
+    if st.button("Court Locations", key="tab_court_locations"):
+        st.session_state.current_tab = "Court Locations"
+
+# Add CSS to highlight the active tab button
+st.markdown(f"""
+<script>
+    var buttons = window.parent.document.querySelectorAll('.stButton > button');
+    buttons.forEach(function(button) {{
+        button.classList.remove('active-tab');
+    }});
+    var activeTabButton = window.parent.document.querySelector('[key="tab_{st.session_state.current_tab.lower().replace(" ", "_")}"] > button');
+    if (activeTabButton) {{
+        activeTabButton.classList.add('active-tab');
+    }}
+</script>
+""", unsafe_allow_html=True)
+
+
+# --- Content for each tab ---
+if st.session_state.current_tab == "Rankings":
+    # ----- RANKINGS -----
     scores = defaultdict(float)
     wins = defaultdict(int)
     losses = defaultdict(int)
@@ -444,8 +514,8 @@ with tab3:
     selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings")
     display_player_insights(selected_player_rankings, players_df, matches, rank_df, partner_wins, key_prefix="rankings_")
 
-# ----- MATCH RECORDS -----
-with tab2:
+elif st.session_state.current_tab == "Match Records":
+    # ----- MATCH RECORDS -----
     st.header("Match History")
     match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True)
     filtered_matches = matches.copy()
@@ -530,8 +600,8 @@ with tab2:
                 st.success("Match deleted.")
                 st.rerun()
 
-# ----- POST MATCH -----
-with tab1:
+elif st.session_state.current_tab == "Post Match":
+    # ----- POST MATCH -----
     st.header("Enter Match Result")
     match_type = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key="post_match_type")
     available_players = players.copy() if players else []
@@ -590,8 +660,8 @@ with tab1:
                 st.success("Match submitted.")
                 st.rerun()
 
-# ----- PLAYER PROFILE -----
-with tab5:
+elif st.session_state.current_tab == "Player Profile":
+    # ----- PLAYER PROFILE -----
     st.header("Player Profile")
 
     # Player Insights for Player Profile Tab (moved to top)
@@ -677,8 +747,8 @@ with tab5:
                     st.success(f"{selected_player_manage} removed.")
                     st.rerun()
 
-# ----- COURT LOCATIONS -----
-with tab4:
+elif st.session_state.current_tab == "Court Locations":
+    # ----- COURT LOCATIONS -----
     st.header("Court Locations")
     st.markdown("### Arabian Ranches Tennis Courts")
     st.markdown("- [Alvorado 1 & 2](https://maps.google.com/?q=25.041792,55.259258)")
