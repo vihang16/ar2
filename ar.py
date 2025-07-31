@@ -159,7 +159,7 @@ st.markdown("""
         overflow-y: auto;
         margin: 0 !important;
     }
-    .stDataFrame, .stDataFrame [data-testid="stTable"], .stDataFrame table {
+    .stDataFrame, .stDataFrame [data-testid="stTable"], .stDataFrame table, [class*="st-emotion-cache"] table {
         width: 100% !important;
         margin: 0 !important;
     }
@@ -169,14 +169,18 @@ st.markdown("""
     .stDataFrame [data-testid="stTable"] th,
     .stDataFrame [data-testid="stTable"] td,
     .stDataFrame th,
-    .stDataFrame td {
+    .stDataFrame td,
+    [class*="st-emotion-cache"] th,
+    [class*="st-emotion-cache"] td,
+    .stDataFrame * {
         font-size: 21px !important;
         padding: 8px !important;
         border-bottom: 1px solid #eee;
         font-family: 'Offside', sans-serif !important;
     }
     .stDataFrame [data-testid="stTable"] th,
-    .stDataFrame th {
+    .stDataFrame th,
+    [class*="st-emotion-cache"] th {
         background-color: #f5f5f5;
         color: #333;
         font-weight: bold;
@@ -193,7 +197,11 @@ st.markdown("""
     .stDataFrame th:nth-child(1),
     .stDataFrame th:nth-child(3),
     .stDataFrame td:nth-child(1),
-    .stDataFrame td:nth-child(3) {
+    .stDataFrame td:nth-child(3),
+    [class*="st-emotion-cache"] th:nth-child(1),
+    [class*="st-emotion-cache"] th:nth-child(3),
+    [class*="st-emotion-cache"] td:nth-child(1),
+    [class*="st-emotion-cache"] td:nth-child(3) {
         font-weight: bold !important;
         font-size: 24px !important;
     }
@@ -201,7 +209,10 @@ st.markdown("""
         .stDataFrame [data-testid="stTable"] th,
         .stDataFrame [data-testid="stTable"] td,
         .stDataFrame th,
-        .stDataFrame td {
+        .stDataFrame td,
+        [class*="st-emotion-cache"] th,
+        [class*="st-emotion-cache"] td,
+        .stDataFrame * {
             font-size: 18px !important;
             padding: 6px !important;
         }
@@ -212,7 +223,11 @@ st.markdown("""
         .stDataFrame th:nth-child(1),
         .stDataFrame th:nth-child(3),
         .stDataFrame td:nth-child(1),
-        .stDataFrame td:nth-child(3) {
+        .stDataFrame td:nth-child(3),
+        [class*="st-emotion-cache"] th:nth-child(1),
+        [class*="st-emotion-cache"] th:nth-child(3),
+        [class*="st-emotion-cache"] td:nth-child(1),
+        [class*="st-emotion-cache"] td:nth-child(3) {
             font-weight: bold !important;
             font-size: 21px !important;
         }
@@ -233,8 +248,11 @@ st.write("""
 Debug: CSS for rankings table applied with font-size 21px (desktop) and 18px (mobile) for general content, 
 24px (desktop) and 21px (mobile) for Rank/Player columns. 
 Please inspect the table using browser developer tools (right-click table > Inspect) and check the 'font-size' 
-property for '.stDataFrame [data-testid="stTable"] th' or '.stDataFrame [data-testid="stTable"] td' elements. 
-If sizes are not applied, try clearing Streamlit cache (rerun app) or browser cache.
+property for '.stDataFrame [data-testid="stTable"] th', '.stDataFrame [data-testid="stTable"] td', 
+or '[class*="st-emotion-cache"] th', '[class*="st-emotion-cache"] td' elements. 
+Note the applied font-size and any conflicting CSS rules (e.g., from Streamlit or a custom theme). 
+Try clearing Streamlit cache via the app's menu (Settings > Clear Cache) or run `streamlit cache clear` 
+in the terminal. If using a custom Streamlit theme, check .streamlit/config.toml for conflicting font settings.
 """)
 
 # Display dubai.png from local GitHub repository
@@ -338,7 +356,7 @@ with tab3:
     ).reset_index(drop=True)
     rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
-    # Display rankings table
+    # Display rankings table with inline styles
     st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
     display_df = rank_df.copy()
@@ -359,7 +377,15 @@ with tab3:
         },
         height=500,
         use_container_width=True,
-        hide_index=True
+        hide_index=True,
+        styles=[
+            {"selector": "th, td", "props": [("font-size", "21px"), ("padding", "8px"), ("font-family", "'Offside', sans-serif")]},
+            {"selector": "th:nth-child(1), td:nth-child(1), th:nth-child(3), td:nth-child(3)", "props": [("font-size", "24px"), ("font-weight", "bold")]},
+            {"selector": "@media (max-width: 640px)", "props": [
+                ("th, td", [("font-size", "18px"), ("padding", "6px")]),
+                ("th:nth-child(1), td:nth-child(1), th:nth-child(3), td:nth-child(3)", [("font-size", "21px"), ("font-weight", "bold")])
+            ]}
+        ]
     )
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
