@@ -120,11 +120,6 @@ st.markdown("""
         border-radius: 50%;
         margin-right: 10px;
     }
-    .rankings-table-header .stMarkdown {
-        font-size: 10px !important;
-        font-weight: bold;
-        text-align: center;
-    }
     .rankings-table-dataframe {
         font-size: 10px !important;
     }
@@ -237,33 +232,8 @@ with tab3:
     ).reset_index(drop=True)
     rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
-    # Display rankings table with headers
+    # Display rankings table
     st.markdown('<div class="rankings-table">', unsafe_allow_html=True)
-    
-    # Header row
-    st.markdown('<div class="rankings-table-header">', unsafe_allow_html=True)
-    header_cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5])
-    with header_cols[0]:
-        st.markdown("**Rank**")
-    with header_cols[1]:
-        st.markdown("**Profile**")
-    with header_cols[2]:
-        st.markdown("**Player**")
-    with header_cols[3]:
-        st.markdown("**Points**")
-    with header_cols[4]:
-        st.markdown("**Win %**")
-    with header_cols[5]:
-        st.markdown("**Matches**")
-    with header_cols[6]:
-        st.markdown("**Wins**")
-    with header_cols[7]:
-        st.markdown("**Losses**")
-    with header_cols[8]:
-        st.markdown("**Games Won**")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Scrollable dataframe
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
     display_df = rank_df.copy()
     display_df["Profile"] = display_df["Profile"].apply(lambda x: x if x else "No image")
@@ -282,7 +252,8 @@ with tab3:
             "Games Won": st.column_config.NumberColumn(width=40, format="%d")
         },
         height=400,
-        use_container_width=True
+        use_container_width=True,
+        hide_index=True
     )
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
