@@ -121,7 +121,7 @@ st.markdown("""
         margin-right: 10px;
     }
     .rankings-table .stMarkdown, .rankings-table .stButton > button {
-        font-size: 12px !important;
+        font-size: 8px !important;
     }
     .stButton > button {
         white-space: nowrap !important;
