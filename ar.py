@@ -256,7 +256,7 @@ st.markdown("""
          margin-right: 10px;
     }
     
-    /* Add labels for stats and apply new color */
+    /* Add labels for stats and apply new color to labels only */
     .points-col::before { content: "Points: "; font-weight: bold; color: #bbbbbb; }
     .win-percent-col::before { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
     .matches-col::before { content: "Matches: "; font-weight: bold; color: #bbbbbb; }
@@ -264,9 +264,9 @@ st.markdown("""
     .losses-col::before { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
     .games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
     
-    /* Ensure the actual values are white */
+    /* Ensure the actual values are white. Applies to the text content within the div, not the ::before. */
     .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col {
-        color: white; /* This sets the color of the actual value */
+        color: white; 
     }
 
 
@@ -445,9 +445,10 @@ with tabs[0]: # Rankings Tab
     for index, row in rank_df.iterrows():
         # Using the new ranking-profile-image class
         profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
-        # Apply bold and optic yellow to Player Name and Points
+        # Apply bold and optic yellow to Player Name
         player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-        points_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+        # Apply bold and white to Points value (as per latest request)
+        points_value_styled = f"<span style='font-weight:bold; color:white;'>{row['Points']:.1f}</span>"
 
         st.markdown(f"""
         <div class="ranking-row">
@@ -456,7 +457,7 @@ with tabs[0]: # Rankings Tab
                 <div class="profile-col">{profile_html}</div>
                 <div class="player-col">{player_styled}</div>
             </div>
-            <div class="points-col">{points_styled}</div>
+            <div class="points-col">{points_value_styled}</div>
             <div class="win-percent-col">{row["Win %"]:.1f}%</div>
             <div class="matches-col">{int(row["Matches"])}</div>
             <div class="wins-col">{int(row["Wins"])}</div>
