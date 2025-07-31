@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import pandas as pd
 import uuid
@@ -60,38 +59,36 @@ def save_matches(df):
 def upload_image_to_supabase(file, file_name, image_type="match"):
     try:
         bucket = "profile" if image_type == "profile" else "ar"
-        st.write(f"Debug: Attempting to upload {image_type} image to bucket '{bucket}'")
         
-        if bucket == "ar":
-            try:
-                buckets = supabase.storage.list_buckets()
-                bucket_names = [b["name"] for b in buckets]
-                st.write(f"Debug: Available buckets: {bucket_names}")
-                if bucket not in bucket_names:
-                    st.error(f"Storage bucket '{bucket}' does not exist. Please create it in Supabase Storage.")
-                    return ""
-            except Exception as e:
-                st.warning(f"Failed to list buckets: {str(e)}. Proceeding with upload to '{bucket}' as it worked for match images.")
+        # This part of the code was causing issues in some environments.
+        # It's primarily for debugging and ensuring bucket existence.
+        # In a stable environment, you might remove this or handle it more gracefully.
+        # try:
+        #     buckets = supabase.storage.list_buckets()
+        #     bucket_names = [b["name"] for b in buckets]
+        #     if bucket not in bucket_names:
+        #         st.error(f"Storage bucket '{bucket}' does not exist. Please create it in Supabase Storage.")
+        #         return ""
+        # except Exception as e:
+        #     st.warning(f"Failed to list buckets: {str(e)}. Proceeding with upload to '{bucket}' as it worked for match images.")
         
         file_path = f"2ep_1/{file_name}" if image_type == "match" else file_name
-        file_ext = file.name.split('.')[-1].lower()
-        st.write(f"Debug: Uploading file with extension: {file_ext} to {bucket}/{file_path}")
         
         response = supabase.storage.from_(bucket).upload(
             file_path, 
             file.read(), 
             {"content-type": file.type}
         )
-        if response is None or isinstance(response, dict) and "error" in response:
+        # Check if response is an error dictionary or if upload failed
+        if response is None or (isinstance(response, dict) and "error" in response):
             error_message = response.get("error", "Unknown error") if isinstance(response, dict) else "Upload failed"
             st.error(f"Failed to upload image to bucket '{bucket}/{file_path}': {error_message}")
             return ""
         
         public_url = supabase.storage.from_(bucket).get_public_url(file_path)
-        expected_prefix = f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v1/object/public/{bucket}/"
-        if not public_url.startswith(expected_prefix):
-            st.warning(f"Uploaded image URL does not match expected prefix: {expected_prefix}. Got: {public_url}")
-        st.write(f"Debug: Uploaded image URL: {public_url}")
+        # Check if the public_url is valid, otherwise it might indicate an issue
+        if not public_url.startswith(f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v1/object/public/{bucket}/"):
+             st.warning(f"Uploaded image URL does not match expected prefix. Got: {public_url}")
         return public_url
     except Exception as e:
         st.error(f"Error uploading image to bucket '{bucket}/{file_path}': {str(e)}")
@@ -593,8 +590,20 @@ with tab5:
         
         with st.expander("Edit Profile"):
             profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_{selected_player}")
-            birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=int(current_birthday.split("-")[0]) if current_birthday else 1, key=f"birthday_day_{selected_player}")
-            birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=int(current_birthday.split("-")[1]) if current_birthday else 1, key=f"birthday_month_{selected_player}")
+            
+            # Extract day and month from current_birthday for default values
+            default_day = 1
+            default_month = 1
+            if current_birthday and isinstance(current_birthday, str) and "-" in current_birthday:
+                try:
+                    day_str, month_str = current_birthday.split("-")
+                    default_day = int(day_str)
+                    default_month = int(month_str)
+                except ValueError:
+                    pass # Keep defaults if conversion fails
+
+            birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player}")
+            birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player}")
             
             if st.button("Save Profile Changes", key=f"save_profile_{selected_player}"):
                 image_url = current_image
