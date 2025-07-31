@@ -239,13 +239,13 @@ with tab2:
 with tab3:
     st.header("Player Rankings")
     
-    # Initialize data structures for points, wins, losses, matches played, and games won
+    # Initialize data structures for points, wins, losses, matches played, games won, and partner wins
     scores = defaultdict(float)  # Points
     wins = defaultdict(int)     # Number of wins
     losses = defaultdict(int)   # Number of losses
     matches_played = defaultdict(int)  # Total matches played
     games_won = defaultdict(int)  # Total games won
-    partners = defaultdict(list)  # Partners for doubles matches
+    partner_wins = defaultdict(lambda: defaultdict(int))  # Wins per partner for doubles matches
 
     for _, row in matches.iterrows():
         if row['match_type'] == 'Doubles':
@@ -291,12 +291,14 @@ with tab3:
                 except ValueError:
                     continue  # Skip invalid scores
 
-        # Track partners for doubles matches
+        # Track partner wins for doubles matches
         if row['match_type'] == 'Doubles':
-            partners[row['team1_player1']].append(row['team1_player2'])
-            partners[row['team1_player2']].append(row['team1_player1'])
-            partners[row['team2_player1']].append(row['team2_player2'])
-            partners[row['team2_player2']].append(row['team2_player1'])
+            if row["winner"] == "Team 1":
+                partner_wins[row['team1_player1']][row['team1_player2']] += 1
+                partner_wins[row['team1_player2']][row['team1_player1']] += 1
+            elif row["winner"] == "Team 2":
+                partner_wins[row['team2_player1']][row['team2_player2']] += 1
+                partner_wins[row['team2_player2']][row['team2_player1']] += 1
 
     # Create DataFrame for rankings
     rank_data = []
@@ -327,7 +329,7 @@ with tab3:
     st.dataframe(
         rank_df[["Rank", "Player", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]],
         use_container_width=True,
-        hide_index=True  # Hide the default index column
+        hide_index=True
     )
 
     # Player Insights
@@ -345,17 +347,14 @@ with tab3:
                 **Wins**: {int(player_data["Wins"])}  
                 **Losses**: {int(player_data["Losses"])}  
                 **Games Won**: {int(player_data["Games Won"])}  
-                **Partners Played With**: {dict(Counter(partners[selected]))}  
+                **Partners Played With**: {dict(partner_wins[selected])}  
             """)
-            if partners[selected]:
-                best = Counter(partners[selected]).most_common(1)[0][0]
-                st.markdown(f"**Most Frequent Partner**: {best}")
+            if partner_wins[selected]:
+                best_partner, best_wins = max(partner_wins[selected].items(), key=lambda x: x[1])
+                st.markdown(f"**Most Effective Partner**: {best_partner} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
         else:
             st.markdown(f"No match data available for {selected}.")  
-            st.markdown(f"**Partners Played With**: {dict(Counter(partners[selected]))}")
-            if partners[selected]:
-                best = Counter(partners[selected]).most_common(1)[0][0]
-                st.markdown(f"**Most Frequent Partner**: {best}")
+            st.markdown(f"**Partners Played With**: {dict(partner_wins[selected])}")
 
 # ----- COURT LOCATIONS -----
 with tab4:
