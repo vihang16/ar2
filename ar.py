@@ -121,8 +121,8 @@ st.markdown("""
         border-radius: 5px;
     }
     .profile-thumbnail {
-        width: 50px;
-        height: 50px;
+        width: 100px;
+        height: 100px;
         object-fit: cover;
         border-radius: 50%;
         margin-right: 10px;
@@ -291,7 +291,7 @@ with tab3:
             with cols[0]:
                 if profile_image:
                     try:
-                        st.image(profile_image, width=50, caption="")
+                        st.image(profile_image, width=100, caption="")
                     except Exception as e:
                         st.error(f"Error displaying image for {selected}: {str(e)}")
                 else:
@@ -321,7 +321,7 @@ with tab3:
             with cols[0]:
                 if profile_image:
                     try:
-                        st.image(profile_image, width=50, caption="")
+                        st.image(profile_image, width=100, caption="")
                     except Exception as e:
                         st.error(f"Error displaying image for {selected}: {str(e)}")
                 else:
