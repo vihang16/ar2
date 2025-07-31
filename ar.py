@@ -187,7 +187,7 @@ st.markdown("""
         background: #ffffff;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-top: 0px; /* Reduced margin */
+        margin-top: 0px !important; /* Force no top margin */
         padding: 10px;
     }
     .rankings-table-scroll { 
@@ -252,9 +252,6 @@ st.markdown("""
         width: auto; /* Shrink to fit content */
         margin-right: 10px;
     }
-    .rank-profile-player-group .player-col {
-        flex-grow: 1; /* Take remaining space */
-    }
     .rank-profile-player-group .profile-col {
          width: auto; /* Adjust to content */
          margin-right: 10px;
@@ -268,14 +265,11 @@ st.markdown("""
     .losses-col::before { content: "Losses: "; font-weight: bold; }
     .games-won-col::before { content: "Games Won: "; font-weight: bold; }
 
-    /* Remove extra space below the subheader for "Current Rankings" */
+    /* Remove extra space below the subheader for "Rankings as of dd/mm" */
+    /* Target the specific subheader element by its class. Use !important to override default Streamlit styling. */
     .st-emotion-cache-1jm692n { /* This class targets the subheader element */
-        margin-bottom: 0 !important;
-        padding-bottom: 0 !important;
-    }
-    /* Adjust padding/margin for the container right below the subheader */
-    .rankings-table-container {
-        margin-top: 10px; /* Adjust as needed, less than 20px */
+        margin-bottom: 0px !important;
+        padding-bottom: 0px !important;
     }
 
     </style>
