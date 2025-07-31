@@ -239,9 +239,10 @@ with tab2:
 with tab3:
     st.header("Player Rankings")
     
-    # Initialize data structures for points, wins, matches played, and games won
+    # Initialize data structures for points, wins, losses, matches played, and games won
     scores = defaultdict(float)  # Points
     wins = defaultdict(int)     # Number of wins
+    losses = defaultdict(int)   # Number of losses
     matches_played = defaultdict(int)  # Total matches played
     games_won = defaultdict(int)  # Total games won
     partners = defaultdict(list)  # Partners for doubles matches
@@ -254,7 +255,7 @@ with tab3:
             t1 = [row['team1_player1']]
             t2 = [row['team2_player1']]
 
-        # Update points and win/loss counts
+        # Update points, win/loss counts, and matches played
         if row["winner"] == "Team 1":
             for p in t1:
                 scores[p] += 3
@@ -262,6 +263,7 @@ with tab3:
                 matches_played[p] += 1
             for p in t2:
                 scores[p] += 1
+                losses[p] += 1
                 matches_played[p] += 1
         elif row["winner"] == "Team 2":
             for p in t2:
@@ -270,6 +272,7 @@ with tab3:
                 matches_played[p] += 1
             for p in t1:
                 scores[p] += 1
+                losses[p] += 1
                 matches_played[p] += 1
         else:  # Tie
             for p in t1 + t2:
@@ -302,7 +305,10 @@ with tab3:
         rank_data.append({
             "Player": player,
             "Points": scores[player],
-            "Win Percentage": win_percentage,
+            "Win Percentage": round(win_percentage, 2),  # Round to 2 decimal places
+            "Matches Played": matches_played[player],
+            "Wins": wins[player],
+            "Losses": losses[player],
             "Games Won": games_won[player]
         })
 
@@ -314,17 +320,41 @@ with tab3:
         ascending=[False, False, False, True]
     ).reset_index(drop=True)
     
+    # Add Rank column (1-based index)
+    rank_df.insert(0, "Rank", range(1, len(rank_df) + 1))
+    
     # Display rankings
-    st.dataframe(rank_df[["Player", "Points", "Win Percentage", "Games Won"]], use_container_width=True)
+    st.dataframe(
+        rank_df[["Rank", "Player", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]],
+        use_container_width=True
+    )
 
     # Player Insights
     st.subheader("Player Insights")
     selected = st.selectbox("Select a player", players)
     if selected:
-        st.markdown(f"**Partners Played With**: {dict(Counter(partners[selected]))}")
-        if partners[selected]:
-            best = Counter(partners[selected]).most_common(1)[0][0]
-            st.markdown(f"**Most Frequent Partner**: {best}")
+        # Get player's data from rank_df
+        if selected in rank_df["Player"].values:
+            player_data = rank_df[rank_df["Player"] == selected].iloc[0]
+            st.markdown(f"""
+                **Rank**: {int(player_data["Rank"])}  
+                **Points**: {player_data["Points"]}  
+                **Win Percentage**: {player_data["Win Percentage"]}%  
+                **Matches Played**: {int(player_data["Matches Played"])}  
+                **Wins**: {int(player_data["Wins"])}  
+                **Losses**: {int(player_data["Losses"])}  
+                **Games Won**: {int(player_data["Games Won"])}  
+                **Partners Played With**: {dict(Counter(partners[selected]))}  
+            """)
+            if partners[selected]:
+                best = Counter(partners[selected]).most_common(1)[0][0]
+                st.markdown(f"**Most Frequent Partner**: {best}")
+        else:
+            st.markdown(f"No match data available for {selected}.")  
+            st.markdown(f"**Partners Played With**: {dict(Counter(partners[selected]))}")
+            if partners[selected]:
+                best = Counter(partners[selected]).most_common(1)[0][0]
+                st.markdown(f"**Most Frequent Partner**: {best}")
 
 # ----- COURT LOCATIONS -----
 with tab4:
