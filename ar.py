@@ -290,9 +290,7 @@ with tab3:
         by=["Points", "Win %", "Games Won", "Player"],
         ascending=[False, False, False, True]
     ).reset_index(drop=True)
-ionego
-
-System: rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
+    rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     # Display rankings table
     st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
@@ -341,7 +339,7 @@ System: rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
                 else:
                     team1 = [row['team1_player1']]
                     team2 = [row['team2_player1']]
-                if player in team1 and row['winner'] == 'W':
+                if player in team1 and row['winner'] == 'Team 1':
                     trend.append('W')
                 elif player in team2 and row['winner'] == 'Team 2':
                     trend.append('W')
@@ -350,7 +348,7 @@ System: rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
             return ' '.join(trend) if trend else 'No recent matches'
 
         if selected in rank_df["Player"].values:
-            playerChevronData = rank_df[rank_df["Player"] == selected].iloc[0]
+            player_data = rank_df[rank_df["Player"] == selected].iloc[0]
             trend = get_player_trend(selected, matches)
             player_info = players_df[players_df["name"] == selected].iloc[0]
             birthday = player_info.get("birthday", "Not set")
