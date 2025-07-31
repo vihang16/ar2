@@ -288,40 +288,19 @@ st.markdown("""
         padding-top: 0 !important;
     }
 
-    /* Custom styles for tab buttons */
-    .stButton > button {
-        width: 100%; /* Make buttons fill their column */
-        border: 1px solid #ddd;
-        background-color: #f0f0f0;
-        color: #333;
-        padding: 10px 0;
+    /* Streamlit tabs for mobile responsiveness */
+    .stTabs [data-baseweb="tab-list"] {
+        flex-wrap: wrap; /* Allows tabs to wrap to multiple lines */
+        gap: 5px; /* Adds space between tabs */
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        flex: 1 0 auto; /* Allow tabs to grow and shrink, but not less than content */
+        padding: 10px 0; /* Adjust padding for better look on smaller screens */
+        font-size: 14px; /* Smaller font size for tabs */
         text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 14px;
-        margin: 4px 2px;
-        cursor: pointer;
-        border-radius: 5px;
+        margin: 2px; /* Small margin around each tab button */
     }
-
-    .stButton > button:hover {
-        background-color: #e0e0e0;
-    }
-
-    .stButton > button.active-tab {
-        background-color: #007bff; /* Active tab color */
-        color: white;
-        border-color: #007bff;
-    }
-
-    /* Adjust Streamlit's default container padding if necessary */
-    .st-emotion-cache-z5fcl4 { /* This is a common class for main container padding */
-        padding-top: 1rem;
-        padding-right: 1rem;
-        padding-bottom: 1rem;
-        padding-left: 1rem;
-    }
-
     </style>
 """, unsafe_allow_html=True)
 
@@ -341,50 +320,20 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
     save_matches(matches)
 
-# --- Manual Tab Implementation ---
+# --- Use st.tabs instead of custom buttons ---
 tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations"]
 
-if 'current_tab' not in st.session_state:
-    st.session_state.current_tab = "Rankings" # Default tab
+# Set default tab
+if 'current_tab_index' not in st.session_state:
+    st.session_state.current_tab_index = 0 # Corresponds to "Rankings"
 
-# Create columns for tabs (e.g., 3 tabs per row, then 2 tabs per row for the rest)
-col1, col2, col3 = st.columns(3)
-col4, col5 = st.columns(2) # Remaining tabs in a second row
+tabs = st.tabs(tab_names)
 
-with col1:
-    if st.button("Rankings", key="tab_rankings"):
-        st.session_state.current_tab = "Rankings"
-with col2:
-    if st.button("Matches", key="tab_matches"):
-        st.session_state.current_tab = "Matches"
-with col3:
-    if st.button("Player Profile", key="tab_player_profile"):
-        st.session_state.current_tab = "Player Profile"
-with col4:
-    if st.button("Court Locations", key="tab_court_locations"):
-        st.session_state.current_tab = "Court Locations"
-# Add an empty column if needed to balance the layout for 4 tabs
-with col5:
-    pass
-
-
-# Add CSS to highlight the active tab button
-st.markdown(f"""
-<script>
-    var buttons = window.parent.document.querySelectorAll('.stButton > button');
-    buttons.forEach(function(button) {{
-        button.classList.remove('active-tab');
-    }});
-    var activeTabButton = window.parent.document.querySelector('[key="tab_{st.session_state.current_tab.lower().replace(" ", "_")}"] > button');
-    if (activeTabButton) {{
-        activeTabButton.classList.add('active-tab');
-    }}
-</script>
-""", unsafe_allow_html=True)
-
+# Update session state based on active tab (Streamlit handles this automatically for st.tabs)
+# The content is now placed directly within the 'with' blocks of the tabs.
 
 # --- Content for each tab ---
-if st.session_state.current_tab == "Rankings":
+with tabs[0]: # Rankings Tab
     # ----- RANKINGS -----
     scores = defaultdict(float)
     wins = defaultdict(int)
@@ -515,7 +464,7 @@ if st.session_state.current_tab == "Rankings":
     selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings")
     display_player_insights(selected_player_rankings, players_df, matches, rank_df, partner_wins, key_prefix="rankings_")
 
-elif st.session_state.current_tab == "Matches":
+with tabs[1]: # Matches Tab
     # ----- MATCHES (formerly Match Records and Post Match) -----
     st.header("Matches")
 
@@ -670,7 +619,7 @@ elif st.session_state.current_tab == "Matches":
                 st.success("Match deleted.")
                 st.rerun()
 
-elif st.session_state.current_tab == "Player Profile":
+with tabs[2]: # Player Profile Tab
     # ----- PLAYER PROFILE -----
     st.header("Player Profile")
 
@@ -757,7 +706,7 @@ elif st.session_state.current_tab == "Player Profile":
                     st.success(f"{selected_player_manage} removed.")
                     st.rerun()
 
-elif st.session_state.current_tab == "Court Locations":
+with tabs[3]: # Court Locations Tab
     # ----- COURT LOCATIONS -----
     st.header("Court Locations")
     st.markdown("### Arabian Ranches Tennis Courts")
