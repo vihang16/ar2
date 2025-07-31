@@ -161,26 +161,25 @@ st.markdown("""
     }
     .stDataFrame {
         width: 100%;
-        font-size: 21px !important;
         margin: 0 !important;
     }
     .stDataFrame table {
         width: 100% !important;
         border-collapse: collapse;
     }
+    .stDataFrame th, .stDataFrame td {
+        font-size: 21px !important;
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+    }
     .stDataFrame th {
         background-color: #f5f5f5;
         color: #333;
         font-weight: bold;
-        padding: 8px;
         text-align: left;
         position: sticky;
         top: 0;
         z-index: 1;
-    }
-    .stDataFrame td {
-        padding: 8px;
-        border-bottom: 1px solid #eee;
     }
     /* Style for Rank and Player columns */
     .stDataFrame th:nth-child(1), /* Rank header */
@@ -191,10 +190,8 @@ st.markdown("""
         font-size: 24px !important;
     }
     @media (max-width: 640px) {
-        .stDataFrame {
-            font-size: 18px !important;
-        }
         .stDataFrame th, .stDataFrame td {
+            font-size: 18px !important;
             padding: 6px;
         }
         .stDataFrame th:nth-child(1), /* Rank header */
@@ -215,6 +212,9 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+# Debug CSS application
+st.write("Debug: CSS for rankings table applied with font-size 21px (desktop) and 18px (mobile) for general content, 24px (desktop) and 21px (mobile) for Rank/Player columns.")
 
 # Display dubai.png from local GitHub repository
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
