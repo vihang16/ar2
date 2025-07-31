@@ -252,6 +252,9 @@ st.markdown("""
         width: auto; /* Shrink to fit content */
         margin-right: 10px;
     }
+    .rank-profile-player-group .player-col {
+        flex-grow: 1; /* Take remaining space */
+    }
     .rank-profile-player-group .profile-col {
          width: auto; /* Adjust to content */
          margin-right: 10px;
@@ -266,10 +269,26 @@ st.markdown("""
     .games-won-col::before { content: "Games Won: "; font-weight: bold; }
 
     /* Remove extra space below the subheader for "Rankings as of dd/mm" */
-    /* Target the specific subheader element by its class. Use !important to override default Streamlit styling. */
-    .st-emotion-cache-1jm692n { /* This class targets the subheader element */
+    /* Target the specific subheader element's container */
+    div.st-emotion-cache-1jm692n { /* This targets the div containing the subheader */
         margin-bottom: 0px !important;
         padding-bottom: 0px !important;
+    }
+    /* Also target the subheader itself in case it has its own margin/padding */
+    div.st-emotion-cache-1jm692n h3 {
+        margin-bottom: 0px !important;
+        padding-bottom: 0px !important;
+        line-height: 1 !important; /* Attempt to reduce line height */
+    }
+    
+    /* Ensure no margin/padding on the immediate children of the rankings table container */
+    .rankings-table-container > div {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    .rankings-table-container > .rankings-table-scroll {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
     }
 
     </style>
