@@ -120,6 +120,9 @@ st.markdown("""
         border-radius: 50%;
         margin-right: 10px;
     }
+    .rankings-table .stMarkdown, .rankings-table .stButton > button {
+        font-size: 12px !important;
+    }
     .stButton > button {
         white-space: nowrap !important;
         min-width: 60px !important;
@@ -237,7 +240,33 @@ with tab3:
     
     rank_df.insert(0, "Rank", [f"🏆 {i}" for i in range(1, len(rank_df) + 1)])
 
-    # Display dataframe with a button column
+    # Display rankings table with headers
+    st.markdown('<div class="rankings-table">', unsafe_allow_html=True)
+    
+    # Header row
+    header_cols = st.columns([1, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2])
+    with header_cols[0]:
+        st.markdown("**Rank**")
+    with header_cols[1]:
+        st.markdown("**Profile**")
+    with header_cols[2]:
+        st.markdown("**Player**")
+    with header_cols[3]:
+        st.markdown("**Points**")
+    with header_cols[4]:
+        st.markdown("**Win %**")
+    with header_cols[5]:
+        st.markdown("**Matches**")
+    with header_cols[6]:
+        st.markdown("**Wins**")
+    with header_cols[7]:
+        st.markdown("**Losses**")
+    with header_cols[8]:
+        st.markdown("**Games Won**")
+    with header_cols[9]:
+        st.markdown("**Select**")
+
+    # Data rows
     for idx, row in rank_df.iterrows():
         cols = st.columns([1, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2])
         with cols[0]:
@@ -268,6 +297,8 @@ with tab3:
             if st.button("View", key=f"view_{row['Player']}_{idx}"):
                 st.session_state.selected_player = row["Player"]
                 st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # Player Insights
     st.subheader("Player Insights")
