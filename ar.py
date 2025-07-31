@@ -122,7 +122,8 @@ st.markdown("""
     }
     .stDataFrame {
         width: 100%;
-        font-size: 1.2em !important; /* Increased base font size for the whole table */
+        /* Setting a default font size for the entire dataframe content */
+        font-size: 1.2em !important; 
         margin: 0 !important;
     }
     .stDataFrame table {
@@ -138,20 +139,29 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 1;
-        font-size: 1.2em !important; /* Ensure headers also get increased size */
+        /* Ensure headers also get a base increased size */
+        font-size: 1.2em !important; 
     }
     .stDataFrame td {
         padding: 8px;
         border-bottom: 1px solid #eee;
     }
-    /* Style for Rank and Player columns */
+    /* Styles for Rank and Player columns - targeting both headers and data cells */
     .stDataFrame th:nth-child(1), /* Rank header */
     .stDataFrame th:nth-child(3), /* Player header */
     .stDataFrame td:nth-child(1), /* Rank cells */
     .stDataFrame td:nth-child(3) { /* Player cells */
         font-weight: bold !important;
-        font-size: 1.5em !important; /* Increased font size for Rank and Player, 1.5 times the parent */
+        /* Make it 1.5 times the size of its parent, which is already 1.2em */
+        font-size: 1.5em !important; 
     }
+    /* Further specific targeting for the text content within the cells if needed */
+    .stDataFrame td:nth-child(1) > div, /* Rank text inside div */
+    .stDataFrame td:nth-child(3) > div { /* Player text inside div */
+        font-weight: bold !important;
+        font-size: 1.5em !important;
+    }
+
     @media (max-width: 640px) {
         .stDataFrame {
             font-size: 1em !important; /* Adjusted base font size for smaller screens */
@@ -165,6 +175,11 @@ st.markdown("""
         .stDataFrame td:nth-child(3) { /* Player cells */
             font-weight: bold !important;
             font-size: 1.2em !important; /* Adjusted for smaller screens (1.2 times the new base) */
+        }
+        .stDataFrame td:nth-child(1) > div, /* Rank text inside div */
+        .stDataFrame td:nth-child(3) > div { /* Player text inside div */
+            font-weight: bold !important;
+            font-size: 1.2em !important;
         }
         .thumbnail {
             width: 40px;
