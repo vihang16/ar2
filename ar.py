@@ -127,6 +127,14 @@ st.markdown("""
         border-radius: 50%;
         margin-right: 10px;
     }
+    .stDataFrame a {
+        color: white !important;
+        text-decoration: none !important;
+    }
+    .stDataFrame a:hover {
+        color: white !important;
+        text-decoration: none !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -214,8 +222,11 @@ with tab3:
     for player in scores:
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
+        # Create a URL with query parameter for the player
+        player_url = f"?selected_player={player.replace(' ', '%20')}"
         rank_data.append({
             "Player": player,
+            "PlayerLink": player_url,
             "Profile Image": profile_image,
             "Points": scores[player],
             "Win Percentage": round(win_percentage, 2),
@@ -234,13 +245,17 @@ with tab3:
     rank_df.insert(0, "Rank", [f"🏆 {i}" for i in range(1, len(rank_df) + 1)])
     
     st.dataframe(
-        rank_df[["Rank", "Profile Image", "Player", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]],
+        rank_df[["Rank", "Profile Image", "PlayerLink", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]],
         use_container_width=True,
         hide_index=True,
         column_config={
             "Rank": st.column_config.TextColumn("Rank", help="Player ranking with trophy icon"),
             "Profile Image": st.column_config.ImageColumn("Profile", width="small"),
-            "Player": st.column_config.TextColumn("Player", help="Player name"),
+            "PlayerLink": st.column_config.LinkColumn(
+                "Player",
+                help="Player name",
+                display_text=r"^(.*)$"  # Regex to display the player name as the link text
+            ),
             "Points": st.column_config.NumberColumn("Points", format="%.1f"),
             "Win Percentage": st.column_config.NumberColumn("Win Percentage", format="%.2f%%"),
             "Matches Played": st.column_config.NumberColumn("Matches Played", format="%d"),
@@ -248,12 +263,17 @@ with tab3:
             "Losses": st.column_config.NumberColumn("Losses", format="%d"),
             "Games Won": st.column_config.NumberColumn("Games Won", format="%d")
         },
-        column_order=["Rank", "Profile Image", "Player", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]
+        column_order=["Rank", "Profile Image", "PlayerLink", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]
     )
 
     # Player Insights
     st.subheader("Player Insights")
-    selected = st.selectbox("Select a player", players)
+    # Check for query parameter to pre-select player
+    query_params = st.query_params
+    default_player = query_params.get("selected_player", [""])[0]
+    if default_player not in players:
+        default_player = ""
+    selected = st.selectbox("Select a player", players, index=players.index(default_player) if default_player in players else 0, key="insights_player")
     if selected:
         def get_player_trend(player, matches, max_matches=5):
             player_matches = matches[
