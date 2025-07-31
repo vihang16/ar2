@@ -120,13 +120,11 @@ st.markdown("""
         border-radius: 50%;
         margin-right: 10px;
     }
-    .stDataFrame a {
-        color: white !important;
-        text-decoration: none !important;
-    }
-    .stDataFrame a:hover {
-        color: white !important;
-        text-decoration: none !important;
+    .stButton > button {
+        white-space: nowrap !important;
+        min-width: 60px !important;
+        padding: 5px 10px !important;
+        text-align: center !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -221,7 +219,7 @@ with tab3:
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
         rank_data.append({
             "Player": player,
-            "Select": player,  # Used for button to select player
+            "Select": player,
             "Profile Image": profile_image,
             "Points": scores[player],
             "Win Percentage": round(win_percentage, 2),
@@ -241,7 +239,7 @@ with tab3:
 
     # Display dataframe with a button column
     for idx, row in rank_df.iterrows():
-        cols = st.columns([1, 2, 1, 1, 1, 1, 1, 1, 1, 1])
+        cols = st.columns([1, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2])
         with cols[0]:
             st.write(row["Rank"])
         with cols[1]:
@@ -267,13 +265,12 @@ with tab3:
         with cols[8]:
             st.write(f"{int(row['Games Won'])}")
         with cols[9]:
-            if st.button("Select", key=f"select_{row['Player']}_{idx}"):
+            if st.button("View", key=f"view_{row['Player']}_{idx}"):
                 st.session_state.selected_player = row["Player"]
                 st.rerun()
 
     # Player Insights
     st.subheader("Player Insights")
-    # Use session state to pre-select player
     default_player = st.session_state.selected_player if st.session_state.selected_player in players else ""
     selected = st.selectbox("Select a player", players, index=players.index(default_player) if default_player in players else 0, key="insights_player")
     if selected:
