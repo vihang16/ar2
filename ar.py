@@ -92,26 +92,35 @@ st.markdown("""
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
     }
-    .thumbnail {
+    .thumbnail { /* For match history images */
         width: 50px;
         height: 50px;
         object-fit: cover;
         cursor: pointer;
         border-radius: 5px;
     }
-    .profile-thumbnail {
+    .profile-thumbnail { /* For player profile tab large image */
         width: 100px;
         height: 100px;
         object-fit: cover;
         border-radius: 50%;
         margin-right: 10px;
     }
+    .ranking-profile-image { /* For ranking list images */
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 50%; /* Round images in ranking list */
+        margin-right: 10px;
+        vertical-align: middle;
+    }
+
     .rankings-table-container { 
         width: 100%;
         background: #ffffff;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-top: 20px;
+        margin-top: 0px; /* Reduced margin */
         padding: 10px;
     }
     .rankings-table-scroll { 
@@ -142,28 +151,34 @@ st.markdown("""
         padding: 2px 0;
         font-size: 1em; /* Base font size */
         margin-bottom: 5px; /* Space between fields */
+        word-break: break-word; /* Ensure long names/values wrap */
+    }
+    .rank-col {
+        /* Ensure cup icon and rank number stay together */
+        display: inline-block; /* Allows content to shrink to fit */
+        white-space: nowrap; /* Prevent line break between cup and number */
+        font-size: 1.3em; /* Keep rank and player larger */
+        font-weight: bold;
+        margin-right: 5px;
     }
     .profile-col {
         text-align: left; /* Ensure image aligns left */
         margin-bottom: 10px; /* More space after image */
-    }
-    .profile-col img {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%; /* Round profile images */
-        margin-right: 10px;
+        display: inline-block; /* Allows it to sit next to rank/player in flex */
         vertical-align: middle;
     }
-    .rank-col, .player-col {
+    .player-col {
         font-size: 1.3em; /* Keep rank and player larger */
         font-weight: bold;
-        display: inline-block; /* Allow rank and player to be on same line if small text */
-        margin-right: 5px;
+        display: inline-block; /* Allows it to sit next to profile/rank in flex */
+        flex-grow: 1; /* Take remaining space in flex container */
+        vertical-align: middle;
     }
-    /* Group Profile, Rank and Player together */
+    
+    /* Group Profile, Rank and Player together in a flex container */
     .rank-profile-player-group {
         display: flex;
-        align-items: center;
+        align-items: center; /* Vertically align items */
         margin-bottom: 10px;
     }
     .rank-profile-player-group .rank-col {
@@ -185,6 +200,17 @@ st.markdown("""
     .wins-col::before { content: "Wins: "; font-weight: bold; }
     .losses-col::before { content: "Losses: "; font-weight: bold; }
     .games-won-col::before { content: "Games Won: "; font-weight: bold; }
+
+    /* Remove extra space below the subheader for "Current Rankings" */
+    .st-emotion-cache-1jm692n { /* This class targets the subheader element */
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    /* Adjust padding/margin for the container right below the subheader */
+    .rankings-table-container {
+        margin-top: 10px; /* Adjust as needed, less than 20px */
+    }
+
     </style>
 """, unsafe_allow_html=True)
 
@@ -290,7 +316,8 @@ with tab3:
     rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     # Display rankings using custom HTML/CSS
-    st.subheader("Current Rankings")
+    current_date_formatted = datetime.now().strftime("%d/%m")
+    st.subheader(f"Rankings as of {current_date_formatted}")
     st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
 
@@ -311,7 +338,8 @@ with tab3:
 
     # Data Rows
     for index, row in rank_df.iterrows():
-        profile_html = f'<img src="{row["Profile"]}" class="profile-thumbnail" alt="Profile">' if row["Profile"] else ''
+        # Using the new ranking-profile-image class
+        profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
         st.markdown(f"""
         <div class="ranking-row">
             <div class="rank-profile-player-group">
@@ -371,6 +399,7 @@ with tab3:
             with cols[0]:
                 if profile_image:
                     try:
+                        # Use profile-thumbnail for the larger image in Player Insights
                         st.image(profile_image, width=100, caption="")
                     except Exception as e:
                         st.error(f"Error displaying image for {selected}: {str(e)}")
@@ -437,6 +466,7 @@ with tab2:
             if row["match_image_url"]:
                 with cols[0]:
                     try:
+                        # Using thumbnail for match history images
                         st.image(row["match_image_url"], width=50, caption="")
                     except Exception as e:
                         st.error(f"Error displaying match image: {str(e)}")
@@ -597,6 +627,7 @@ with tab5:
         st.subheader(f"Profile for {selected_player}")
         if current_image:
             try:
+                # Use profile-thumbnail for the larger image in Player Profile
                 st.image(current_image, width=100, caption="Current Profile Image")
             except Exception as e:
                 st.error(f"Error displaying profile image: {str(e)}")
