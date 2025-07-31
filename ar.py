@@ -126,15 +126,18 @@ st.markdown("""
         background: #ffffff;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        padding: 10px;
+        margin-top: 0 !important;
+        padding: 0 !important;
     }
     .rankings-table-scroll {
         max-height: 500px;
         overflow-y: auto;
+        margin: 0 !important;
     }
     .stDataFrame {
         width: 100%;
         font-size: 14px !important;
+        margin: 0 !important;
     }
     .stDataFrame table {
         width: 100% !important;
