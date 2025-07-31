@@ -70,7 +70,6 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
         # Check if response is an error dictionary or if upload failed
         if response is None or (isinstance(response, dict) and "error" in response):
             error_message = response.get("error", "Unknown error") if isinstance(response, dict) else "Upload failed"
-            st.error(f"Failed to upload image to bucket '{bucket}/{file_path}': {error_message}")
             return ""
         
         public_url = supabase.storage.from_(bucket).get_public_url(file_path)
@@ -257,13 +256,19 @@ st.markdown("""
          margin-right: 10px;
     }
     
-    /* Add labels for stats */
-    .points-col::before { content: "Points: "; font-weight: bold; }
-    .win-percent-col::before { content: "Win %: "; font-weight: bold; }
-    .matches-col::before { content: "Matches: "; font-weight: bold; }
-    .wins-col::before { content: "Wins: "; font-weight: bold; }
-    .losses-col::before { content: "Losses: "; font-weight: bold; }
-    .games-won-col::before { content: "Games Won: "; font-weight: bold; }
+    /* Add labels for stats and apply new color */
+    .points-col::before { content: "Points: "; font-weight: bold; color: #bbbbbb; }
+    .win-percent-col::before { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
+    .matches-col::before { content: "Matches: "; font-weight: bold; color: #bbbbbb; }
+    .wins-col::before { content: "Wins: "; font-weight: bold; color: #bbbbbb; }
+    .losses-col::before { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
+    .games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
+    
+    /* Ensure the actual values are white */
+    .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col {
+        color: white; /* This sets the color of the actual value */
+    }
+
 
     /* Remove extra space below the subheader for "Rankings as of dd/mm" */
     /* Target the specific subheader element's container */
