@@ -322,14 +322,25 @@ with tab3:
         ascending=[False, False, False, True]
     ).reset_index(drop=True)
     
-    # Add Rank column (1-based index)
-    rank_df.insert(0, "Rank", range(1, len(rank_df) + 1))
+    # Add Rank column (1-based index) with cup icon
+    rank_df.insert(0, "Rank", [f"🏆 {i}" for i in range(1, len(rank_df) + 1)])
     
-    # Display rankings
+    # Display rankings with bold Rank and Player columns
     st.dataframe(
         rank_df[["Rank", "Player", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]],
         use_container_width=True,
-        hide_index=True
+        hide_index=True,
+        column_config={
+            "Rank": st.column_config.TextColumn("Rank", help="Player ranking with trophy icon"),
+            "Player": st.column_config.TextColumn("Player", help="Player name"),
+            "Points": st.column_config.NumberColumn("Points", format="%.1f"),
+            "Win Percentage": st.column_config.NumberColumn("Win Percentage", format="%.2f%%"),
+            "Matches Played": st.column_config.NumberColumn("Matches Played", format="%d"),
+            "Wins": st.column_config.NumberColumn("Wins", format="%d"),
+            "Losses": st.column_config.NumberColumn("Losses", format="%d"),
+            "Games Won": st.column_config.NumberColumn("Games Won", format="%d")
+        },
+        column_order=["Rank", "Player", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]
     )
 
     # Player Insights
@@ -340,7 +351,7 @@ with tab3:
         if selected in rank_df["Player"].values:
             player_data = rank_df[rank_df["Player"] == selected].iloc[0]
             st.markdown(f"""
-                **Rank**: {int(player_data["Rank"])}  
+                **Rank**: {player_data["Rank"]}  
                 **Points**: {player_data["Points"]}  
                 **Win Percentage**: {player_data["Win Percentage"]}%  
                 **Matches Played**: {int(player_data["Matches Played"])}  
@@ -393,7 +404,7 @@ with st.sidebar:
                 st.success(f"{new_player} added.")
                 st.rerun()
             else:
-                st.warning(f"{new_player} already exists.")
+                st warning(f"{new_player} already exists.")
 
     remove_player = st.selectbox("Remove Player", [""] + players)
     if st.button("Remove Selected Player"):
