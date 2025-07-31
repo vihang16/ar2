@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import pandas as pd
 import uuid
@@ -163,7 +164,7 @@ st.markdown("""
     .stDataFrame td:nth-child(1), /* Rank cells */
     .stDataFrame td:nth-child(3) { /* Player cells */
         font-weight: bold !important;
-        font-size: 16px !important;
+        font-size: 1.5em !important; /* Increased font size for Rank and Player */
     }
     @media (max-width: 640px) {
         .stDataFrame {
@@ -177,7 +178,7 @@ st.markdown("""
         .stDataFrame td:nth-child(1), /* Rank cells */
         .stDataFrame td:nth-child(3) { /* Player cells */
             font-weight: bold !important;
-            font-size: 14px !important;
+            font-size: 1.2em !important; /* Adjusted for smaller screens */
         }
         .thumbnail {
             width: 40px;
@@ -638,3 +639,4 @@ Built with ❤️ using <a href='https://streamlit.io/' style='color: #ccff00;'>
 <a href='https://devs-scripts.streamlit.app/' style='color: #ccff00;'>Other Scripts by dev</a> on Streamlit.
 </div>
 """, unsafe_allow_html=True)
+```
