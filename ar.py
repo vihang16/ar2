@@ -16,8 +16,13 @@ matches_table_name = "matches"
 
 def load_players():
     try:
-        response = supabase.table(players_table_name).select("name, profile_image_url, birthday").execute()
+        response = supabase.table(players_table_name).select("name").execute()
         df = pd.DataFrame(response.data)
+        # Ensure all expected columns exist, filling missing ones with defaults
+        expected_columns = ["name", "profile_image_url", "birthday"]
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""  # Default to empty string for missing columns
         return df
     except Exception as e:
         st.error(f"Error loading players: {str(e)}")
@@ -25,6 +30,9 @@ def load_players():
 
 def save_players(players_df):
     try:
+        # Ensure only expected columns are saved to avoid schema mismatches
+        expected_columns = ["name", "profile_image_url", "birthday"]
+        players_df = players_df[expected_columns].copy()
         supabase.table(players_table_name).delete().neq("name", "").execute()
         supabase.table(players_table_name).insert(players_df.to_dict("records")).execute()
     except Exception as e:
@@ -406,7 +414,6 @@ with tab1:
         st.warning("No players available. Please add players in the sidebar.")
     else:
         if match_type == "Doubles":
-            # Create a fresh copy for each selectbox to avoid modifying the same list
             p1 = st.selectbox("Team 1 - Player 1", [""] + available_players, key="t1p1")
             available_players_t1p2 = [p for p in available_players if p != p1] if p1 else available_players
             p2 = st.selectbox("Team 1 - Player 2", [""] + available_players_t1p2, key="t1p2")
@@ -428,7 +435,6 @@ with tab1:
         match_image = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png"])
 
         if st.button("Submit Match"):
-            # Validate player selections
             if match_type == "Doubles" and not all([p1, p2, p3, p4]):
                 st.error("Please select all four players for a doubles match.")
             elif match_type == "Singles" and not all([p1, p3]):
