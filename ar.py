@@ -99,31 +99,6 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
-def get_player_trend(player, matches, max_matches=5):
-    player_matches = matches[
-        (matches['team1_player1'] == player) |
-        (matches['team1_player2'] == player) |
-        (matches['team2_player1'] == player) |
-        (matches['team2_player2'] == player)
-    ].copy()
-    player_matches['date'] = pd.to_datetime(player_matches['date'], errors='coerce')
-    player_matches = player_matches.sort_values(by='date', ascending=False)
-    trend = []
-    for _, row in player_matches.head(max_matches).iterrows():
-        if row['match_type'] == 'Doubles':
-            team1 = [row['team1_player1'], row['team1_player2']]
-            team2 = [row['team2_player1'], row['team2_player2']]
-        else:
-            team1 = [row['team1_player1']]
-            team2 = [row['team2_player1']]
-        if player in team1 and row['winner'] == 'Team 1':
-            trend.append('W')
-        elif player in team2 and row['winner'] == 'Team 2':
-            trend.append('W')
-        elif row['winner'] != 'Tie':
-            trend.append('L')
-    return ' '.join(trend) if trend else 'No recent matches'
-
 # Custom CSS
 st.markdown("""
     <style>
@@ -159,79 +134,50 @@ st.markdown("""
         overflow-y: auto;
         margin: 0 !important;
     }
-    .custom-dataframe, .custom-dataframe [data-testid="stTable"], .custom-dataframe table, 
-    .stDataFrame, .stDataFrame [data-testid="stTable"], .stDataFrame table, 
-    [class*="emotion-cache"] table, div.stDataFrame [data-testid="stTable"] {
-        width: 100% !important;
+    .stDataFrame {
+        width: 100%;
+        font-size: 14px !important;
         margin: 0 !important;
     }
-    .custom-dataframe table, .stDataFrame table {
+    .stDataFrame table {
+        width: 100% !important;
         border-collapse: collapse;
     }
-    .custom-dataframe th, .custom-dataframe td,
-    .custom-dataframe [data-testid="stTable"] th, .custom-dataframe [data-testid="stTable"] td,
-    .stDataFrame th, .stDataFrame td,
-    .stDataFrame [data-testid="stTable"] th, .stDataFrame [data-testid="stTable"] td,
-    [class*="emotion-cache"] th, [class*="emotion-cache"] td,
-    div.stDataFrame [data-testid="stTable"] th, div.stDataFrame [data-testid="stTable"] td,
-    .custom-dataframe *, .stDataFrame * {
-        font-size: 21px !important;
-        padding: 8px !important;
-        border-bottom: 1px solid #eee;
-        font-family: 'Offside', sans-serif !important;
-    }
-    .custom-dataframe th, .custom-dataframe [data-testid="stTable"] th,
-    .stDataFrame th, .stDataFrame [data-testid="stTable"] th,
-    [class*="emotion-cache"] th, div.stDataFrame [data-testid="stTable"] th {
+    .stDataFrame th {
         background-color: #f5f5f5;
         color: #333;
         font-weight: bold;
+        padding: 8px;
         text-align: left;
         position: sticky;
         top: 0;
         z-index: 1;
     }
+    .stDataFrame td {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+    }
     /* Style for Rank and Player columns */
-    .custom-dataframe th:nth-child(1), .custom-dataframe th:nth-child(3),
-    .custom-dataframe td:nth-child(1), .custom-dataframe td:nth-child(3),
-    .custom-dataframe [data-testid="stTable"] th:nth-child(1), .custom-dataframe [data-testid="stTable"] th:nth-child(3),
-    .custom-dataframe [data-testid="stTable"] td:nth-child(1), .custom-dataframe [data-testid="stTable"] td:nth-child(3),
-    .stDataFrame th:nth-child(1), .stDataFrame th:nth-child(3),
-    .stDataFrame td:nth-child(1), .stDataFrame td:nth-child(3),
-    .stDataFrame [data-testid="stTable"] th:nth-child(1), .stDataFrame [data-testid="stTable"] th:nth-child(3),
-    .stDataFrame [data-testid="stTable"] td:nth-child(1), .stDataFrame [data-testid="stTable"] td:nth-child(3),
-    [class*="emotion-cache"] th:nth-child(1), [class*="emotion-cache"] th:nth-child(3),
-    [class*="emotion-cache"] td:nth-child(1), [class*="emotion-cache"] td:nth-child(3),
-    div.stDataFrame [data-testid="stTable"] th:nth-child(1), div.stDataFrame [data-testid="stTable"] th:nth-child(3),
-    div.stDataFrame [data-testid="stTable"] td:nth-child(1), div.stDataFrame [data-testid="stTable"] td:nth-child(3) {
+    .stDataFrame th:nth-child(1), /* Rank header */
+    .stDataFrame th:nth-child(3), /* Player header */
+    .stDataFrame td:nth-child(1), /* Rank cells */
+    .stDataFrame td:nth-child(3) { /* Player cells */
         font-weight: bold !important;
-        font-size: 24px !important;
+        font-size: 16px !important;
     }
     @media (max-width: 640px) {
-        .custom-dataframe th, .custom-dataframe td,
-        .custom-dataframe [data-testid="stTable"] th, .custom-dataframe [data-testid="stTable"] td,
-        .stDataFrame th, .stDataFrame td,
-        .stDataFrame [data-testid="stTable"] th, .stDataFrame [data-testid="stTable"] td,
-        [class*="emotion-cache"] th, [class*="emotion-cache"] td,
-        div.stDataFrame [data-testid="stTable"] th, div.stDataFrame [data-testid="stTable"] td,
-        .custom-dataframe *, .stDataFrame * {
-            font-size: 18px !important;
-            padding: 6px !important;
+        .stDataFrame {
+            font-size: 12px !important;
         }
-        .custom-dataframe th:nth-child(1), .custom-dataframe th:nth-child(3),
-        .custom-dataframe td:nth-child(1), .custom-dataframe td:nth-child(3),
-        .custom-dataframe [data-testid="stTable"] th:nth-child(1), .custom-dataframe [data-testid="stTable"] th:nth-child(3),
-        .custom-dataframe [data-testid="stTable"] td:nth-child(1), .custom-dataframe [data-testid="stTable"] td:nth-child(3),
-        .stDataFrame th:nth-child(1), .stDataFrame th:nth-child(3),
-        .stDataFrame td:nth-child(1), .stDataFrame td:nth-child(3),
-        .stDataFrame [data-testid="stTable"] th:nth-child(1), .stDataFrame [data-testid="stTable"] th:nth-child(3),
-        .stDataFrame [data-testid="stTable"] td:nth-child(1), .stDataFrame [data-testid="stTable"] td:nth-child(3),
-        [class*="emotion-cache"] th:nth-child(1), [class*="emotion-cache"] th:nth-child(3),
-        [class*="emotion-cache"] td:nth-child(1), [class*="emotion-cache"] td:nth-child(3),
-        div.stDataFrame [data-testid="stTable"] th:nth-child(1), div.stDataFrame [data-testid="stTable"] th:nth-child(3),
-        div.stDataFrame [data-testid="stTable"] td:nth-child(1), div.stDataFrame [data-testid="stTable"] td:nth-child(3) {
+        .stDataFrame th, .stDataFrame td {
+            padding: 6px;
+        }
+        .stDataFrame th:nth-child(1), /* Rank header */
+        .stDataFrame th:nth-child(3), /* Player header */
+        .stDataFrame td:nth-child(1), /* Rank cells */
+        .stDataFrame td:nth-child(3) { /* Player cells */
             font-weight: bold !important;
-            font-size: 21px !important;
+            font-size: 14px !important;
         }
         .thumbnail {
             width: 40px;
@@ -243,18 +189,6 @@ st.markdown("""
         }
     }
     </style>
-""", unsafe_allow_html=True)
-
-# Debug CSS application
-st.markdown("""
-Debug: CSS for rankings table applied with font-size 21px (desktop) and 18px (mobile) for general content, 
-24px (desktop) and 21px (mobile) for Rank/Player columns. 
-Please inspect the table using browser developer tools (right-click table > Inspect) and check the 'font-size' 
-property for '.custom-dataframe th', '.custom-dataframe td', '.stDataFrame [data-testid="stTable"] th', 
-'.stDataFrame [data-testid="stTable"] td', or '[class*="emotion-cache"] th', '[class*="emotion-cache"] td' elements. 
-Note the applied font-size (e.g., 14px) and any conflicting CSS rules (e.g., from Streamlit or a custom theme). 
-Clear Streamlit cache via the app's menu (Settings > Clear Cache) or run `streamlit cache clear` in the terminal. 
-Check Streamlit version with `streamlit --version`. If using a custom theme, check .streamlit/config.toml for font settings.
 """, unsafe_allow_html=True)
 
 # Display dubai.png from local GitHub repository
@@ -358,8 +292,8 @@ with tab3:
     ).reset_index(drop=True)
     rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
-    # Display rankings table with custom container
-    st.markdown('<div class="rankings-table-container custom-dataframe">', unsafe_allow_html=True)
+    # Display rankings table
+    st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
     display_df = rank_df.copy()
     display_df["Profile"] = display_df["Profile"].apply(lambda x: x if x else "No image")
@@ -386,12 +320,37 @@ with tab3:
 
     # Player Insights
     st.subheader("Player Insights")
-    selected_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings")
-    if selected_rankings:
-        if selected_rankings in rank_df["Player"].values:
-            player_data = rank_df[rank_df["Player"] == selected_rankings].iloc[0]
-            trend = get_player_trend(selected_rankings, matches)
-            player_info = players_df[players_df["name"] == selected_rankings].iloc[0]
+    selected = st.selectbox("Select a player", [""] + players, index=0, key="insights_player")
+    if selected:
+        def get_player_trend(player, matches, max_matches=5):
+            player_matches = matches[
+                (matches['team1_player1'] == player) |
+                (matches['team1_player2'] == player) |
+                (matches['team2_player1'] == player) |
+                (matches['team2_player2'] == player)
+            ].copy()
+            player_matches['date'] = pd.to_datetime(player_matches['date'], errors='coerce')
+            player_matches = player_matches.sort_values(by='date', ascending=False)
+            trend = []
+            for _, row in player_matches.head(max_matches).iterrows():
+                if row['match_type'] == 'Doubles':
+                    team1 = [row['team1_player1'], row['team1_player2']]
+                    team2 = [row['team2_player1'], row['team2_player2']]
+                else:
+                    team1 = [row['team1_player1']]
+                    team2 = [row['team2_player1']]
+                if player in team1 and row['winner'] == 'Team 1':
+                    trend.append('W')
+                elif player in team2 and row['winner'] == 'Team 2':
+                    trend.append('W')
+                elif row['winner'] != 'Tie':
+                    trend.append('L')
+            return ' '.join(trend) if trend else 'No recent matches'
+
+        if selected in rank_df["Player"].values:
+            player_data = rank_df[rank_df["Player"] == selected].iloc[0]
+            trend = get_player_trend(selected, matches)
+            player_info = players_df[players_df["name"] == selected].iloc[0]
             birthday = player_info.get("birthday", "Not set")
             profile_image = player_info.get("profile_image_url", "")
             
@@ -401,7 +360,7 @@ with tab3:
                     try:
                         st.image(profile_image, width=100, caption="")
                     except Exception as e:
-                        st.error(f"Error displaying image for {selected_rankings}: {str(e)}")
+                        st.error(f"Error displaying image for {selected}: {str(e)}")
                 else:
                     st.write("No image")
             with cols[1]:
@@ -414,15 +373,15 @@ with tab3:
                     **Losses**: {int(player_data["Losses"])}  
                     **Games Won**: {int(player_data["Games Won"])}  
                     **Birthday**: {birthday}  
-                    **Partners Played With**: {dict(partner_wins[selected_rankings])}  
+                    **Partners Played With**: {dict(partner_wins[selected])}  
                     **Recent Trend**: {trend}  
                 """)
-                if partner_wins[selected_rankings]:
-                    best_partner, best_wins = max(partner_wins[selected_rankings].items(), key=lambda x: x[1])
+                if partner_wins[selected]:
+                    best_partner, best_wins = max(partner_wins[selected].items(), key=lambda x: x[1])
                     st.markdown(f"**Most Effective Partner**: {best_partner} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
         else:
-            trend = get_player_trend(selected_rankings, matches)
-            player_info = players_df[players_df["name"] == selected_rankings].iloc[0]
+            trend = get_player_trend(selected, matches)
+            player_info = players_df[players_df["name"] == selected].iloc[0]
             birthday = player_info.get("birthday", "Not set")
             profile_image = player_info.get("profile_image_url", "")
             cols = st.columns([1, 5])
@@ -431,13 +390,13 @@ with tab3:
                     try:
                         st.image(profile_image, width=100, caption="")
                     except Exception as e:
-                        st.error(f"Error displaying image for {selected_rankings}: {str(e)}")
+                        st.error(f"Error displaying image for {selected}: {str(e)}")
                 else:
                     st.write("No image")
             with cols[1]:
-                st.markdown(f"No match data available for {selected_rankings}.")  
+                st.markdown(f"No match data available for {selected}.")  
                 st.markdown(f"**Birthday**: {birthday}")
-                st.markdown(f"**Partners Played With**: {dict(partner_wins[selected_rankings])}")
+                st.markdown(f"**Partners Played With**: {dict(partner_wins[selected])}")
                 st.markdown(f"**Recent Trend**: {trend}")
 
 # ----- MATCH RECORDS -----
@@ -587,109 +546,51 @@ with tab1:
 with tab5:
     st.header("Player Profile")
     
-    # Player Insights
-    st.subheader("Player Insights")
-    selected_profile = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
-    if selected_profile:
-        if selected_profile in rank_df["Player"].values:
-            player_data = rank_df[rank_df["Player"] == selected_profile].iloc[0]
-            trend = get_player_trend(selected_profile, matches)
-            player_info = players_df[players_df["name"] == selected_profile].iloc[0]
-            birthday = player_info.get("birthday", "Not set")
-            profile_image = player_info.get("profile_image_url", "")
-            
-            cols = st.columns([1, 5])
-            with cols[0]:
-                if profile_image:
-                    try:
-                        st.image(profile_image, width=100, caption="")
-                    except Exception as e:
-                        st.error(f"Error displaying image for {selected_profile}: {str(e)}")
-                else:
-                    st.write("No image")
-            with cols[1]:
-                st.markdown(f"""
-                    **Rank**: {player_data["Rank"]}  
-                    **Points**: {player_data["Points"]}  
-                    **Win Percentage**: {player_data["Win %"]}%  
-                    **Matches Played**: {int(player_data["Matches"])}  
-                    **Wins**: {int(player_data["Wins"])}  
-                    **Losses**: {int(player_data["Losses"])}  
-                    **Games Won**: {int(player_data["Games Won"])}  
-                    **Birthday**: {birthday}  
-                    **Partners Played With**: {dict(partner_wins[selected_profile])}  
-                    **Recent Trend**: {trend}  
-                """)
-                if partner_wins[selected_profile]:
-                    best_partner, best_wins = max(partner_wins[selected_profile].items(), key=lambda x: x[1])
-                    st.markdown(f"**Most Effective Partner**: {best_partner} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
-        else:
-            trend = get_player_trend(selected_profile, matches)
-            player_info = players_df[players_df["name"] == selected_profile].iloc[0]
-            birthday = player_info.get("birthday", "Not set")
-            profile_image = player_info.get("profile_image_url", "")
-            cols = st.columns([1, 5])
-            with cols[0]:
-                if profile_image:
-                    try:
-                        st.image(profile_image, width=100, caption="")
-                    except Exception as e:
-                        st.error(f"Error displaying image for {selected_profile}: {str(e)}")
-                else:
-                    st.write("No image")
-            with cols[1]:
-                st.markdown(f"No match data available for {selected_profile}.")  
-                st.markdown(f"**Birthday**: {birthday}")
-                st.markdown(f"**Partners Played With**: {dict(partner_wins[selected_profile])}")
-                st.markdown(f"**Recent Trend**: {trend}")
-
-    # Merged Manage Players and Edit Player Profile
-    st.subheader("Manage Players and Profiles")
-    with st.expander("Manage Players and Profiles"):
-        # Add Player
-        st.markdown("**Add New Player**")
-        new_player = st.text_input("New Player Name").strip()
-        if st.button("Add Player"):
-            if new_player:
-                if new_player not in players:
-                    new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
-                    players_df = pd.concat([players_df, pd.DataFrame([new_player_data])], ignore_index=True)
-                    players.append(new_player)
-                    save_players(players_df)
-                    st.session_state.players_df = load_players()
-                    st.success(f"{new_player} added.")
-                    st.rerun()
-                else:
-                    st.warning(f"{new_player} already exists.")
-
-        # Remove Player
-        st.markdown("**Remove Player**")
-        remove_player = st.selectbox("Select Player to Remove", [""] + players, key="remove_player")
-        if st.button("Remove Selected Player"):
-            if remove_player:
-                players_df = players_df[players_df["name"] != remove_player].reset_index(drop=True)
-                players = [p for p in players if p != remove_player]
+    # Manage Players Section
+    st.subheader("Manage Players")
+    new_player = st.text_input("Add Player").strip()
+    if st.button("Add Player"):
+        if new_player:
+            if new_player not in players:
+                new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
+                players_df = pd.concat([players_df, pd.DataFrame([new_player_data])], ignore_index=True)
+                players.append(new_player)
                 save_players(players_df)
                 st.session_state.players_df = load_players()
-                st.success(f"{remove_player} removed.")
+                st.success(f"{new_player} added.")
                 st.rerun()
-
-        # Edit Player Profile
-        st.markdown("**Edit Player Profile**")
-        selected_player = st.selectbox("Select Player to Edit", [""] + players, key="edit_player")
-        if selected_player:
-            player_data = players_df[players_df["name"] == selected_player].iloc[0]
-            current_image = player_data.get("profile_image_url", "")
-            current_birthday = player_data.get("birthday", "")
-            
-            if current_image:
-                try:
-                    st.image(current_image, width=100, caption="Current Profile Image")
-                except Exception as e:
-                    st.error(f"Error displaying profile image: {str(e)}")
             else:
-                st.write("No profile image set.")
-            
+                st.warning(f"{new_player} already exists.")
+
+    remove_player = st.selectbox("Remove Player", [""] + players)
+    if st.button("Remove Selected Player"):
+        if remove_player:
+            players_df = players_df[players_df["name"] != remove_player].reset_index(drop=True)
+            players = [p for p in players if p != remove_player]
+            save_players(players_df)
+            st.session_state.players_df = load_players()
+            st.success(f"{remove_player} removed.")
+            st.rerun()
+
+    # Existing Player Profile Section
+    st.subheader("Edit Player Profile")
+    selected_player = st.selectbox("Select Player", [""] + players, key="profile_player")
+    
+    if selected_player:
+        player_data = players_df[players_df["name"] == selected_player].iloc[0]
+        current_image = player_data.get("profile_image_url", "")
+        current_birthday = player_data.get("birthday", "")
+        
+        st.subheader(f"Profile for {selected_player}")
+        if current_image:
+            try:
+                st.image(current_image, width=100, caption="Current Profile Image")
+            except Exception as e:
+                st.error(f"Error displaying profile image: {str(e)}")
+        else:
+            st.write("No profile image set.")
+        
+        with st.expander("Edit Profile"):
             profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_{selected_player}")
             birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=int(current_birthday.split("-")[0]) if current_birthday else 1, key=f"birthday_day_{selected_player}")
             birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=int(current_birthday.split("-")[1]) if current_birthday else 1, key=f"birthday_month_{selected_player}")
