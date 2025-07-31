@@ -58,6 +58,13 @@ def save_matches(df):
 
 def upload_image_to_supabase(file, file_name, bucket="ar"):
     try:
+        # Check if the bucket exists
+        buckets = supabase.storage.list_buckets()
+        bucket_names = [b["name"] for b in buckets]
+        if bucket not in bucket_names:
+            st.error(f"Storage bucket '{bucket}' does not exist. Please create it in Supabase Storage.")
+            return ""
+        
         file_path = f"{bucket}/{file_name}"
         response = supabase.storage.from_(bucket).upload(
             file_path, 
@@ -66,12 +73,12 @@ def upload_image_to_supabase(file, file_name, bucket="ar"):
         )
         if response is None or isinstance(response, dict) and "error" in response:
             error_message = response.get("error", "Unknown error") if isinstance(response, dict) else "Upload failed"
-            st.error(f"Failed to upload image: {error_message}")
+            st.error(f"Failed to upload image to bucket '{bucket}': {error_message}")
             return ""
         public_url = supabase.storage.from_(bucket).get_public_url(file_path)
         return public_url
     except Exception as e:
-        st.error(f"Error uploading image: {str(e)}")
+        st.error(f"Error uploading image to bucket '{bucket}': {str(e)}")
         return ""
 
 def tennis_scores():
@@ -344,7 +351,7 @@ with tab2:
             if st.button("Save Changes"):
                 image_url = row["match_image_url"]
                 if match_image:
-                    image_url = upload_image_to_supabase(match_image, selected_id)
+                    image_url = upload_image_to_supabase(match_image, selected_id, bucket="ar")
                 
                 matches.loc[idx] = {
                     "match_id": selected_id,
@@ -409,7 +416,7 @@ with tab1:
                 match_id = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
                 image_url = ""
                 if match_image:
-                    image_url = upload_image_to_supabase(match_image, match_id)
+                    image_url = upload_image_to_supabase(match_image, match_id, bucket="ar")
                 
                 new_match = {
                     "match_id": match_id,
