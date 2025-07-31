@@ -59,10 +59,8 @@ def save_matches(df):
 def upload_image_to_supabase(file, file_name, image_type="match"):
     try:
         bucket = "profile" if image_type == "profile" else "ar"
-        # Debug: Log bucket and image type
         st.write(f"Debug: Attempting to upload {image_type} image to bucket '{bucket}'")
         
-        # Check bucket existence only for 'ar' bucket (since 'profile' is confirmed to exist)
         if bucket == "ar":
             try:
                 buckets = supabase.storage.list_buckets()
@@ -74,13 +72,10 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
             except Exception as e:
                 st.warning(f"Failed to list buckets: {str(e)}. Proceeding with upload to '{bucket}' as it worked for match images.")
         
-        # Use folder for match images, root for profile images
         file_path = f"2ep_1/{file_name}" if image_type == "match" else file_name
-        # Debug: Log file extension and path
         file_ext = file.name.split('.')[-1].lower()
         st.write(f"Debug: Uploading file with extension: {file_ext} to {bucket}/{file_path}")
         
-        # Upload file
         response = supabase.storage.from_(bucket).upload(
             file_path, 
             file.read(), 
@@ -91,9 +86,7 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
             st.error(f"Failed to upload image to bucket '{bucket}/{file_path}': {error_message}")
             return ""
         
-        # Get public URL
         public_url = supabase.storage.from_(bucket).get_public_url(file_path)
-        # Validate URL structure
         expected_prefix = f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v1/object/public/{bucket}/"
         if not public_url.startswith(expected_prefix):
             st.warning(f"Uploaded image URL does not match expected prefix: {expected_prefix}. Got: {public_url}")
@@ -222,11 +215,11 @@ with tab3:
     for player in scores:
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
-        # Create a URL with query parameter for the player
-        player_url = f"?selected_player={player.replace(' ', '%20')}"
+        # Create a Markdown link for the player
+        player_display = f'<a href="?selected_player={player.replace(" ", "%20")}" style="color:white;text-decoration:none">{player}</a>'
         rank_data.append({
             "Player": player,
-            "PlayerLink": player_url,
+            "PlayerDisplay": player_display,
             "Profile Image": profile_image,
             "Points": scores[player],
             "Win Percentage": round(win_percentage, 2),
@@ -245,16 +238,16 @@ with tab3:
     rank_df.insert(0, "Rank", [f"🏆 {i}" for i in range(1, len(rank_df) + 1)])
     
     st.dataframe(
-        rank_df[["Rank", "Profile Image", "PlayerLink", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]],
+        rank_df[["Rank", "Profile Image", "PlayerDisplay", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]],
         use_container_width=True,
         hide_index=True,
         column_config={
             "Rank": st.column_config.TextColumn("Rank", help="Player ranking with trophy icon"),
             "Profile Image": st.column_config.ImageColumn("Profile", width="small"),
-            "PlayerLink": st.column_config.LinkColumn(
+            "PlayerDisplay": st.column_config.TextColumn(
                 "Player",
                 help="Player name",
-                display_text=r"^(.*)$"  # Regex to display the player name as the link text
+                unsafe_allow_html=True
             ),
             "Points": st.column_config.NumberColumn("Points", format="%.1f"),
             "Win Percentage": st.column_config.NumberColumn("Win Percentage", format="%.2f%%"),
@@ -263,7 +256,7 @@ with tab3:
             "Losses": st.column_config.NumberColumn("Losses", format="%d"),
             "Games Won": st.column_config.NumberColumn("Games Won", format="%d")
         },
-        column_order=["Rank", "Profile Image", "PlayerLink", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]
+        column_order=["Rank", "Profile Image", "PlayerDisplay", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]
     )
 
     # Player Insights
@@ -527,7 +520,7 @@ with tab5:
                 players_df.loc[players_df["name"] == selected_player, "profile_image_url"] = image_url
                 players_df.loc[players_df["name"] == selected_player, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
                 save_players(players_df)
-                st.session_state.players_df = load_players()  # Refresh players_df
+                st.session_state.players_df = load_players()
                 st.success("Profile updated.")
                 st.rerun()
 
@@ -567,7 +560,7 @@ with st.sidebar:
                 players_df = pd.concat([players_df, pd.DataFrame([new_player_data])], ignore_index=True)
                 players.append(new_player)
                 save_players(players_df)
-                st.session_state.players_df = load_players()  # Refresh players_df
+                st.session_state.players_df = load_players()
                 st.success(f"{new_player} added.")
                 st.rerun()
             else:
@@ -579,7 +572,7 @@ with st.sidebar:
             players_df = players_df[players_df["name"] != remove_player].reset_index(drop=True)
             players = [p for p in players if p != remove_player]
             save_players(players_df)
-            st.session_state.players_df = load_players()  # Refresh players_df
+            st.session_state.players_df = load_players()
             st.success(f"{remove_player} removed.")
             st.rerun()
 
