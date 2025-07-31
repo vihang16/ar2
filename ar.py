@@ -326,7 +326,8 @@ with tab3:
     # Display rankings
     st.dataframe(
         rank_df[["Rank", "Player", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]],
-        use_container_width=True
+        use_container_width=True,
+        hide_index=True  # Hide the default index column
     )
 
     # Player Insights
