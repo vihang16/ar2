@@ -120,15 +120,14 @@ st.markdown("""
         overflow-y: auto;
         margin: 0 !important;
     }
+    /* General font size for the entire DataFrame content */
     .stDataFrame {
         width: 100%;
-        /* Setting a default font size for the entire dataframe content */
-        font-size: 1.2em !important; 
         margin: 0 !important;
     }
-    .stDataFrame table {
-        width: 100% !important;
-        border-collapse: collapse;
+    /* Apply a base font size to all table data cells and any direct text content */
+    .stDataFrame td, .stDataFrame td p, .stDataFrame td span {
+        font-size: 1.2em !important; /* Base size for all content cells */
     }
     .stDataFrame th {
         background-color: #f5f5f5;
@@ -139,47 +138,55 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 1;
-        /* Ensure headers also get a base increased size */
-        font-size: 1.2em !important; 
+        font-size: 1.2em !important; /* Base size for headers */
     }
     .stDataFrame td {
         padding: 8px;
         border-bottom: 1px solid #eee;
     }
-    /* Styles for Rank and Player columns - targeting both headers and data cells */
+
+    /* Specific styles for Rank and Player columns - targeting both headers and data cells */
     .stDataFrame th:nth-child(1), /* Rank header */
-    .stDataFrame th:nth-child(3), /* Player header */
+    .stDataFrame th:nth-child(3) { /* Player header */
+        font-weight: bold !important;
+        font-size: 1.5em !important; /* Increased font size for Rank and Player headers */
+    }
+
+    /* Target the text content directly within cells for Rank and Player */
+    /* This targets any direct text or common wrapping elements like div/span within these specific columns */
     .stDataFrame td:nth-child(1), /* Rank cells */
     .stDataFrame td:nth-child(3) { /* Player cells */
         font-weight: bold !important;
-        /* Make it 1.5 times the size of its parent, which is already 1.2em */
-        font-size: 1.5em !important; 
+        font-size: 1.5em !important; /* Increased font size for Rank and Player data cells */
     }
-    /* Further specific targeting for the text content within the cells if needed */
-    .stDataFrame td:nth-child(1) > div, /* Rank text inside div */
-    .stDataFrame td:nth-child(3) > div { /* Player text inside div */
-        font-weight: bold !important;
-        font-size: 1.5em !important;
+    .stDataFrame td:nth-child(1) *, /* Any element within Rank cells */
+    .stDataFrame td:nth-child(3) * { /* Any element within Player cells */
+        font-weight: inherit !important; /* Inherit bold from parent td */
+        font-size: inherit !important; /* Inherit increased size from parent td */
     }
 
+
     @media (max-width: 640px) {
-        .stDataFrame {
+        .stDataFrame td, .stDataFrame td p, .stDataFrame td span {
             font-size: 1em !important; /* Adjusted base font size for smaller screens */
         }
         .stDataFrame th, .stDataFrame td {
             padding: 6px;
         }
         .stDataFrame th:nth-child(1), /* Rank header */
-        .stDataFrame th:nth-child(3), /* Player header */
+        .stDataFrame th:nth-child(3) { /* Player header */
+            font-weight: bold !important;
+            font-size: 1.2em !important; /* Adjusted for smaller screens */
+        }
         .stDataFrame td:nth-child(1), /* Rank cells */
         .stDataFrame td:nth-child(3) { /* Player cells */
             font-weight: bold !important;
-            font-size: 1.2em !important; /* Adjusted for smaller screens (1.2 times the new base) */
+            font-size: 1.2em !important; /* Adjusted for smaller screens */
         }
-        .stDataFrame td:nth-child(1) > div, /* Rank text inside div */
-        .stDataFrame td:nth-child(3) > div { /* Player text inside div */
-            font-weight: bold !important;
-            font-size: 1.2em !important;
+        .stDataFrame td:nth-child(1) *, /* Any element within Rank cells */
+        .stDataFrame td:nth-child(3) * { /* Any element within Player cells */
+            font-weight: inherit !important;
+            font-size: inherit !important;
         }
         .thumbnail {
             width: 40px;
