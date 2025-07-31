@@ -120,19 +120,55 @@ st.markdown("""
         border-radius: 50%;
         margin-right: 10px;
     }
-    .rankings-table-dataframe {
-        font-size: 12px !important;
+    .rankings-table-container {
+        width: 100%;
+        overflow-x: auto;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 10px;
     }
     .rankings-table-scroll {
-        max-height: 400px;
+        max-height: 500px;
         overflow-y: auto;
+    }
+    .stDataFrame {
         width: 100%;
+        font-size: 14px !important;
     }
-    .stDataFrame table, .stDataFrame td, .stDataFrame th {
-        border: none !important;
+    .stDataFrame table {
+        width: 100% !important;
+        border-collapse: collapse;
     }
-    .stDataFrame td:nth-child(1), .stDataFrame td:nth-child(3) {
+    .stDataFrame th {
+        background-color: #f5f5f5;
+        color: #333;
         font-weight: bold;
+        padding: 8px;
+        text-align: left;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+    .stDataFrame td {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+    }
+    @media (max-width: 640px) {
+        .stDataFrame {
+            font-size: 12px !important;
+        }
+        .stDataFrame th, .stDataFrame td {
+            padding: 6px;
+        }
+        .thumbnail {
+            width: 40px;
+            height: 40px;
+        }
+        .profile-thumbnail {
+            width: 80px;
+            height: 80px;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -239,7 +275,7 @@ with tab3:
     rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     # Display rankings table
-    st.markdown('<div class="rankings-table">', unsafe_allow_html=True)
+    st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
     display_df = rank_df.copy()
     display_df["Profile"] = display_df["Profile"].apply(lambda x: x if x else "No image")
@@ -247,17 +283,17 @@ with tab3:
     st.dataframe(
         display_df[["Rank", "Profile", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Games Won"]],
         column_config={
-            "Rank": st.column_config.TextColumn(width=80),
-            "Profile": st.column_config.ImageColumn(width=60),
-            "Player": st.column_config.TextColumn(width=100),
-            "Points": st.column_config.NumberColumn(width=40, format="%.1f"),
-            "Win %": st.column_config.NumberColumn(width=40, format="%.2f%%"),
-            "Matches": st.column_config.NumberColumn(width=40, format="%d"),
-            "Wins": st.column_config.NumberColumn(width=40, format="%d"),
-            "Losses": st.column_config.NumberColumn(width=40, format="%d"),
-            "Games Won": st.column_config.NumberColumn(width=40, format="%d")
+            "Rank": st.column_config.TextColumn(width="small"),
+            "Profile": st.column_config.ImageColumn(width="small"),
+            "Player": st.column_config.TextColumn(width="medium"),
+            "Points": st.column_config.NumberColumn(width="small", format="%.1f"),
+            "Win %": st.column_config.NumberColumn(width="small", format="%.1f%%"),
+            "Matches": st.column_config.NumberColumn(width="small", format="%d"),
+            "Wins": st.column_config.NumberColumn(width="small", format="%d"),
+            "Losses": st.column_config.NumberColumn(width="small", format="%d"),
+            "Games Won": st.column_config.NumberColumn(width="small", format="%d")
         },
-        height=400,
+        height=500,
         use_container_width=True,
         hide_index=True
     )
