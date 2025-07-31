@@ -216,9 +216,41 @@ with tab3:
     st.subheader("Player Insights")
     selected = st.selectbox("Select a player", players)
     if selected:
+        # Compute player's trend (last 5 matches, W or L)
+        def get_player_trend(player, matches, max_matches=5):
+            # Filter matches involving the player
+            player_matches = matches[
+                (matches['team1_player1'] == player) |
+                (matches['team1_player2'] == player) |
+                (matches['team2_player1'] == player) |
+                (matches['team2_player2'] == player)
+            ].copy()
+            # Ensure date is in datetime format and sort by date descending
+            player_matches['date'] = pd.to_datetime(player_matches['date'], errors='coerce')
+            player_matches = player_matches.sort_values(by='date', ascending=False)
+            # Get outcomes for the player
+            trend = []
+            for _, row in player_matches.head(max_matches).iterrows():
+                if row['match_type'] == 'Doubles':
+                    team1 = [row['team1_player1'], row['team1_player2']]
+                    team2 = [row['team2_player1'], row['team2_player2']]
+                else:
+                    team1 = [row['team1_player1']]
+                    team2 = [row['team2_player1']]
+                # Determine if player was on winning team
+                if player in team1 and row['winner'] == 'Team 1':
+                    trend.append('W')
+                elif player in team2 and row['winner'] == 'Team 2':
+                    trend.append W')
+                elif row['winner'] != 'Tie':
+                    trend.append('L')
+                # Skip ties
+            return ' '.join(trend) if trend else 'No recent matches'
+
         # Get player's data from rank_df
         if selected in rank_df["Player"].values:
             player_data = rank_df[rank_df["Player"] == selected].iloc[0]
+            trend = get_player_trend(selected, matches)
             st.markdown(f"""
                 **Rank**: {player_data["Rank"]}  
                 **Points**: {player_data["Points"]}  
@@ -228,13 +260,16 @@ with tab3:
                 **Losses**: {int(player_data["Losses"])}  
                 **Games Won**: {int(player_data["Games Won"])}  
                 **Partners Played With**: {dict(partner_wins[selected])}  
+                **Recent Trend**: {trend}  
             """)
             if partner_wins[selected]:
                 best_partner, best_wins = max(partner_wins[selected].items(), key=lambda x: x[1])
                 st.markdown(f"**Most Effective Partner**: {best_partner} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
         else:
+            trend = get_player_trend(selected, matches)
             st.markdown(f"No match data available for {selected}.")  
             st.markdown(f"**Partners Played With**: {dict(partner_wins[selected])}")
+            st.markdown(f"**Recent Trend**: {trend}")
 
 # ----- MATCH RECORDS -----
 with tab2:
