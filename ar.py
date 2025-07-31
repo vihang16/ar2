@@ -54,18 +54,15 @@ def save_matches(df):
 def upload_image_to_supabase(file, match_id):
     try:
         file_path = f"match_images/{match_id}_{file.name}"
-        # Upload the file to Supabase storage
         response = supabase.storage.from_("ar").upload(
             file_path, 
             file.read(), 
             {"content-type": file.type}
         )
-        # Check if the upload was successful
         if response is None or isinstance(response, dict) and "error" in response:
             error_message = response.get("error", "Unknown error") if isinstance(response, dict) else "Upload failed"
             st.error(f"Failed to upload image: {error_message}")
             return ""
-        # Get the public URL for the uploaded file
         public_url = supabase.storage.from_("ar").get_public_url(file_path)
         return public_url
     except Exception as e:
@@ -179,7 +176,7 @@ with tab2:
     else:
         for _, row in filtered_matches.iterrows():
             match_label = format_match_label(row)
-            cols = st.columns([1, 10])  # Two columns: one for thumbnail, one for label
+            cols = st.columns([1, 10])
             if row["match_image_url"]:
                 with cols[0]:
                     st.image(row["match_image_url"], width=50, caption="")
@@ -241,8 +238,14 @@ with tab2:
 # ----- RANKINGS -----
 with tab3:
     st.header("Player Rankings")
-    scores = defaultdict(float)
-    partners = defaultdict(list)
+    
+    # Initialize data structures for points, wins, matches played, and games won
+    scores = defaultdict(float)  # Points
+    wins = defaultdict(int)     # Number of wins
+    matches_played = defaultdict(int)  # Total matches played
+    games_won = defaultdict(int)  # Total games won
+    partners = defaultdict(list)  # Partners for doubles matches
+
     for _, row in matches.iterrows():
         if row['match_type'] == 'Doubles':
             t1 = [row['team1_player1'], row['team1_player2']]
@@ -251,24 +254,70 @@ with tab3:
             t1 = [row['team1_player1']]
             t2 = [row['team2_player1']]
 
+        # Update points and win/loss counts
         if row["winner"] == "Team 1":
-            for p in t1: scores[p] += 3
-            for p in t2: scores[p] += 1
+            for p in t1:
+                scores[p] += 3
+                wins[p] += 1
+                matches_played[p] += 1
+            for p in t2:
+                scores[p] += 1
+                matches_played[p] += 1
         elif row["winner"] == "Team 2":
-            for p in t2: scores[p] += 3
-            for p in t1: scores[p] += 1
-        else:
-            for p in t1 + t2: scores[p] += 1.5
+            for p in t2:
+                scores[p] += 3
+                wins[p] += 1
+                matches_played[p] += 1
+            for p in t1:
+                scores[p] += 1
+                matches_played[p] += 1
+        else:  # Tie
+            for p in t1 + t2:
+                scores[p] += 1.5
+                matches_played[p] += 1
 
+        # Calculate games won from set scores
+        for set_score in [row['set1'], row['set2'], row['set3']]:
+            if set_score and '-' in set_score:  # Ensure valid score
+                try:
+                    team1_games, team2_games = map(int, set_score.split('-'))
+                    for p in t1:
+                        games_won[p] += team1_games
+                    for p in t2:
+                        games_won[p] += team2_games
+                except ValueError:
+                    continue  # Skip invalid scores
+
+        # Track partners for doubles matches
         if row['match_type'] == 'Doubles':
             partners[row['team1_player1']].append(row['team1_player2'])
             partners[row['team1_player2']].append(row['team1_player1'])
             partners[row['team2_player1']].append(row['team2_player2'])
             partners[row['team2_player2']].append(row['team2_player1'])
 
-    rank_df = pd.DataFrame(scores.items(), columns=["Player", "Points"]).sort_values(by="Points", ascending=False).reset_index(drop=True)
-    st.dataframe(rank_df, use_container_width=True)
+    # Create DataFrame for rankings
+    rank_data = []
+    for player in scores:
+        win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
+        rank_data.append({
+            "Player": player,
+            "Points": scores[player],
+            "Win Percentage": win_percentage,
+            "Games Won": games_won[player]
+        })
 
+    rank_df = pd.DataFrame(rank_data)
+    
+    # Sort by Points (desc), Win Percentage (desc), Games Won (desc), Player name (asc)
+    rank_df = rank_df.sort_values(
+        by=["Points", "Win Percentage", "Games Won", "Player"],
+        ascending=[False, False, False, True]
+    ).reset_index(drop=True)
+    
+    # Display rankings
+    st.dataframe(rank_df[["Player", "Points", "Win Percentage", "Games Won"]], use_container_width=True)
+
+    # Player Insights
     st.subheader("Player Insights")
     selected = st.selectbox("Select a player", players)
     if selected:
