@@ -16,7 +16,7 @@ matches_table_name = "matches"
 
 def load_players():
     try:
-        response = supabase.table(players_table_name).select("name").execute()
+        response = supabase.table(players_table_name).select("name, profile_image_url, birthday").execute()
         df = pd.DataFrame(response.data)
         expected_columns = ["name", "profile_image_url", "birthday"]
         for col in expected_columns:
@@ -58,7 +58,6 @@ def save_matches(df):
 
 def upload_image_to_supabase(file, file_name, bucket="ar"):
     try:
-        # Check if the bucket exists
         buckets = supabase.storage.list_buckets()
         bucket_names = [b["name"] for b in buckets]
         if bucket not in bucket_names:
@@ -111,7 +110,10 @@ st.markdown("""
 # Display dubai.png from local GitHub repository
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
 
-players_df = load_players()
+# Initialize players_df in session state to ensure consistency
+if 'players_df' not in st.session_state:
+    st.session_state.players_df = load_players()
+players_df = st.session_state.players_df
 players = players_df["name"].dropna().tolist() if "name" in players_df.columns else []
 matches = load_matches()
 
@@ -189,6 +191,9 @@ with tab3:
     for player in scores:
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
+        # Debug: Log profile_image_url
+        if not profile_image:
+            st.write(f"Debug: No profile image for {player}")
         rank_data.append({
             "Player": player,
             "Profile Image": profile_image,
@@ -263,9 +268,19 @@ with tab3:
             profile_image = player_info.get("profile_image_url", "")
             
             cols = st.columns([1, 5])
-            if profile_image:
-                with cols[0]:
-                    st.image(profile_image, width=50, caption="")
+            # Debug: Log profile_image_url
+            if not profile_image:
+                st.write(f"Debug: No profile image for {selected} in Player Insights")
+            else:
+                st.write(f"Debug: Profile image URL for {selected}: {profile_image}")
+            with cols[0]:
+                if profile_image:
+                    try:
+                        st.image(profile_image, width=50, caption="")
+                    except Exception as e:
+                        st.error(f"Error displaying image for {selected}: {str(e)}")
+                else:
+                    st.write("No image")
             with cols[1]:
                 st.markdown(f"""
                     **Rank**: {player_data["Rank"]}  
@@ -288,9 +303,19 @@ with tab3:
             birthday = player_info.get("birthday", "Not set")
             profile_image = player_info.get("profile_image_url", "")
             cols = st.columns([1, 5])
-            if profile_image:
-                with cols[0]:
-                    st.image(profile_image, width=50, caption="")
+            # Debug: Log profile_image_url
+            if not profile_image:
+                st.write(f"Debug: No profile image for {selected} in Player Insights (no match data)")
+            else:
+                st.write(f"Debug: Profile image URL for {selected}: {profile_image}")
+            with cols[0]:
+                if profile_image:
+                    try:
+                        st.image(profile_image, width=50, caption="")
+                    except Exception as e:
+                        st.error(f"Error displaying image for {selected}: {str(e)}")
+                else:
+                    st.write("No image")
             with cols[1]:
                 st.markdown(f"No match data available for {selected}.")  
                 st.markdown(f"**Birthday**: {birthday}")
@@ -321,7 +346,10 @@ with tab2:
             cols = st.columns([1, 10])
             if row["match_image_url"]:
                 with cols[0]:
-                    st.image(row["match_image_url"], width=50, caption="")
+                    try:
+                        st.image(row["match_image_url"], width=50, caption="")
+                    except Exception as e:
+                        st.error(f"Error displaying match image: {str(e)}")
                 with cols[1]:
                     st.markdown(f"- {match_label}")
             else:
@@ -449,7 +477,10 @@ with tab5:
         
         st.subheader(f"Profile for {selected_player}")
         if current_image:
-            st.image(current_image, width=100, caption="Current Profile Image")
+            try:
+                st.image(current_image, width=100, caption="Current Profile Image")
+            except Exception as e:
+                st.error(f"Error displaying profile image: {str(e)}")
         else:
             st.write("No profile image set.")
         
@@ -466,6 +497,7 @@ with tab5:
                 players_df.loc[players_df["name"] == selected_player, "profile_image_url"] = image_url
                 players_df.loc[players_df["name"] == selected_player, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
                 save_players(players_df)
+                st.session_state.players_df = load_players()  # Refresh players_df
                 st.success("Profile updated.")
                 st.rerun()
 
@@ -505,6 +537,7 @@ with st.sidebar:
                 players_df = pd.concat([players_df, pd.DataFrame([new_player_data])], ignore_index=True)
                 players.append(new_player)
                 save_players(players_df)
+                st.session_state.players_df = load_players()  # Refresh players_df
                 st.success(f"{new_player} added.")
                 st.rerun()
             else:
@@ -516,6 +549,7 @@ with st.sidebar:
             players_df = players_df[players_df["name"] != remove_player].reset_index(drop=True)
             players = [p for p in players if p != remove_player]
             save_players(players_df)
+            st.session_state.players_df = load_players()  # Refresh players_df
             st.success(f"{remove_player} removed.")
             st.rerun()
 
