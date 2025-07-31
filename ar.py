@@ -632,11 +632,6 @@ with tab4:
     st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
     st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
 
-# ----- SIDEBAR -----
-with st.sidebar:
-    st.sidebar.title("About")
-    st.sidebar.markdown("This app tracks tennis match results and player rankings for the Arabian Ranches community.")
-
 st.markdown("""
 <div style='background-color: #161e80; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
 Built with ❤️ using <a href='https://streamlit.io/' style='color: #ccff00;'>Streamlit</a> — free and open source.
