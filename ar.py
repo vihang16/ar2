@@ -161,7 +161,7 @@ st.markdown("""
     }
     .stDataFrame {
         width: 100%;
-        font-size: 14px !important;
+        font-size: 21px !important;
         margin: 0 !important;
     }
     .stDataFrame table {
@@ -188,11 +188,11 @@ st.markdown("""
     .stDataFrame td:nth-child(1), /* Rank cells */
     .stDataFrame td:nth-child(3) { /* Player cells */
         font-weight: bold !important;
-        font-size: 16px !important;
+        font-size: 24px !important;
     }
     @media (max-width: 640px) {
         .stDataFrame {
-            font-size: 12px !important;
+            font-size: 18px !important;
         }
         .stDataFrame th, .stDataFrame td {
             padding: 6px;
@@ -202,7 +202,7 @@ st.markdown("""
         .stDataFrame td:nth-child(1), /* Rank cells */
         .stDataFrame td:nth-child(3) { /* Player cells */
             font-weight: bold !important;
-            font-size: 14px !important;
+            font-size: 21px !important;
         }
         .thumbnail {
             width: 40px;
