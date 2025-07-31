@@ -648,4 +648,3 @@ Built with ❤️ using <a href='https://streamlit.io/' style='color: #ccff00;'>
 <a href='https://devs-scripts.streamlit.app/' style='color: #ccff00;'>Other Scripts by dev</a> on Streamlit.
 </div>
 """, unsafe_allow_html=True)
-```
