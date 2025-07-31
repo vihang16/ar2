@@ -542,11 +542,32 @@ with tabs[1]: # Matches Tab
     filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
 
     def format_match_label(row):
-        score = f"{row['set1']}, {row['set2']}" + (f", {row['set3']}" if row['set3'] else "")
+        # Format set scores in bold and optic yellow
+        score_parts = [f"<span style='font-weight:bold; color:#fff500;'>{row['set1']}</span>", 
+                       f"<span style='font-weight:bold; color:#fff500;'>{row['set2']}</span>"]
+        if row['set3']:
+            score_parts.append(f"<span style='font-weight:bold; color:#fff500;'>{row['set3']}</span>")
+        score = ", ".join(score_parts)
+
+        # Format player names in bold and optic yellow
+        date_str = row['date'].strftime('%Y-%m-%d')
         if row["match_type"] == "Singles":
-            desc = f"{row['date'].strftime('%Y-%m-%d')} | {row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['date'].strftime('%Y-%m-%d')} | {row['team2_player1']} def. {row['team1_player1']}"
+            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
+            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
+            if row["winner"] == "Team 1":
+                desc = f"{date_str} | {p1_styled} def. {p2_styled}"
+            else:
+                desc = f"{date_str} | {p2_styled} def. {p1_styled}"
         else:
-            desc = f"{row['date'].strftime('%Y-%m-%d')} | {row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['date'].strftime('%Y-%m-%d')} | {row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
+            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player2']}</span>"
+            p3_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
+            p4_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player2']}</span>"
+
+            if row["winner"] == "Team 1":
+                desc = f"{date_str} | {p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
+            else:
+                desc = f"{date_str} | {p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
         return f"{desc} | {score} | {row['match_id']}"
 
     if filtered_matches.empty:
@@ -563,10 +584,10 @@ with tabs[1]: # Matches Tab
                     except Exception as e:
                         st.error(f"Error displaying match image: {str(e)}")
                 with cols[1]:
-                    st.markdown(f"- {match_label}")
+                    st.markdown(f"- {match_label}", unsafe_allow_html=True) # Allow HTML here
             else:
                 with cols[1]:
-                    st.markdown(f"- {match_label}")
+                    st.markdown(f"- {match_label}", unsafe_allow_html=True) # Allow HTML here
         
         st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
         st.markdown("### ✏️ Manage Existing Match")
@@ -574,7 +595,8 @@ with tabs[1]: # Matches Tab
         selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + match_options, key="select_match_to_edit")
         
         if selected_match_to_edit:
-            selected_id = selected_match_to_edit.split(" | ")[-1]
+            # When selecting, we still need to strip HTML to get the ID correctly
+            selected_id = selected_match_to_edit.split(" | ")[-1].replace("</span>", "").replace("<span style='font-weight:bold; color:#fff500;'>", "") # Clean up ID
             row = matches[matches["match_id"] == selected_id].iloc[0]
             idx = matches[matches["match_id"] == selected_id].index[0]
 
