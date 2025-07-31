@@ -121,12 +121,13 @@ st.markdown("""
         margin-right: 10px;
     }
     .rankings-table .stMarkdown, .rankings-table .stButton > button {
-        font-size: 8px !important;
+        font-size: 4px !important;
+        white-space: nowrap !important;
     }
     .stButton > button {
         white-space: nowrap !important;
-        min-width: 60px !important;
-        padding: 5px 10px !important;
+        min-width: 40px !important;
+        padding: 3px 6px !important;
         text-align: center !important;
     }
     </style>
@@ -244,7 +245,7 @@ with tab3:
     st.markdown('<div class="rankings-table">', unsafe_allow_html=True)
     
     # Header row
-    header_cols = st.columns([1, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2])
+    header_cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1])
     with header_cols[0]:
         st.markdown("**Rank**")
     with header_cols[1]:
@@ -268,7 +269,7 @@ with tab3:
 
     # Data rows
     for idx, row in rank_df.iterrows():
-        cols = st.columns([1, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 2])
+        cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1])
         with cols[0]:
             st.write(row["Rank"])
         with cols[1]:
