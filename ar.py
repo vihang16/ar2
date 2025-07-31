@@ -440,14 +440,18 @@ with tabs[0]: # Rankings Tab
     for index, row in rank_df.iterrows():
         # Using the new ranking-profile-image class
         profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
+        # Apply bold and optic yellow to Player Name and Points
+        player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+        points_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+
         st.markdown(f"""
         <div class="ranking-row">
             <div class="rank-profile-player-group">
                 <div class="rank-col">{row["Rank"]}</div>
                 <div class="profile-col">{profile_html}</div>
-                <div class="player-col">{row["Player"]}</div>
+                <div class="player-col">{player_styled}</div>
             </div>
-            <div class="points-col">{row["Points"]:.1f}</div>
+            <div class="points-col">{points_styled}</div>
             <div class="win-percent-col">{row["Win %"]:.1f}%</div>
             <div class="matches-col">{int(row["Matches"])}</div>
             <div class="wins-col">{int(row["Wins"])}</div>
@@ -591,12 +595,21 @@ with tabs[1]: # Matches Tab
         
         st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
         st.markdown("### ✏️ Manage Existing Match")
-        match_options = filtered_matches.apply(format_match_label, axis=1).tolist()
-        selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + match_options, key="select_match_to_edit")
+        # When presenting options for selection, we want to show clean text, not HTML
+        # So we create a separate list of display options for the selectbox
+        clean_match_options = []
+        for _, row in filtered_matches.iterrows():
+            score_plain = f"{row['set1']}, {row['set2']}" + (f", {row['set3']}" if row['set3'] else "")
+            if row["match_type"] == "Singles":
+                desc_plain = f"{row['date'].strftime('%Y-%m-%d')} | {row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['date'].strftime('%Y-%m-%d')} | {row['team2_player1']} def. {row['team1_player1']}"
+            else:
+                desc_plain = f"{row['date'].strftime('%Y-%m-%d')} | {row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['date'].strftime('%Y-%m-%d')} | {row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+            clean_match_options.append(f"{desc_plain} | {score_plain} | {row['match_id']}")
+
+        selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit")
         
         if selected_match_to_edit:
-            # When selecting, we still need to strip HTML to get the ID correctly
-            selected_id = selected_match_to_edit.split(" | ")[-1].replace("</span>", "").replace("<span style='font-weight:bold; color:#fff500;'>", "") # Clean up ID
+            selected_id = selected_match_to_edit.split(" | ")[-1]
             row = matches[matches["match_id"] == selected_id].iloc[0]
             idx = matches[matches["match_id"] == selected_id].index[0]
 
