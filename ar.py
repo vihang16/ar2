@@ -1,8 +1,3 @@
-It seems the text size in the table columns ("Rank" and "Player") didn't update as intended. I will review the CSS and make adjustments to ensure the font size changes are correctly applied.
-
-Here's the updated CSS that should correctly adjust the font size for the entire table and specifically for the "Rank" and "Player" columns. I've added a more general font size to the `.stDataFrame` class and ensured that the specific column styles override it correctly with `!important`.
-
-```python
 import streamlit as st
 import pandas as pd
 import uuid
@@ -642,4 +637,3 @@ Built with ❤️ using <a href='https://streamlit.io/' style='color: #ccff00;'>
 <a href='https://devs-scripts.streamlit.app/' style='color: #ccff00;'>Other Scripts by dev</a> on Streamlit.
 </div>
 """, unsafe_allow_html=True)
-```
