@@ -147,6 +147,10 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
     save_matches(matches)
 
+# Initialize selected_player in session state
+if 'selected_player' not in st.session_state:
+    st.session_state.selected_player = ""
+
 # Reordered tabs: Rankings, Match Records, Post Match, Player Profile, Court Locations
 tab3, tab2, tab1, tab5, tab4 = st.tabs(["Rankings", "Match Records", "Post Match", "Player Profile", "Court Locations"])
 
@@ -215,11 +219,9 @@ with tab3:
     for player in scores:
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
-        # Create a Markdown link for the player
-        player_display = f'<a href="?selected_player={player.replace(" ", "%20")}" style="color:white;text-decoration:none">{player}</a>'
         rank_data.append({
             "Player": player,
-            "PlayerDisplay": player_display,
+            "Select": player,  # Used for button to select player
             "Profile Image": profile_image,
             "Points": scores[player],
             "Win Percentage": round(win_percentage, 2),
@@ -236,36 +238,43 @@ with tab3:
     ).reset_index(drop=True)
     
     rank_df.insert(0, "Rank", [f"🏆 {i}" for i in range(1, len(rank_df) + 1)])
-    
-    st.dataframe(
-        rank_df[["Rank", "Profile Image", "PlayerDisplay", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]],
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Rank": st.column_config.TextColumn("Rank", help="Player ranking with trophy icon"),
-            "Profile Image": st.column_config.ImageColumn("Profile", width="small"),
-            "PlayerDisplay": st.column_config.TextColumn(
-                "Player",
-                help="Player name",
-                unsafe_allow_html=True
-            ),
-            "Points": st.column_config.NumberColumn("Points", format="%.1f"),
-            "Win Percentage": st.column_config.NumberColumn("Win Percentage", format="%.2f%%"),
-            "Matches Played": st.column_config.NumberColumn("Matches Played", format="%d"),
-            "Wins": st.column_config.NumberColumn("Wins", format="%d"),
-            "Losses": st.column_config.NumberColumn("Losses", format="%d"),
-            "Games Won": st.column_config.NumberColumn("Games Won", format="%d")
-        },
-        column_order=["Rank", "Profile Image", "PlayerDisplay", "Points", "Win Percentage", "Matches Played", "Wins", "Losses", "Games Won"]
-    )
+
+    # Display dataframe with a button column
+    for idx, row in rank_df.iterrows():
+        cols = st.columns([1, 2, 1, 1, 1, 1, 1, 1, 1, 1])
+        with cols[0]:
+            st.write(row["Rank"])
+        with cols[1]:
+            if row["Profile Image"]:
+                try:
+                    st.image(row["Profile Image"], width=50)
+                except Exception as e:
+                    st.write("No image")
+            else:
+                st.write("No image")
+        with cols[2]:
+            st.write(row["Player"])
+        with cols[3]:
+            st.write(f"{row['Points']:.1f}")
+        with cols[4]:
+            st.write(f"{row['Win Percentage']:.2f}%")
+        with cols[5]:
+            st.write(f"{int(row['Matches Played'])}")
+        with cols[6]:
+            st.write(f"{int(row['Wins'])}")
+        with cols[7]:
+            st.write(f"{int(row['Losses'])}")
+        with cols[8]:
+            st.write(f"{int(row['Games Won'])}")
+        with cols[9]:
+            if st.button("Select", key=f"select_{row['Player']}_{idx}"):
+                st.session_state.selected_player = row["Player"]
+                st.rerun()
 
     # Player Insights
     st.subheader("Player Insights")
-    # Check for query parameter to pre-select player
-    query_params = st.query_params
-    default_player = query_params.get("selected_player", [""])[0]
-    if default_player not in players:
-        default_player = ""
+    # Use session state to pre-select player
+    default_player = st.session_state.selected_player if st.session_state.selected_player in players else ""
     selected = st.selectbox("Select a player", players, index=players.index(default_player) if default_player in players else 0, key="insights_player")
     if selected:
         def get_player_trend(player, matches, max_matches=5):
