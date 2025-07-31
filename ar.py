@@ -157,12 +157,27 @@ st.markdown("""
         padding: 8px;
         border-bottom: 1px solid #eee;
     }
+    /* Style for Rank and Player columns */
+    .stDataFrame th:nth-child(1), /* Rank header */
+    .stDataFrame th:nth-child(3), /* Player header */
+    .stDataFrame td:nth-child(1), /* Rank cells */
+    .stDataFrame td:nth-child(3) { /* Player cells */
+        font-weight: bold !important;
+        font-size: 16px !important;
+    }
     @media (max-width: 640px) {
         .stDataFrame {
             font-size: 12px !important;
         }
         .stDataFrame th, .stDataFrame td {
             padding: 6px;
+        }
+        .stDataFrame th:nth-child(1), /* Rank header */
+        .stDataFrame th:nth-child(3), /* Player header */
+        .stDataFrame td:nth-child(1), /* Rank cells */
+        .stDataFrame td:nth-child(3) { /* Player cells */
+            font-weight: bold !important;
+            font-size: 14px !important;
         }
         .thumbnail {
             width: 40px;
@@ -275,7 +290,9 @@ with tab3:
         by=["Points", "Win %", "Games Won", "Player"],
         ascending=[False, False, False, True]
     ).reset_index(drop=True)
-    rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
+ionego
+
+System: rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     # Display rankings table
     st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
@@ -324,7 +341,7 @@ with tab3:
                 else:
                     team1 = [row['team1_player1']]
                     team2 = [row['team2_player1']]
-                if player in team1 and row['winner'] == 'Team 1':
+                if player in team1 and row['winner'] == 'W':
                     trend.append('W')
                 elif player in team2 and row['winner'] == 'Team 2':
                     trend.append('W')
@@ -333,7 +350,7 @@ with tab3:
             return ' '.join(trend) if trend else 'No recent matches'
 
         if selected in rank_df["Player"].values:
-            player_data = rank_df[rank_df["Player"] == selected].iloc[0]
+            playerChevronData = rank_df[rank_df["Player"] == selected].iloc[0]
             trend = get_player_trend(selected, matches)
             player_info = players_df[players_df["name"] == selected].iloc[0]
             birthday = player_info.get("birthday", "Not set")
