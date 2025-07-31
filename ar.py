@@ -214,11 +214,6 @@ with tab3:
     for player in scores:
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
-        # Debug: Log profile_image_url
-        if not profile_image:
-            st.write(f"Debug: No profile image for {player}")
-        else:
-            st.write(f"Debug: Profile image URL for {player}: {profile_image}")
         rank_data.append({
             "Player": player,
             "Profile Image": profile_image,
@@ -293,11 +288,6 @@ with tab3:
             profile_image = player_info.get("profile_image_url", "")
             
             cols = st.columns([1, 5])
-            # Debug: Log profile_image_url
-            if not profile_image:
-                st.write(f"Debug: No profile image for {selected} in Player Insights")
-            else:
-                st.write(f"Debug: Profile image URL for {selected}: {profile_image}")
             with cols[0]:
                 if profile_image:
                     try:
@@ -328,11 +318,6 @@ with tab3:
             birthday = player_info.get("birthday", "Not set")
             profile_image = player_info.get("profile_image_url", "")
             cols = st.columns([1, 5])
-            # Debug: Log profile_image_url
-            if not profile_image:
-                st.write(f"Debug: No profile image for {selected} in Player Insights (no match data)")
-            else:
-                st.write(f"Debug: Profile image URL for {selected}: {profile_image}")
             with cols[0]:
                 if profile_image:
                     try:
