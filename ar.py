@@ -400,53 +400,63 @@ with tab2:
 with tab1:
     st.header("Enter Match Result")
     match_type = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True)
-    available_players = players.copy()
+    available_players = players.copy() if players else []
 
-    if match_type == "Doubles":
-        p1 = st.selectbox("Team 1 - Player 1", available_players, key="t1p1")
-        available_players.remove(p1)
-        p2 = st.selectbox("Team 1 - Player 2", available_players, key="t1p2")
-        available_players.remove(p2)
-        p3 = st.selectbox("Team 2 - Player 1", available_players, key="t2p1")
-        available_players.remove(p3)
-        p4 = st.selectbox("Team 2 - Player 2", available_players, key="t2p2")
+    if not available_players:
+        st.warning("No players available. Please add players in the sidebar.")
     else:
-        p1 = st.selectbox("Player 1", available_players, key="s1p1")
-        available_players.remove(p1)
-        p3 = st.selectbox("Player 2", available_players, key="s1p2")
-        p2 = ""
-        p4 = ""
+        if match_type == "Doubles":
+            # Create a fresh copy for each selectbox to avoid modifying the same list
+            p1 = st.selectbox("Team 1 - Player 1", [""] + available_players, key="t1p1")
+            available_players_t1p2 = [p for p in available_players if p != p1] if p1 else available_players
+            p2 = st.selectbox("Team 1 - Player 2", [""] + available_players_t1p2, key="t1p2")
+            available_players_t2p1 = [p for p in available_players_t1p2 if p != p2] if p2 else available_players_t1p2
+            p3 = st.selectbox("Team 2 - Player 1", [""] + available_players_t2p1, key="t2p1")
+            available_players_t2p2 = [p for p in available_players_t2p1 if p != p3] if p3 else available_players_t2p1
+            p4 = st.selectbox("Team 2 - Player 2", [""] + available_players_t2p2, key="t2p2")
+        else:
+            p1 = st.selectbox("Player 1", [""] + available_players, key="s1p1")
+            available_players_p2 = [p for p in available_players if p != p1] if p1 else available_players
+            p3 = st.selectbox("Player 2", [""] + available_players_p2, key="s1p2")
+            p2 = ""
+            p4 = ""
 
-    set1 = st.selectbox("Set 1", tennis_scores(), index=4)
-    set2 = st.selectbox("Set 2", tennis_scores(), index=4)
-    set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores())
-    winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"])
-    match_image = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png"])
+        set1 = st.selectbox("Set 1", tennis_scores(), index=4)
+        set2 = st.selectbox("Set 2", tennis_scores(), index=4)
+        set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores())
+        winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"])
+        match_image = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png"])
 
-    if st.button("Submit Match"):
-        match_id = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
-        image_url = ""
-        if match_image:
-            image_url = upload_image_to_supabase(match_image, match_id)
-        
-        new_match = {
-            "match_id": match_id,
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "match_type": match_type,
-            "team1_player1": p1,
-            "team1_player2": p2,
-            "team2_player1": p3,
-            "team2_player2": p4,
-            "set1": set1,
-            "set2": set2,
-            "set3": set3,
-            "winner": winner,
-            "match_image_url": image_url
-        }
-        matches = pd.concat([matches, pd.DataFrame([new_match])], ignore_index=True)
-        save_matches(matches)
-        st.success("Match submitted.")
-        st.rerun()
+        if st.button("Submit Match"):
+            # Validate player selections
+            if match_type == "Doubles" and not all([p1, p2, p3, p4]):
+                st.error("Please select all four players for a doubles match.")
+            elif match_type == "Singles" and not all([p1, p3]):
+                st.error("Please select both players for a singles match.")
+            else:
+                match_id = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+                image_url = ""
+                if match_image:
+                    image_url = upload_image_to_supabase(match_image, match_id)
+                
+                new_match = {
+                    "match_id": match_id,
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "match_type": match_type,
+                    "team1_player1": p1,
+                    "team1_player2": p2,
+                    "team2_player1": p3,
+                    "team2_player2": p4,
+                    "set1": set1,
+                    "set2": set2,
+                    "set3": set3,
+                    "winner": winner,
+                    "match_image_url": image_url
+                }
+                matches = pd.concat([matches, pd.DataFrame([new_match])], ignore_index=True)
+                save_matches(matches)
+                st.success("Match submitted.")
+                st.rerun()
 
 # ----- COURT LOCATIONS -----
 with tab4:
