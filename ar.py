@@ -130,6 +130,16 @@ st.markdown("""
         padding: 3px 6px !important;
         text-align: center !important;
     }
+    .rankings-table-header .stMarkdown {
+        font-size: 4px !important;
+        white-space: nowrap !important;
+        font-weight: bold;
+    }
+    .rankings-table-scroll {
+        max-height: 400px;
+        overflow-y: auto;
+        width: 100%;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -245,6 +255,7 @@ with tab3:
     st.markdown('<div class="rankings-table">', unsafe_allow_html=True)
     
     # Header row
+    st.markdown('<div class="rankings-table-header">', unsafe_allow_html=True)
     header_cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1])
     with header_cols[0]:
         st.markdown("**Rank**")
@@ -266,8 +277,10 @@ with tab3:
         st.markdown("**Games Won**")
     with header_cols[9]:
         st.markdown("**Select**")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # Data rows
+    # Scrollable data rows
+    st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
     for idx, row in rank_df.iterrows():
         cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1])
         with cols[0]:
@@ -298,6 +311,7 @@ with tab3:
             if st.button("View", key=f"view_{row['Player']}_{idx}"):
                 st.session_state.selected_player = row["Player"]
                 st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
