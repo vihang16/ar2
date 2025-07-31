@@ -133,16 +133,6 @@ st.markdown("""
         overflow-y: auto;
         width: 100%;
     }
-    .stRadio > label > div > input + div {
-        width: 12px !important;
-        height: 12px !important;
-        min-width: 12px !important;
-        min-height: 12px !important;
-        border-radius: 50%;
-    }
-    .stRadio > label > div > input + div > p {
-        display: none !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -162,17 +152,11 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
     save_matches(matches)
 
-# Initialize selected_player in session state
-if 'selected_player' not in st.session_state:
-    st.session_state.selected_player = ""
-
 # Reordered tabs: Rankings, Match Records, Post Match, Player Profile, Court Locations
 tab3, tab2, tab1, tab5, tab4 = st.tabs(["Rankings", "Match Records", "Post Match", "Player Profile", "Court Locations"])
 
 # ----- RANKINGS -----
 with tab3:
-    st.header("Player Rankings")
-    
     scores = defaultdict(float)
     wins = defaultdict(int)
     losses = defaultdict(int)
@@ -258,7 +242,7 @@ with tab3:
     
     # Header row
     st.markdown('<div class="rankings-table-header">', unsafe_allow_html=True)
-    header_cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 0.5])
+    header_cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5])
     with header_cols[0]:
         st.markdown("**Rank**")
     with header_cols[1]:
@@ -277,11 +261,9 @@ with tab3:
         st.markdown("**Losses**")
     with header_cols[8]:
         st.markdown("**Games Won**")
-    with header_cols[9]:
-        st.markdown("**Select**")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Scrollable dataframe and radio buttons
+    # Scrollable dataframe
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
     display_df = rank_df.copy()
     display_df["Profile"] = display_df["Profile"].apply(lambda x: x if x else "No image")
@@ -302,22 +284,12 @@ with tab3:
         height=400,
         use_container_width=True
     )
-
-    # Add radio buttons for selection
-    for idx, row in rank_df.iterrows():
-        cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 0.5])
-        with cols[9]:
-            if st.radio("", [""], key=f"select_{row['Player']}_{idx}", index=0 if st.session_state.selected_player != row["Player"] else None):
-                st.session_state.selected_player = row["Player"]
-                st.rerun()
-
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Player Insights
     st.subheader("Player Insights")
-    default_player = st.session_state.selected_player if st.session_state.selected_player in players else ""
-    selected = st.selectbox("Select a player", players, index=players.index(default_player) if default_player in players else 0, key="insights_player")
+    selected = st.selectbox("Select a player", [""] + players, index=0, key="insights_player")
     if selected:
         def get_player_trend(player, matches, max_matches=5):
             player_matches = matches[
@@ -521,7 +493,7 @@ with tab1:
                     image_url = upload_image_to_supabase(match_image, match_id, image_type="match")
                 
                 new_match = {
-                    "match_id": rank_id,
+                    "match_id": match_id,
                     "date": datetime.now().strftime("%Y-%m-%d"),
                     "match_type": match_type,
                     "team1_player1": p1,
