@@ -120,25 +120,28 @@ st.markdown("""
         border-radius: 50%;
         margin-right: 10px;
     }
-    .rankings-table .stMarkdown, .rankings-table .stButton > button {
-        font-size: 4px !important;
-        white-space: nowrap !important;
-    }
-    .stButton > button {
-        white-space: nowrap !important;
-        min-width: 40px !important;
-        padding: 3px 6px !important;
-        text-align: center !important;
-    }
     .rankings-table-header .stMarkdown {
-        font-size: 4px !important;
-        white-space: nowrap !important;
+        font-size: 10px !important;
         font-weight: bold;
+        text-align: center;
+    }
+    .rankings-table-dataframe {
+        font-size: 10px !important;
     }
     .rankings-table-scroll {
         max-height: 400px;
         overflow-y: auto;
         width: 100%;
+    }
+    .stRadio > label > div > input + div {
+        width: 12px !important;
+        height: 12px !important;
+        min-width: 12px !important;
+        min-height: 12px !important;
+        border-radius: 50%;
+    }
+    .stRadio > label > div > input + div > p {
+        display: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -232,31 +235,31 @@ with tab3:
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
         rank_data.append({
+            "Rank": f"🏆 {len(rank_data) + 1}",
+            "Profile": profile_image,
             "Player": player,
-            "Select": player,
-            "Profile Image": profile_image,
             "Points": scores[player],
-            "Win Percentage": round(win_percentage, 2),
-            "Matches Played": matches_played[player],
+            "Win %": round(win_percentage, 2),
+            "Matches": matches_played[player],
             "Wins": wins[player],
             "Losses": losses[player],
-            "Games Won": games_won[player]
+            "Games Won": games_won[player],
+            "Select": player
         })
 
     rank_df = pd.DataFrame(rank_data)
     rank_df = rank_df.sort_values(
-        by=["Points", "Win Percentage", "Games Won", "Player"],
+        by=["Points", "Win %", "Games Won", "Player"],
         ascending=[False, False, False, True]
     ).reset_index(drop=True)
-    
-    rank_df.insert(0, "Rank", [f"🏆 {i}" for i in range(1, len(rank_df) + 1)])
+    rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     # Display rankings table with headers
     st.markdown('<div class="rankings-table">', unsafe_allow_html=True)
     
     # Header row
     st.markdown('<div class="rankings-table-header">', unsafe_allow_html=True)
-    header_cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1])
+    header_cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 0.5])
     with header_cols[0]:
         st.markdown("**Rank**")
     with header_cols[1]:
@@ -279,40 +282,42 @@ with tab3:
         st.markdown("**Select**")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Scrollable data rows
+    # Scrollable dataframe
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
-    for idx, row in rank_df.iterrows():
-        cols = st.columns([2, 2, 3, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1])
-        with cols[0]:
-            st.write(row["Rank"])
-        with cols[1]:
-            if row["Profile Image"]:
-                try:
-                    st.image(row["Profile Image"], width=50)
-                except Exception as e:
-                    st.write("No image")
-            else:
-                st.write("No image")
-        with cols[2]:
-            st.write(row["Player"])
-        with cols[3]:
-            st.write(f"{row['Points']:.1f}")
-        with cols[4]:
-            st.write(f"{row['Win Percentage']:.2f}%")
-        with cols[5]:
-            st.write(f"{int(row['Matches Played'])}")
-        with cols[6]:
-            st.write(f"{int(row['Wins'])}")
-        with cols[7]:
-            st.write(f"{int(row['Losses'])}")
-        with cols[8]:
-            st.write(f"{int(row['Games Won'])}")
-        with cols[9]:
-            if st.button("View", key=f"view_{row['Player']}_{idx}"):
-                st.session_state.selected_player = row["Player"]
-                st.rerun()
+    display_df = rank_df.copy()
+    display_df["Profile"] = display_df["Profile"].apply(lambda x: x if x else "No image")
+    display_df["Select"] = [f"select_{row['Player']}_{idx}" for idx, row in display_df.iterrows()]
+
+    st.dataframe(
+        display_df,
+        column_config={
+            "Rank": st.column_config.TextColumn(width=80),
+            "Profile": st.column_config.ImageColumn(width=60),
+            "Player": st.column_config.TextColumn(width=100),
+            "Points": st.column_config.NumberColumn(width=40, format="%.1f"),
+            "Win %": st.column_config.NumberColumn(width=40, format="%.2f%%"),
+            "Matches": st.column_config.NumberColumn(width=40, format="%d"),
+            "Wins": st.column_config.NumberColumn(width=40, format="%d"),
+            "Losses": st.column_config.NumberColumn(width=40, format="%d"),
+            "Games Won": st.column_config.NumberColumn(width=40, format="%d"),
+            "Select": st.column_config.RadioColumn(
+                width=20,
+                options=[""],
+                default=""
+            )
+        },
+        height=400,
+        use_container_width=True
+    )
+
+    # Handle radio button selection
+    for idx, row in display_df.iterrows():
+        if st.session_state.get(f"select_{row['Player']}_{idx}") == "":
+            st.session_state.selected_player = row["Player"]
+            st.rerun()
+            break
+
     st.markdown('</div>', unsafe_allow_html=True)
-    
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Player Insights
@@ -365,8 +370,8 @@ with tab3:
                 st.markdown(f"""
                     **Rank**: {player_data["Rank"]}  
                     **Points**: {player_data["Points"]}  
-                    **Win Percentage**: {player_data["Win Percentage"]}%  
-                    **Matches Played**: {int(player_data["Matches Played"])}  
+                    **Win Percentage**: {player_data["Win %"]}%  
+                    **Matches Played**: {int(player_data["Matches"])}  
                     **Wins**: {int(player_data["Wins"])}  
                     **Losses**: {int(player_data["Losses"])}  
                     **Games Won**: {int(player_data["Games Won"])}  
