@@ -1,3 +1,8 @@
+It seems the text size in the table columns ("Rank" and "Player") didn't update as intended. I will review the CSS and make adjustments to ensure the font size changes are correctly applied.
+
+Here's the updated CSS that should correctly adjust the font size for the entire table and specifically for the "Rank" and "Player" columns. I've added a more general font size to the `.stDataFrame` class and ensured that the specific column styles override it correctly with `!important`.
+
+```python
 import streamlit as st
 import pandas as pd
 import uuid
@@ -59,18 +64,6 @@ def save_matches(df):
 def upload_image_to_supabase(file, file_name, image_type="match"):
     try:
         bucket = "profile" if image_type == "profile" else "ar"
-        
-        # This part of the code was causing issues in some environments.
-        # It's primarily for debugging and ensuring bucket existence.
-        # In a stable environment, you might remove this or handle it more gracefully.
-        # try:
-        #     buckets = supabase.storage.list_buckets()
-        #     bucket_names = [b["name"] for b in buckets]
-        #     if bucket not in bucket_names:
-        #         st.error(f"Storage bucket '{bucket}' does not exist. Please create it in Supabase Storage.")
-        #         return ""
-        # except Exception as e:
-        #     st.warning(f"Failed to list buckets: {str(e)}. Proceeding with upload to '{bucket}' as it worked for match images.")
         
         file_path = f"2ep_1/{file_name}" if image_type == "match" else file_name
         
@@ -134,7 +127,7 @@ st.markdown("""
     }
     .stDataFrame {
         width: 100%;
-        font-size: 14px !important;
+        font-size: 1.2em !important; /* Increased base font size for the whole table */
         margin: 0 !important;
     }
     .stDataFrame table {
@@ -150,6 +143,7 @@ st.markdown("""
         position: sticky;
         top: 0;
         z-index: 1;
+        font-size: 1.2em !important; /* Ensure headers also get increased size */
     }
     .stDataFrame td {
         padding: 8px;
@@ -161,11 +155,11 @@ st.markdown("""
     .stDataFrame td:nth-child(1), /* Rank cells */
     .stDataFrame td:nth-child(3) { /* Player cells */
         font-weight: bold !important;
-        font-size: 1.5em !important; /* Increased font size for Rank and Player */
+        font-size: 1.5em !important; /* Increased font size for Rank and Player, 1.5 times the parent */
     }
     @media (max-width: 640px) {
         .stDataFrame {
-            font-size: 12px !important;
+            font-size: 1em !important; /* Adjusted base font size for smaller screens */
         }
         .stDataFrame th, .stDataFrame td {
             padding: 6px;
@@ -175,7 +169,7 @@ st.markdown("""
         .stDataFrame td:nth-child(1), /* Rank cells */
         .stDataFrame td:nth-child(3) { /* Player cells */
             font-weight: bold !important;
-            font-size: 1.2em !important; /* Adjusted for smaller screens */
+            font-size: 1.2em !important; /* Adjusted for smaller screens (1.2 times the new base) */
         }
         .thumbnail {
             width: 40px;
@@ -648,3 +642,4 @@ Built with ❤️ using <a href='https://streamlit.io/' style='color: #ccff00;'>
 <a href='https://devs-scripts.streamlit.app/' style='color: #ccff00;'>Other Scripts by dev</a> on Streamlit.
 </div>
 """, unsafe_allow_html=True)
+```
