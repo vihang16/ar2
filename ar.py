@@ -252,9 +252,6 @@ st.markdown("""
         width: auto; /* Shrink to fit content */
         margin-right: 10px;
     }
-    .rank-profile-player-group .player-col {
-        flex-grow: 1; /* Take remaining space */
-    }
     .rank-profile-player-group .profile-col {
          width: auto; /* Adjust to content */
          margin-right: 10px;
@@ -291,6 +288,40 @@ st.markdown("""
         padding-top: 0 !important;
     }
 
+    /* Custom styles for tab buttons */
+    .stButton > button {
+        width: 100%; /* Make buttons fill their column */
+        border: 1px solid #ddd;
+        background-color: #f0f0f0;
+        color: #333;
+        padding: 10px 0;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    .stButton > button:hover {
+        background-color: #e0e0e0;
+    }
+
+    .stButton > button.active-tab {
+        background-color: #007bff; /* Active tab color */
+        color: white;
+        border-color: #007bff;
+    }
+
+    /* Adjust Streamlit's default container padding if necessary */
+    .st-emotion-cache-z5fcl4 { /* This is a common class for main container padding */
+        padding-top: 1rem;
+        padding-right: 1rem;
+        padding-bottom: 1rem;
+        padding-left: 1rem;
+    }
+
     </style>
 """, unsafe_allow_html=True)
 
@@ -310,11 +341,51 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
     save_matches(matches)
 
-# Reordered tabs: Rankings, Match Records, Post Match, Player Profile, Court Locations
-tab3, tab2, tab1, tab5, tab4 = st.tabs(["Rankings", "Match Records", "Post Match", "Player Profile", "Court Locations"])
+# --- Manual Tab Implementation ---
+tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations"]
 
-# ----- RANKINGS -----
-with tab3:
+if 'current_tab' not in st.session_state:
+    st.session_state.current_tab = "Rankings" # Default tab
+
+# Create columns for tabs (e.g., 3 tabs per row, then 2 tabs per row for the rest)
+col1, col2, col3 = st.columns(3)
+col4, col5 = st.columns(2) # Remaining tabs in a second row
+
+with col1:
+    if st.button("Rankings", key="tab_rankings"):
+        st.session_state.current_tab = "Rankings"
+with col2:
+    if st.button("Matches", key="tab_matches"):
+        st.session_state.current_tab = "Matches"
+with col3:
+    if st.button("Player Profile", key="tab_player_profile"):
+        st.session_state.current_tab = "Player Profile"
+with col4:
+    if st.button("Court Locations", key="tab_court_locations"):
+        st.session_state.current_tab = "Court Locations"
+# Add an empty column if needed to balance the layout for 4 tabs
+with col5:
+    pass
+
+
+# Add CSS to highlight the active tab button
+st.markdown(f"""
+<script>
+    var buttons = window.parent.document.querySelectorAll('.stButton > button');
+    buttons.forEach(function(button) {{
+        button.classList.remove('active-tab');
+    }});
+    var activeTabButton = window.parent.document.querySelector('[key="tab_{st.session_state.current_tab.lower().replace(" ", "_")}"] > button');
+    if (activeTabButton) {{
+        activeTabButton.classList.add('active-tab');
+    }}
+</script>
+""", unsafe_allow_html=True)
+
+
+# --- Content for each tab ---
+if st.session_state.current_tab == "Rankings":
+    # ----- RANKINGS -----
     scores = defaultdict(float)
     wins = defaultdict(int)
     losses = defaultdict(int)
@@ -444,20 +515,89 @@ with tab3:
     selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings")
     display_player_insights(selected_player_rankings, players_df, matches, rank_df, partner_wins, key_prefix="rankings_")
 
-# ----- MATCH RECORDS -----
-with tab2:
-    st.header("Match History")
-    match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True)
+elif st.session_state.current_tab == "Matches":
+    # ----- MATCHES (formerly Match Records and Post Match) -----
+    st.header("Matches")
+
+    # Post Match functionality within an expander
+    with st.expander("➕ Post New Match Result"):
+        st.subheader("Enter Match Result")
+        match_type_new = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key="post_match_type_new")
+        available_players = players.copy() if players else []
+
+        if not available_players:
+            st.warning("No players available. Please add players in the Player Profile tab.")
+        else:
+            if match_type_new == "Doubles":
+                p1_new = st.selectbox("Team 1 - Player 1", [""] + available_players, key="t1p1_new_post")
+                available_players_t1p2_new = [p for p in available_players if p != p1_new] if p1_new else available_players
+                p2_new = st.selectbox("Team 1 - Player 2", [""] + available_players_t1p2_new, key="t1p2_new_post")
+                available_players_t2p1_new = [p for p in available_players_t1p2_new if p != p2_new] if p2_new else available_players_t1p2_new
+                p3_new = st.selectbox("Team 2 - Player 1", [""] + available_players_t2p1_new, key="t2p1_new_post")
+                available_players_t2p2_new = [p for p in available_players_t1p2_new if p != p3_new] if p3_new else available_players_t1p2_new
+                p4_new = st.selectbox("Team 2 - Player 2", [""] + available_players_t2p2_new, key="t2p2_new_post")
+            else:
+                p1_new = st.selectbox("Player 1", [""] + available_players, key="s1p1_new_post")
+                available_players_p2_new = [p for p in available_players if p != p1_new] if p1_new else available_players
+                p3_new = st.selectbox("Player 2", [""] + available_players_p2_new, key="s1p2_new_post")
+                p2_new = ""
+                p4_new = ""
+
+            set1_new = st.selectbox("Set 1", tennis_scores(), index=4, key="set1_new_post")
+            set2_new = st.selectbox("Set 2", tennis_scores(), index=4, key="set2_new_post")
+            set3_new = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), key="set3_new_post")
+            winner_new = st.radio("Winner", ["Team 1", "Team 2", "Tie"], key="winner_new_post")
+            match_image_new = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key="match_image_new_post")
+
+            if st.button("Submit Match", key="submit_new_match_post"):
+                if match_type_new == "Doubles" and not all([p1_new, p2_new, p3_new, p4_new]):
+                    st.error("Please select all four players for a doubles match.")
+                elif match_type_new == "Singles" and not all([p1_new, p3_new]):
+                    st.error("Please select both players for a singles match.")
+                else:
+                    match_id_new = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+                    image_url_new = ""
+                    if match_image_new:
+                        image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image_type="match")
+                    
+                    new_match_entry = {
+                        "match_id": match_id_new,
+                        "date": datetime.now().strftime("%Y-%m-%d"),
+                        "match_type": match_type_new,
+                        "team1_player1": p1_new,
+                        "team1_player2": p2_new,
+                        "team2_player1": p3_new,
+                        "team2_player2": p4_new,
+                        "set1": set1_new,
+                        "set2": set2_new,
+                        "set3": set3_new,
+                        "winner": winner_new,
+                        "match_image_url": image_url_new
+                    }
+                    matches = pd.concat([matches, pd.DataFrame([new_match_entry])], ignore_index=True)
+                    save_matches(matches)
+                    st.success("Match submitted.")
+                    st.rerun()
+
+    st.markdown("---") # Separator between post match and history
+
+    st.subheader("Match History")
+    match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True, key="match_history_filter")
+    
     filtered_matches = matches.copy()
     if match_filter != "All":
         filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
 
+    # Sort matches by date, newest first
+    filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
+    filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
+
     def format_match_label(row):
         score = f"{row['set1']}, {row['set2']}" + (f", {row['set3']}" if row['set3'] else "")
         if row["match_type"] == "Singles":
-            desc = f"{row['date']} | {row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['date']} | {row['team2_player1']} def. {row['team1_player1']}"
+            desc = f"{row['date'].strftime('%Y-%m-%d')} | {row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['date'].strftime('%Y-%m-%d')} | {row['team2_player1']} def. {row['team1_player1']}"
         else:
-            desc = f"{row['date']} | {row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['date']} | {row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+            desc = f"{row['date'].strftime('%Y-%m-%d')} | {row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['date'].strftime('%Y-%m-%d')} | {row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         return f"{desc} | {score} | {row['match_id']}"
 
     if filtered_matches.empty:
@@ -480,7 +620,7 @@ with tab2:
                     st.markdown(f"- {match_label}")
         
         st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
-        st.markdown("### ✏️ Manage Match")
+        st.markdown("### ✏️ Manage Existing Match")
         match_options = filtered_matches.apply(format_match_label, axis=1).tolist()
         selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + match_options, key="select_match_to_edit")
         
@@ -490,35 +630,35 @@ with tab2:
             idx = matches[matches["match_id"] == selected_id].index[0]
 
             with st.expander("Edit Match Details"):
-                match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
-                p1 = st.text_input("Team 1 - Player 1", value=row["team1_player1"], key=f"edit_t1p1_{selected_id}")
-                p2 = st.text_input("Team 1 - Player 2", value=row["team1_player2"], key=f"edit_t1p2_{selected_id}")
-                p3 = st.text_input("Team 2 - Player 1", value=row["team2_player1"], key=f"edit_t2p1_{selected_id}")
-                p4 = st.text_input("Team 2 - Player 2", value=row["team2_player2"], key=f"edit_t2p2_{selected_id}")
-                set1 = st.text_input("Set 1", value=row["set1"], key=f"edit_set1_{selected_id}")
-                set2 = st.text_input("Set 2", value=row["set2"], key=f"edit_set2_{selected_id}")
-                set3 = st.text_input("Set 3", value=row["set3"], key=f"edit_set3_{selected_id}")
-                winner = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
-                match_image = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
+                match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
+                p1_edit = st.text_input("Team 1 - Player 1", value=row["team1_player1"], key=f"edit_t1p1_{selected_id}")
+                p2_edit = st.text_input("Team 1 - Player 2", value=row["team1_player2"], key=f"edit_t1p2_{selected_id}")
+                p3_edit = st.text_input("Team 2 - Player 1", value=row["team2_player1"], key=f"edit_t2p1_{selected_id}")
+                p4_edit = st.text_input("Team 2 - Player 2", value=row["team2_player2"], key=f"edit_t2p2_{selected_id}")
+                set1_edit = st.text_input("Set 1", value=row["set1"], key=f"edit_set1_{selected_id}")
+                set2_edit = st.text_input("Set 2", value=row["set2"], key=f"edit_set2_{selected_id}")
+                set3_edit = st.text_input("Set 3", value=row["set3"], key=f"edit_set3_{selected_id}")
+                winner_edit = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
+                match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
 
                 if st.button("Save Changes", key=f"save_match_changes_{selected_id}"):
-                    image_url = row["match_image_url"]
-                    if match_image:
-                        image_url = upload_image_to_supabase(match_image, selected_id, image_type="match")
+                    image_url_edit = row["match_image_url"]
+                    if match_image_edit:
+                        image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
                     
                     matches.loc[idx] = {
                         "match_id": selected_id,
-                        "date": row["date"],
-                        "match_type": match_type,
-                        "team1_player1": p1,
-                        "team1_player2": p2,
-                        "team2_player1": p3,
-                        "team2_player2": p4,
-                        "set1": set1,
-                        "set2": set2,
-                        "set3": set3,
-                        "winner": winner,
-                        "match_image_url": image_url
+                        "date": row["date"], # Date should not be changed here
+                        "match_type": match_type_edit,
+                        "team1_player1": p1_edit,
+                        "team1_player2": p2_edit,
+                        "team2_player1": p3_edit,
+                        "team2_player2": p4_edit,
+                        "set1": set1_edit,
+                        "set2": set2_edit,
+                        "set3": set3_edit,
+                        "winner": winner_edit,
+                        "match_image_url": image_url_edit
                     }
                     save_matches(matches)
                     st.success("Match updated.")
@@ -530,68 +670,8 @@ with tab2:
                 st.success("Match deleted.")
                 st.rerun()
 
-# ----- POST MATCH -----
-with tab1:
-    st.header("Enter Match Result")
-    match_type = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key="post_match_type")
-    available_players = players.copy() if players else []
-
-    if not available_players:
-        st.warning("No players available. Please add players in the Player Profile tab.")
-    else:
-        if match_type == "Doubles":
-            p1 = st.selectbox("Team 1 - Player 1", [""] + available_players, key="t1p1_new")
-            available_players_t1p2 = [p for p in available_players if p != p1] if p1 else available_players
-            p2 = st.selectbox("Team 1 - Player 2", [""] + available_players_t1p2, key="t1p2_new")
-            available_players_t2p1 = [p for p in available_players_t1p2 if p != p2] if p2 else available_players_t1p2
-            p3 = st.selectbox("Team 2 - Player 1", [""] + available_players_t2p1, key="t2p1_new")
-            available_players_t2p2 = [p for p in available_players_t1p2 if p != p3] if p3 else available_players_t1p2
-            p4 = st.selectbox("Team 2 - Player 2", [""] + available_players_t2p2, key="t2p2_new")
-        else:
-            p1 = st.selectbox("Player 1", [""] + available_players, key="s1p1_new")
-            available_players_p2 = [p for p in available_players if p != p1] if p1 else available_players
-            p3 = st.selectbox("Player 2", [""] + available_players_p2, key="s1p2_new")
-            p2 = ""
-            p4 = ""
-
-        set1 = st.selectbox("Set 1", tennis_scores(), index=4, key="set1_new")
-        set2 = st.selectbox("Set 2", tennis_scores(), index=4, key="set2_new")
-        set3 = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), key="set3_new")
-        winner = st.radio("Winner", ["Team 1", "Team 2", "Tie"], key="winner_new")
-        match_image = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key="match_image_new")
-
-        if st.button("Submit Match", key="submit_new_match"):
-            if match_type == "Doubles" and not all([p1, p2, p3, p4]):
-                st.error("Please select all four players for a doubles match.")
-            elif match_type == "Singles" and not all([p1, p3]):
-                st.error("Please select both players for a singles match.")
-            else:
-                match_id = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
-                image_url = ""
-                if match_image:
-                    image_url = upload_image_to_supabase(match_image, match_id, image_type="match")
-                
-                new_match = {
-                    "match_id": match_id,
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "match_type": match_type,
-                    "team1_player1": p1,
-                    "team1_player2": p2,
-                    "team2_player1": p3,
-                    "team2_player2": p4,
-                    "set1": set1,
-                    "set2": set2,
-                    "set3": set3,
-                    "winner": winner,
-                    "match_image_url": image_url
-                }
-                matches = pd.concat([matches, pd.DataFrame([new_match])], ignore_index=True)
-                save_matches(matches)
-                st.success("Match submitted.")
-                st.rerun()
-
-# ----- PLAYER PROFILE -----
-with tab5:
+elif st.session_state.current_tab == "Player Profile":
+    # ----- PLAYER PROFILE -----
     st.header("Player Profile")
 
     # Player Insights for Player Profile Tab (moved to top)
@@ -677,8 +757,8 @@ with tab5:
                     st.success(f"{selected_player_manage} removed.")
                     st.rerun()
 
-# ----- COURT LOCATIONS -----
-with tab4:
+elif st.session_state.current_tab == "Court Locations":
+    # ----- COURT LOCATIONS -----
     st.header("Court Locations")
     st.markdown("### Arabian Ranches Tennis Courts")
     st.markdown("- [Alvorado 1 & 2](https://maps.google.com/?q=25.041792,55.259258)")
