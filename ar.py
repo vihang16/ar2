@@ -54,14 +54,18 @@ def save_matches(df):
 def upload_image_to_supabase(file, match_id):
     try:
         file_path = f"match_images/{match_id}_{file.name}"
+        # Upload the file to Supabase storage
         response = supabase.storage.from_("ar").upload(
             file_path, 
             file.read(), 
             {"content-type": file.type}
         )
-        if response.status_code >= 400:
-            st.error(f"Failed to upload image: {response.json()}")
+        # Check if the upload was successful
+        if response is None or isinstance(response, dict) and "error" in response:
+            error_message = response.get("error", "Unknown error") if isinstance(response, dict) else "Upload failed"
+            st.error(f"Failed to upload image: {error_message}")
             return ""
+        # Get the public URL for the uploaded file
         public_url = supabase.storage.from_("ar").get_public_url(file_path)
         return public_url
     except Exception as e:
