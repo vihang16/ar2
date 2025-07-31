@@ -121,12 +121,18 @@ st.markdown("""
         margin-right: 10px;
     }
     .rankings-table-dataframe {
-        font-size: 10px !important;
+        font-size: 12px !important;
     }
     .rankings-table-scroll {
         max-height: 400px;
         overflow-y: auto;
         width: 100%;
+    }
+    .stDataFrame table, .stDataFrame td, .stDataFrame th {
+        border: none !important;
+    }
+    .stDataFrame td:nth-child(1), .stDataFrame td:nth-child(3) {
+        font-weight: bold;
     }
     </style>
 """, unsafe_allow_html=True)
