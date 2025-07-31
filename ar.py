@@ -404,7 +404,7 @@ with st.sidebar:
                 st.success(f"{new_player} added.")
                 st.rerun()
             else:
-                st warning(f"{new_player} already exists.")
+                st.warning(f"{new_player} already exists.")
 
     remove_player = st.selectbox("Remove Player", [""] + players)
     if st.button("Remove Selected Player"):
