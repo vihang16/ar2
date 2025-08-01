@@ -589,8 +589,7 @@ with tabs[1]: # Matches Tab
             if row["match_image_url"]:
                 with cols[0]:
                     try:
-                        # Using new class 'match-thumbnail' for circular images
-                        st.image(row["match_image_url"], width=50, caption="")
+                        st.markdown(f'<img src="{row["match_image_url"]}" class="match-thumbnail" alt="Match Image">', unsafe_allow_html=True)
                     except Exception as e:
                         st.error(f"Error displaying match image: {str(e)}")
                 with cols[1]:
