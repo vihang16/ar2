@@ -258,6 +258,7 @@ st.markdown("""
         font-size: 1.3em; /* Keep rank and player larger */
         font-weight: bold;
         margin-right: 5px;
+        color: #fff500; /* Set rank color to optic yellow */
     }
     .profile-col {
         text-align: left; /* Ensure image aligns left */
@@ -298,7 +299,7 @@ st.markdown("""
     
     /* Ensure the actual values are white. Applies to the text content within the div, not the ::before. */
     .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col {
-        color: white; 
+        color: #fff500; /* Set values color to optic yellow */
     }
 
 
@@ -467,8 +468,8 @@ with tabs[0]: # Rankings Tab
         profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
         # Apply bold and optic yellow to Player Name
         player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-        # Apply bold and white to Points value (as per latest request)
-        points_value_styled = f"<span style='font-weight:bold; color:white;'>{row['Points']:.1f}</span>"
+        # Apply bold and optic yellow to Points value
+        points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
 
         st.markdown(f"""
         <div class="ranking-row">
