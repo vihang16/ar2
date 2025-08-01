@@ -5,6 +5,9 @@ from datetime import datetime
 from collections import defaultdict, Counter
 from supabase import create_client, Client
 
+# Set the page title
+st.set_page_config(page_title="AR Tennis")
+
 # Supabase setup
 supabase_url = st.secrets["supabase"]["supabase_url"]
 supabase_key = st.secrets["supabase"]["supabase_key"]
