@@ -158,12 +158,12 @@ st.markdown("""
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
     }
-    .thumbnail { /* For match history images */
+    .match-thumbnail { /* For match history images */
         width: 50px;
         height: 50px;
         object-fit: cover;
         cursor: pointer;
-        border-radius: 5px;
+        border-radius: 50%; /* Changed to 50% for circular shape */
     }
     .profile-thumbnail { /* For player profile tab large image */
         width: 100px;
@@ -589,7 +589,7 @@ with tabs[1]: # Matches Tab
             if row["match_image_url"]:
                 with cols[0]:
                     try:
-                        # Using thumbnail for match history images
+                        # Using new class 'match-thumbnail' for circular images
                         st.image(row["match_image_url"], width=50, caption="")
                     except Exception as e:
                         st.error(f"Error displaying match image: {str(e)}")
