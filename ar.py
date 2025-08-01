@@ -565,9 +565,9 @@ with tabs[1]: # Matches Tab
             p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
             p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
             if row["winner"] == "Team 1":
-                desc = f"{date_str} | {p1_styled} def. {p2_styled}"
+                desc = f"{p1_styled} def. {p2_styled}"
             else:
-                desc = f"{date_str} | {p2_styled} def. {p1_styled}"
+                desc = f"{p2_styled} def. {p1_styled}"
         else:
             p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
             p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player2']}</span>"
@@ -575,10 +575,10 @@ with tabs[1]: # Matches Tab
             p4_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player2']}</span>"
 
             if row["winner"] == "Team 1":
-                desc = f"{date_str} | {p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
+                desc = f"{p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
             else:
-                desc = f"{date_str} | {p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
-        return f"{desc} | {score} | {row['match_id']}"
+                desc = f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
+        return f"{desc} | {score} | {date_str} | {row['match_id']}"
 
     if filtered_matches.empty:
         st.info("No matches found.")
@@ -605,11 +605,12 @@ with tabs[1]: # Matches Tab
         clean_match_options = []
         for _, row in filtered_matches.iterrows():
             score_plain = f"{row['set1']}, {row['set2']}" + (f", {row['set3']}" if row['set3'] else "")
+            date_plain = row['date'].strftime('%Y-%m-%d')
             if row["match_type"] == "Singles":
-                desc_plain = f"{row['date'].strftime('%Y-%m-%d')} | {row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['date'].strftime('%Y-%m-%d')} | {row['team2_player1']} def. {row['team1_player1']}"
+                desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
             else:
-                desc_plain = f"{row['date'].strftime('%Y-%m-%d')} | {row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['date'].strftime('%Y-%m-%d')} | {row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
-            clean_match_options.append(f"{desc_plain} | {score_plain} | {row['match_id']}")
+                desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+            clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
 
         selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit")
         
