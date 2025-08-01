@@ -6,7 +6,7 @@ from collections import defaultdict, Counter
 from supabase import create_client, Client
 
 # Set the page title
-st.set_page_config(page_title="AR Tennis League")
+st.set_page_config(page_title="AR Tennis")
 
 # Supabase setup
 supabase_url = st.secrets["supabase"]["supabase_url"]
@@ -86,6 +86,35 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
 
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
+
+# Helper function to get the quarter based on the month
+def get_quarter(month):
+    if 1 <= month <= 3:
+        return "Q1"
+    elif 4 <= month <= 6:
+        return "Q2"
+    elif 7 <= month <= 9:
+        return "Q3"
+    else:
+        return "Q4"
+
+# New function to generate the human-readable match ID
+def generate_match_id(matches_df, match_date):
+    year = match_date.year
+    quarter = get_quarter(match_date.month)
+    
+    # Filter for matches in the same quarter and year
+    if not matches_df.empty and 'date' in matches_df.columns:
+        matches_df['date'] = pd.to_datetime(matches_df['date'], errors='coerce')
+        filtered_matches = matches_df[
+            (matches_df['date'].dt.year == year) &
+            (matches_df['date'].apply(lambda d: get_quarter(d.month) == quarter))
+        ]
+        serial_number = len(filtered_matches) + 1
+    else:
+        serial_number = 1
+        
+    return f"AR{quarter}{year}-{serial_number:02d}"
 
 # Helper function for Player Insights
 def get_player_trend(player, matches, max_matches=5):
@@ -323,9 +352,12 @@ players = players_df["name"].dropna().tolist() if "name" in players_df.columns e
 matches = load_matches()
 
 if not matches.empty and ("match_id" not in matches.columns or matches["match_id"].isnull().any()):
+    # Backfill missing match IDs with the new format
+    matches['date'] = pd.to_datetime(matches['date'], errors='coerce')
     for i in matches.index:
         if pd.isna(matches.at[i, "match_id"]):
-            matches.at[i, "match_id"] = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+            match_date_for_id = matches.at[i, "date"] if pd.notna(matches.at[i, "date"]) else datetime.now()
+            matches.at[i, "match_id"] = generate_match_id(matches, match_date_for_id)
     save_matches(matches)
 
 # --- Use st.tabs instead of custom buttons ---
@@ -517,14 +549,15 @@ with tabs[1]: # Matches Tab
                 elif match_type_new == "Singles" and not all([p1_new, p3_new]):
                     st.error("Please select both players for a singles match.")
                 else:
-                    match_id_new = f"AR2-{datetime.now().strftime('%y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+                    new_match_date = datetime.now()
+                    match_id_new = generate_match_id(matches, new_match_date)
                     image_url_new = ""
                     if match_image_new:
                         image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image_type="match")
                     
                     new_match_entry = {
                         "match_id": match_id_new,
-                        "date": datetime.now().strftime("%Y-%m-%d"),
+                        "date": new_match_date.strftime("%Y-%m-%d"),
                         "match_type": match_type_new,
                         "team1_player1": p1_new,
                         "team1_player2": p2_new,
