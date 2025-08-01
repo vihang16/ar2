@@ -190,7 +190,7 @@ st.markdown("""
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
     }
-    .match-thumbnail { /* For match history images */
+    .match-thumbnail-container img { /* For match history images */
         width: 50px;
         height: 50px;
         object-fit: cover;
@@ -625,7 +625,8 @@ with tabs[1]: # Matches Tab
             if row["match_image_url"]:
                 with cols[0]:
                     try:
-                        st.markdown(f'<img src="{row["match_image_url"]}" class="match-thumbnail" alt="Match Image">', unsafe_allow_html=True)
+                        # Replaced st.markdown with st.image to restore full-size view on hover
+                        st.image(row["match_image_url"], width=50, caption="")
                     except Exception as e:
                         st.error(f"Error displaying match image: {str(e)}")
                 with cols[1]:
