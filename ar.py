@@ -461,21 +461,6 @@ with tabs[0]: # Rankings Tab
     st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
 
-    # Header Row (hidden for card layout)
-    st.markdown(f"""
-    <div class="ranking-header-row">
-        <div class="rank-col">Rank</div>
-        <div class="profile-col"></div>
-        <div class="player-col">Player</div>
-        <div class="points-col">Points</div>
-        <div class="win-percent-col">Win %</div>
-        <div class="matches-col">Matches</div>
-        <div class="wins-col">Wins</div>
-        <div class="losses-col">Losses</div>
-        <div class="games-won-col">Games Won</div>
-    </div>
-    """, unsafe_allow_html=True)
-
     # Data Rows
     for index, row in rank_df.iterrows():
         # Using the new ranking-profile-image class
