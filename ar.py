@@ -243,7 +243,7 @@ st.markdown("""
     }
 
     /* Adjust individual columns for card layout */
-    .rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col {
+    .rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .trend-col {
         width: 100%; /* Take full width */
         text-align: left; /* Align text left */
         padding: 2px 0;
@@ -296,9 +296,10 @@ st.markdown("""
     .wins-col::before { content: "Wins: "; font-weight: bold; color: #bbbbbb; }
     .losses-col::before { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
     .games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
+    .trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
     
     /* Ensure the actual values are white. Applies to the text content within the div, not the ::before. */
-    .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col {
+    .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .trend-col {
         color: #fff500; /* Set values color to optic yellow */
     }
 
@@ -437,6 +438,7 @@ with tabs[0]: # Rankings Tab
     for player in scores:
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
+        player_trend = get_player_trend(player, matches) # Calculate trend
         rank_data.append({
             "Rank": f"🏆 {len(rank_data) + 1}",
             "Profile": profile_image,
@@ -446,7 +448,8 @@ with tabs[0]: # Rankings Tab
             "Matches": matches_played[player],
             "Wins": wins[player],
             "Losses": losses[player],
-            "Games Won": games_won[player]
+            "Games Won": games_won[player],
+            "Recent Trend": player_trend # Add trend to data
         })
 
     rank_df = pd.DataFrame(rank_data)
@@ -470,6 +473,9 @@ with tabs[0]: # Rankings Tab
         player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
         # Apply bold and optic yellow to Points value
         points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+        
+        # Style the Recent Trend value
+        trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
 
         st.markdown(f"""
         <div class="ranking-row">
@@ -484,6 +490,7 @@ with tabs[0]: # Rankings Tab
             <div class="wins-col">{int(row["Wins"])}</div>
             <div class="losses-col">{int(row["Losses"])}</div>
             <div class="games-won-col">{int(row["Games Won"])}</div>
+            <div class="trend-col">{trend_value_styled}</div>
         </div>
         """, unsafe_allow_html=True)
 
