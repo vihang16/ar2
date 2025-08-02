@@ -32,7 +32,7 @@ def load_players():
 
 def save_players(players_df):
     try:
-        expected_columns = ["name", "profile_image_url", "birthday"]
+        expected_columns = [\"name\", \"profile_image_url\", \"birthday\"]
         players_df = players_df[expected_columns].copy()
         supabase.table(players_table_name).upsert(players_df.to_dict("records")).execute()
     except Exception as e:
@@ -169,7 +169,7 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     best_partner, best_wins = max(partner_wins_data[selected_player].items(), key=lambda x: x[1])
                     st.markdown(f"**Most Effective Partner**: {best_partner} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
             else:
-                st.markdown(f"No match data available for {selected_player}.")  
+                st.markdown(f"No match data available for {selected_player}.")
                 st.markdown(f"**Birthday**: {birthday}")
                 st.markdown(f"**Partners Played With**: {dict(partner_wins_data[selected_player])}")
                 st.markdown(f"**Recent Trend**: {trend}")
@@ -355,10 +355,44 @@ st.markdown("""
     div[data-testid="stForm"] > div > div > div[data-testid="stRadio"] > div {
         justify-content: center;
     }
+    
+    /* New styles for landing page buttons */
+    .landing-button-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+    .landing-button {
+        width: 75px !important;
+        height: 75px !important;
+        background-color: #161e80;
+        border: 2px solid #fff500;
+        border-radius: 10px;
+        color: #fff500;
+        font-weight: bold;
+        font-size: 1.2em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        margin: 5px;
+        transition: transform 0.2s;
+    }
+    .landing-button:hover {
+        transform: scale(1.05);
+    }
     </style>
 """, unsafe_allow_html=True)
 
-st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
+# Make the main image clickable to return to home
+st.markdown(
+    f"""
+    <div style="cursor: pointer;" onclick="window.parent.postMessage({{ type: 'streamlit:setSessionState', state: {{ page: 'home' }} }}, '*')">
+        <img src="https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png" style="width: 100%; object-fit: contain;">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 if 'players_df' not in st.session_state:
     st.session_state.players_df = load_players()
@@ -448,41 +482,51 @@ def get_rank_df_and_partner_wins(players_df, matches):
 rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def landing_page():
-    st.header("AR Tennis App")
-    st.markdown("##### Select a section to continue")
+    st.markdown("### Menu")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Rankings", key="btn_rankings", help="View player rankings", use_container_width=True):
+        if st.button("Rankings", key="btn_rankings", use_container_width=True):
             st.session_state.page = 'rankings'
             st.rerun()
-        if st.button("Player Profile", key="btn_player_profile", help="Manage player profiles", use_container_width=True):
-            st.session_state.page = 'player_profile'
-            st.rerun()
     with col2:
-        if st.button("Matches", key="btn_matches", help="Post and view match results", use_container_width=True):
+        if st.button("Matches", key="btn_matches", use_container_width=True):
             st.session_state.page = 'matches'
             st.rerun()
-        if st.button("Court Locations", key="btn_courts", help="Find local tennis courts", use_container_width=True):
+
+    col3, col4 = st.columns(2)
+    with col3:
+        if st.button("Player Profile", key="btn_player_profile", use_container_width=True):
+            st.session_state.page = 'player_profile'
+            st.rerun()
+    with col4:
+        if st.button("Court Locations", key="btn_courts", use_container_width=True):
             st.session_state.page = 'court_locations'
             st.rerun()
+
     st.markdown("""
         <style>
         div[data-testid="stButton"] button {
+            width: 75px !important;
+            height: 75px !important;
             background-color: #161e80;
             border: 2px solid #fff500;
             border-radius: 10px;
             color: #fff500;
-            height: 120px;
             font-weight: bold;
             font-size: 1.2em;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            margin-top: 10px;
+            margin: 5px;
+            transition: transform 0.2s;
+        }
+        div[data-testid="stButton"] button:hover {
+            transform: scale(1.05);
         }
         </style>
     """, unsafe_allow_html=True)
+
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
     st.header("Rankings")
