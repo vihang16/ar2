@@ -6,9 +6,10 @@ from collections import defaultdict, Counter
 from supabase import create_client, Client
 
 # Set the page title
-st.set_page_config(page_title="AR Tennis")
+st.set_page_config(page_title="AR Tennis", layout="centered")
 
 # Supabase setup
+# The secret keys will be provided by the Streamlit environment
 supabase_url = st.secrets["supabase"]["supabase_url"]
 supabase_key = st.secrets["supabase"]["supabase_key"]
 supabase: Client = create_client(supabase_url, supabase_key)
@@ -18,6 +19,7 @@ players_table_name = "players"
 matches_table_name = "matches"
 
 def load_players():
+    """Loads player data from Supabase."""
     try:
         response = supabase.table(players_table_name).select("name, profile_image_url, birthday").execute()
         df = pd.DataFrame(response.data)
@@ -31,6 +33,7 @@ def load_players():
         return pd.DataFrame(columns=["name", "profile_image_url", "birthday"])
 
 def save_players(players_df):
+    """Saves player data to Supabase."""
     try:
         expected_columns = ["name", "profile_image_url", "birthday"]
         players_df = players_df[expected_columns].copy()
@@ -39,6 +42,7 @@ def save_players(players_df):
         st.error(f"Error saving players: {str(e)}")
 
 def load_matches():
+    """Loads match data from Supabase."""
     try:
         response = supabase.table(matches_table_name).select("*").execute()
         df = pd.DataFrame(response.data)
@@ -52,6 +56,7 @@ def load_matches():
         return pd.DataFrame(columns=expected_columns)
 
 def save_matches(df):
+    """Saves match data to Supabase."""
     try:
         df_to_save = df.copy()
         if 'date' in df_to_save.columns:
@@ -63,6 +68,7 @@ def save_matches(df):
         st.error(f"Error saving matches: {str(e)}")
 
 def upload_image_to_supabase(file, file_name, image_type="match"):
+    """Uploads an image to the Supabase storage bucket."""
     try:
         bucket = "profile" if image_type == "profile" else "ar"
         file_path = f"2ep_1/{file_name}" if image_type == "match" else file_name
@@ -83,9 +89,11 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
         return ""
 
 def tennis_scores():
+    """Returns a list of possible tennis scores."""
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
 def get_quarter(month):
+    """Determines the quarter of the year for a given month."""
     if 1 <= month <= 3:
         return "Q1"
     elif 4 <= month <= 6:
@@ -96,6 +104,7 @@ def get_quarter(month):
         return "Q4"
 
 def generate_match_id(matches_df, match_date):
+    """Generates a unique match ID based on the quarter and year."""
     year = match_date.year
     quarter = get_quarter(match_date.month)
     if not matches_df.empty and 'date' in matches_df.columns:
@@ -110,6 +119,7 @@ def generate_match_id(matches_df, match_date):
     return f"AR{quarter}{year}-{serial_number:02d}"
 
 def get_player_trend(player, matches, max_matches=5):
+    """Calculates a player's recent win/loss trend."""
     player_matches = matches[
         (matches['team1_player1'] == player) |
         (matches['team1_player2'] == player) |
@@ -135,6 +145,7 @@ def get_player_trend(player, matches, max_matches=5):
     return ' '.join(trend) if trend else 'No recent matches'
 
 def display_player_insights(selected_player, players_df, matches_df, rank_df, partner_wins_data, key_prefix=""):
+    """Displays detailed insights for a selected player."""
     if selected_player:
         player_info = players_df[players_df["name"] == selected_player].iloc[0]
         birthday = player_info.get("birthday", "Not set")
@@ -299,72 +310,46 @@ st.markdown("""
         padding-top: 0 !important;
     }
     .stApp {
-        padding-bottom: 80px;
-    }
-    .app-home-button {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 60px;
-        background-color: #161e80;
-        color: #fff500;
-        border: none;
-        padding: 10px;
-        text-align: center;
-        font-size: 1.2em;
-        font-weight: bold;
-        cursor: pointer;
-        z-index: 1000;
-        border-top: 2px solid #fff500;
-    }
-    .app-icon-container {
-        text-align: center;
-        margin: 10px;
-    }
-    .app-icon {
-        background-color: #161e80;
-        border: 2px solid #fff500;
-        border-radius: 10px;
-        color: #fff500;
-        padding: 20px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        margin: 4px 2px;
-        cursor: pointer;
-        width: 100%;
-        height: 100px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        transition: transform 0.2s;
-    }
-    .app-icon:hover {
-        transform: scale(1.05);
-    }
-    .app-icon-text {
-        margin-top: 8px;
-        font-weight: bold;
-    }
-    .st-emotion-cache-1jm692n {
-        text-align: center;
-    }
-    div[data-testid="stForm"] > div > div > div[data-testid="stRadio"] > div {
-        justify-content: center;
+        padding-top: 80px;
     }
     
-    /* New styles for landing page buttons */
-    .landing-button-container {
+    /* NEW CSS for Header and Responsive Grid */
+    .app-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background-color: #161e80;
+        color: #fff500;
+        padding: 10px 20px;
+        z-index: 1000;
         display: flex;
-        justify-content: center;
-        margin-bottom: 10px;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .landing-button {
-        width: 125px !important;
-        height: 125px !important;
+    .home-button-icon {
+        width: 30px;
+        height: 30px;
+        fill: #fff500;
+        stroke: #fff500;
+        cursor: pointer;
+    }
+    .app-title {
+        font-size: 1.5em;
+        font-weight: bold;
+    }
+    .menu-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+        gap: 20px;
+        justify-items: center;
+        margin-top: 20px;
+        padding: 0 20px;
+    }
+    .grid-button {
+        width: 125px;
+        height: 125px;
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
@@ -375,24 +360,27 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         flex-direction: column;
-        margin: 5px;
         transition: transform 0.2s;
     }
-    .landing-button:hover {
+    .grid-button:hover {
         transform: scale(1.05);
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Make the main image clickable to return to home
-st.markdown(
-    f"""
-    <div style="cursor: pointer;" onclick="window.parent.postMessage({{ type: 'streamlit:setSessionState', state: {{ page: 'home' }} }}, '*')">
-        <img src="https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png" style="width: 100%; object-fit: contain;">
+# Add the new fixed header with a home button
+st.markdown("""
+    <div class="app-header">
+        <div onclick="window.parent.postMessage({ type: 'streamlit:setSessionState', state: { page: 'home' } }, '*')">
+            <svg xmlns="http://www.w3.org/2000/svg" class="home-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+        </div>
+        <div class="app-title">AR Tennis</div>
+        <div></div>
     </div>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
 if 'players_df' not in st.session_state:
     st.session_state.players_df = load_players()
@@ -412,6 +400,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
     save_matches(matches)
 
 def get_rank_df_and_partner_wins(players_df, matches):
+    """Calculates player rankings and partner win data."""
     scores = defaultdict(float)
     wins = defaultdict(int)
     losses = defaultdict(int)
@@ -482,31 +471,38 @@ def get_rank_df_and_partner_wins(players_df, matches):
 rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def landing_page():
-    st.markdown("### Menu")
+    """Renders the main landing page with the menu grid."""
+    st.markdown("<h3 style='text-align:center;'>Menu</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='menu-grid'>", unsafe_allow_html=True)
+    
+    # Using st.button with custom CSS classes for the grid layout
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Rankings", key="btn_rankings", use_container_width=True):
+        if st.button("Rankings", key="btn_rankings", help="View player rankings", use_container_width=True):
             st.session_state.page = 'rankings'
             st.rerun()
     with col2:
-        if st.button("Matches", key="btn_matches", use_container_width=True):
+        if st.button("Matches", key="btn_matches", help="View and post match results", use_container_width=True):
             st.session_state.page = 'matches'
             st.rerun()
 
     col3, col4 = st.columns(2)
     with col3:
-        if st.button("Player Profile", key="btn_player_profile", use_container_width=True):
+        if st.button("Player Profile", key="btn_player_profile", help="Manage player profiles", use_container_width=True):
             st.session_state.page = 'player_profile'
             st.rerun()
     with col4:
-        if st.button("Court Locations", key="btn_courts", use_container_width=True):
+        if st.button("Court Locations", key="btn_courts", help="Find court locations", use_container_width=True):
             st.session_state.page = 'court_locations'
             st.rerun()
-
+            
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Custom CSS for the buttons within the Streamlit columns
     st.markdown("""
         <style>
-        div[data-testid="stButton"] button {
-            width: 125px !important;
+        div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button {
+            width: 100% !important;
             height: 125px !important;
             background-color: #161e80;
             border: 2px solid #fff500;
@@ -521,14 +517,14 @@ def landing_page():
             margin: 5px;
             transition: transform 0.2s;
         }
-        div[data-testid="stButton"] button:hover {
+        div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button:hover {
             transform: scale(1.05);
         }
         </style>
     """, unsafe_allow_html=True)
 
-
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
+    """Renders the rankings page."""
     st.header("Rankings")
     view_mode = st.radio("Display View", ["Card View", "Table View"], horizontal=True, key="ranking_view_mode")
     current_date_formatted = datetime.now().strftime("%d/%m")
@@ -579,6 +575,7 @@ def rankings_page(players_df, matches, rank_df, partner_wins_data):
         st.info("Player insights will be available once there is match data.")
 
 def matches_page(players_df, matches):
+    """Renders the matches page."""
     st.header("Matches")
     with st.expander("➕ Post New Match Result"):
         st.subheader("Enter Match Result")
@@ -750,6 +747,7 @@ def matches_page(players_df, matches):
                 st.rerun()
 
 def player_profile_page(players_df, matches, rank_df, partner_wins_data):
+    """Renders the player profile page."""
     st.header("Player Profile")
     st.subheader("Player Insights")
     selected_player_profile_insights = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
@@ -824,6 +822,7 @@ def player_profile_page(players_df, matches, rank_df, partner_wins_data):
                     st.rerun()
 
 def court_locations_page():
+    """Renders the court locations page."""
     st.header("Court Locations")
     st.markdown("### Arabian Ranches Tennis Courts")
     st.markdown("- [Alvorado 1 & 2](https://maps.google.com/?q=25.041792,55.259258)")
@@ -857,32 +856,6 @@ elif st.session_state.page == 'player_profile':
     player_profile_page(players_df, matches, rank_df, partner_wins_data)
 elif st.session_state.page == 'court_locations':
     court_locations_page()
-
-if st.session_state.page != 'home':
-    if st.button("🏠 Home", key="home_button", use_container_width=True):
-        st.session_state.page = 'home'
-        st.rerun()
-    st.markdown(f"""
-        <style>
-            [data-testid="stButton"][key="home_button"] {{
-                position: fixed;
-                bottom: 10px;
-                left: 10px;
-                right: 10px;
-                width: calc(100% - 20px);
-                height: 60px;
-                z-index: 999;
-                padding-top: 10px;
-                padding-bottom: 10px;
-                background-color: #161e80;
-                color: #fff500;
-                border: 2px solid #fff500;
-                border-radius: 10px;
-                font-weight: bold;
-                font-size: 1.2em;
-            }}
-        </style>
-        """, unsafe_allow_html=True)
 
 st.markdown("""
 <div style='background-color: #161e80; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white; margin-top: 20px;'>
