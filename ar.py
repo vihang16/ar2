@@ -363,8 +363,8 @@ st.markdown("""
         margin-bottom: 10px;
     }
     .landing-button {
-        width: 75px !important;
-        height: 75px !important;
+        width: 125px !important;
+        height: 125px !important;
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
@@ -506,8 +506,8 @@ def landing_page():
     st.markdown("""
         <style>
         div[data-testid="stButton"] button {
-            width: 75px !important;
-            height: 75px !important;
+            width: 125px !important;
+            height: 125px !important;
             background-color: #161e80;
             border: 2px solid #fff500;
             border-radius: 10px;
