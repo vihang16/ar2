@@ -453,11 +453,13 @@ with tabs[0]: # Rankings Tab
         })
 
     rank_df = pd.DataFrame(rank_data)
-    rank_df = rank_df.sort_values(
-        by=["Points", "Win %", "Games Won", "Player"],
-        ascending=[False, False, False, True]
-    ).reset_index(drop=True)
-    rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
+
+    if not rank_df.empty:
+        rank_df = rank_df.sort_values(
+            by=["Points", "Win %", "Games Won", "Player"],
+            ascending=[False, False, False, True]
+        ).reset_index(drop=True)
+        rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     # Display rankings using custom HTML/CSS
     current_date_formatted = datetime.now().strftime("%d/%m")
@@ -465,34 +467,37 @@ with tabs[0]: # Rankings Tab
     st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
 
-    # Data Rows
-    for index, row in rank_df.iterrows():
-        # Using the new ranking-profile-image class
-        profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
-        # Apply bold and optic yellow to Player Name
-        player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-        # Apply bold and optic yellow to Points value
-        points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-        
-        # Style the Recent Trend value
-        trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+    if rank_df.empty:
+        st.info("No ranking data available. Please add players and matches.")
+    else:
+        # Data Rows
+        for index, row in rank_df.iterrows():
+            # Using the new ranking-profile-image class
+            profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
+            # Apply bold and optic yellow to Player Name
+            player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+            # Apply bold and optic yellow to Points value
+            points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+            
+            # Style the Recent Trend value
+            trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
 
-        st.markdown(f"""
-        <div class="ranking-row">
-            <div class="rank-profile-player-group">
-                <div class="rank-col">{row["Rank"]}</div>
-                <div class="profile-col">{profile_html}</div>
-                <div class="player-col">{player_styled}</div>
+            st.markdown(f"""
+            <div class="ranking-row">
+                <div class="rank-profile-player-group">
+                    <div class="rank-col">{row["Rank"]}</div>
+                    <div class="profile-col">{profile_html}</div>
+                    <div class="player-col">{player_styled}</div>
+                </div>
+                <div class="points-col">{points_value_styled}</div>
+                <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                <div class="matches-col">{int(row["Matches"])}</div>
+                <div class="wins-col">{int(row["Wins"])}</div>
+                <div class="losses-col">{int(row["Losses"])}</div>
+                <div class="games-won-col">{int(row["Games Won"])}</div>
+                <div class="trend-col">{trend_value_styled}</div>
             </div>
-            <div class="points-col">{points_value_styled}</div>
-            <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-            <div class="matches-col">{int(row["Matches"])}</div>
-            <div class="wins-col">{int(row["Wins"])}</div>
-            <div class="losses-col">{int(row["Losses"])}</div>
-            <div class="games-won-col">{int(row["Games Won"])}</div>
-            <div class="trend-col">{trend_value_styled}</div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
@@ -500,7 +505,10 @@ with tabs[0]: # Rankings Tab
     # Player Insights for Rankings Tab
     st.subheader("Player Insights")
     selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings")
-    display_player_insights(selected_player_rankings, players_df, matches, rank_df, partner_wins, key_prefix="rankings_")
+    if not rank_df.empty:
+        display_player_insights(selected_player_rankings, players_df, matches, rank_df, partner_wins, key_prefix="rankings_")
+    else:
+        st.info("Player insights will be available once there is match data.")
 
 with tabs[1]: # Matches Tab
     # ----- MATCHES (formerly Match Records and Post Match) -----
@@ -697,7 +705,10 @@ with tabs[2]: # Player Profile Tab
     # Player Insights for Player Profile Tab (moved to top)
     st.subheader("Player Insights")
     selected_player_profile_insights = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
-    display_player_insights(selected_player_profile_insights, players_df, matches, rank_df, partner_wins, key_prefix="profile_")
+    if not rank_df.empty:
+        display_player_insights(selected_player_profile_insights, players_df, matches, rank_df, partner_wins, key_prefix="profile_")
+    else:
+        st.info("Player insights will be available once there is match data.")
 
     st.subheader("Manage & Edit Player Profiles")
     with st.expander("Add, Edit or Remove Player"):
