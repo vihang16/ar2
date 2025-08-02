@@ -607,8 +607,8 @@ with tabs[1]: # Matches Tab
                     match_id_new = generate_match_id(matches, new_match_date)
                     image_url_new = ""
                     if match_image_new:
-                        image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image形式
-
+                        image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image_type="match")
+                    
                     new_match_entry = {
                         "match_id": match_id_new,
                         "date": new_match_date.strftime("%Y-%m-%d"),
