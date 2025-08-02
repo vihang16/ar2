@@ -552,7 +552,7 @@ with tabs[1]: # Matches Tab
                 p4_new = ""
 
             set1_new = st.selectbox("Set 1", tennis_scores(), index=4, key="set1_new_post")
-            set2_new = st.selectbox("Set 2", tennis_scores(), index=4, key="set2_new_post")
+            set2_new = st.selectbox("Set 2 (optional)", [""] + tennis_scores(), key="set2_new_post")
             set3_new = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), key="set3_new_post")
             winner_new = st.radio("Winner", ["Team 1", "Team 2", "Tie"], key="winner_new_post")
             match_image_new = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key="match_image_new_post")
@@ -603,8 +603,9 @@ with tabs[1]: # Matches Tab
 
     def format_match_label(row):
         # Format set scores in bold and optic yellow
-        score_parts = [f"<span style='font-weight:bold; color:#fff500;'>{row['set1']}</span>", 
-                       f"<span style='font-weight:bold; color:#fff500;'>{row['set2']}</span>"]
+        score_parts = [f"<span style='font-weight:bold; color:#fff500;'>{row['set1']}</span>"]
+        if row['set2']:
+            score_parts.append(f"<span style='font-weight:bold; color:#fff500;'>{row['set2']}</span>")
         if row['set3']:
             score_parts.append(f"<span style='font-weight:bold; color:#fff500;'>{row['set3']}</span>")
         score = ", ".join(score_parts)
@@ -655,7 +656,11 @@ with tabs[1]: # Matches Tab
         # So we create a separate list of display options for the selectbox
         clean_match_options = []
         for _, row in filtered_matches.iterrows():
-            score_plain = f"{row['set1']}, {row['set2']}" + (f", {row['set3']}" if row['set3'] else "")
+            score_plain = f"{row['set1']}"
+            if row['set2']:
+                score_plain += f", {row['set2']}"
+            if row['set3']:
+                score_plain += f", {row['set3']}"
             date_plain = row['date'].strftime('%Y-%m-%d')
             if row["match_type"] == "Singles":
                 desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
@@ -672,6 +677,12 @@ with tabs[1]: # Matches Tab
             
             # Convert date string to datetime object for the date_input widget
             current_date_dt = pd.to_datetime(row["date"])
+            
+            all_scores = [""] + tennis_scores()
+            set1_index = all_scores.index(row["set1"]) if row["set1"] in all_scores else 0
+            set2_index = all_scores.index(row["set2"]) if row["set2"] in all_scores else 0
+            set3_index = all_scores.index(row["set3"]) if row["set3"] in all_scores else 0
+
 
             with st.expander("Edit Match Details"):
                 # Allow editing the match date
@@ -682,9 +693,9 @@ with tabs[1]: # Matches Tab
                 p2_edit = st.text_input("Team 1 - Player 2", value=row["team1_player2"], key=f"edit_t1p2_{selected_id}")
                 p3_edit = st.text_input("Team 2 - Player 1", value=row["team2_player1"], key=f"edit_t2p1_{selected_id}")
                 p4_edit = st.text_input("Team 2 - Player 2", value=row["team2_player2"], key=f"edit_t2p2_{selected_id}")
-                set1_edit = st.text_input("Set 1", value=row["set1"], key=f"edit_set1_{selected_id}")
-                set2_edit = st.text_input("Set 2", value=row["set2"], key=f"edit_set2_{selected_id}")
-                set3_edit = st.text_input("Set 3", value=row["set3"], key=f"edit_set3_{selected_id}")
+                set1_edit = st.selectbox("Set 1", all_scores, index=set1_index, key=f"edit_set1_{selected_id}")
+                set2_edit = st.selectbox("Set 2 (optional)", all_scores, index=set2_index, key=f"edit_set2_{selected_id}")
+                set3_edit = st.selectbox("Set 3 (optional)", all_scores, index=set3_index, key=f"edit_set3_{selected_id}")
                 winner_edit = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
                 match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
 
