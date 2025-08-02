@@ -314,34 +314,6 @@ st.markdown("""
     }
 
     /* NEW CSS for Header and Responsive Grid */
-    .app-header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: #161e80;
-        color: #fff500;
-        padding: 10px 20px;
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .home-button-icon {
-        width: 30px;
-        height: 30px;
-        fill: #fff500;
-        stroke: #fff500;
-        cursor: pointer;
-    }
-    .app-title {
-        font-size: 1.5em;
-        font-weight: bold;
-    }
-    .app-logo {
-        height: 40px;
-    }
     .menu-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
@@ -371,18 +343,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Add the new fixed header with a home button and the dubai.png image
-def render_header():
-    """Renders the fixed app header."""
-    cols = st.columns([1, 4, 1])
-    with cols[0]:
-        if st.button("🏠", key="home_button"):
-            st.session_state.page = 'home'
-            st.rerun()
-    with cols[1]:
-        st.markdown("<div style='text-align: center;'><h2>AR Tennis</h2></div>", unsafe_allow_html=True)
-    with cols[2]:
-        st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", width=60)
+# Main Header Image
+st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
+
 
 if 'players_df' not in st.session_state:
     st.session_state.players_df = load_players()
@@ -860,7 +823,6 @@ def court_locations_page():
     st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
     st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
 
-render_header()
 if st.session_state.page == 'home':
     landing_page()
 elif st.session_state.page == 'rankings':
