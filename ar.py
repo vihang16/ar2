@@ -312,7 +312,7 @@ st.markdown("""
     .stApp {
         padding-top: 80px;
     }
-    
+
     /* NEW CSS for Header and Responsive Grid */
     .app-header {
         position: fixed;
@@ -372,20 +372,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Add the new fixed header with a home button and the dubai.png image
-st.markdown("""
-    <div class="app-header">
-        <div onclick="window.parent.postMessage({ type: 'streamlit:setSessionState', state: { page: 'home' } }, '*')">
-            <svg xmlns="http://www.w3.org/2000/svg" class="home-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-        </div>
-        <div class="app-title">AR Tennis</div>
-        <div>
-            <img src="https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png" class="app-logo" alt="Dubai Logo">
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+def render_header():
+    """Renders the fixed app header."""
+    cols = st.columns([1, 4, 1])
+    with cols[0]:
+        if st.button("🏠", key="home_button"):
+            st.session_state.page = 'home'
+            st.rerun()
+    with cols[1]:
+        st.markdown("<div style='text-align: center;'><h2>AR Tennis</h2></div>", unsafe_allow_html=True)
+    with cols[2]:
+        st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", width=60)
 
 if 'players_df' not in st.session_state:
     st.session_state.players_df = load_players()
@@ -477,9 +474,8 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def landing_page():
     """Renders the main landing page with the menu grid."""
-    st.markdown("<h3 style='text-align:center;'>Menu</h3>", unsafe_allow_html=True)
     st.markdown("<div class='menu-grid'>", unsafe_allow_html=True)
-    
+
     # Using st.button with custom CSS classes for the grid layout
     col1, col2 = st.columns(2)
     with col1:
@@ -500,9 +496,9 @@ def landing_page():
         if st.button("Court Locations", key="btn_courts", help="Find court locations", use_container_width=True):
             st.session_state.page = 'court_locations'
             st.rerun()
-            
+
     st.markdown("</div>", unsafe_allow_html=True)
-    
+
     # Custom CSS for the buttons within the Streamlit columns
     st.markdown("""
         <style>
@@ -864,6 +860,7 @@ def court_locations_page():
     st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
     st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
 
+render_header()
 if st.session_state.page == 'home':
     landing_page()
 elif st.session_state.page == 'rankings':
