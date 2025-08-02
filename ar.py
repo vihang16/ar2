@@ -30,12 +30,10 @@ def load_players():
         st.error(f"Error loading players: {str(e)}")
         return pd.DataFrame(columns=["name", "profile_image_url", "birthday"])
 
-# FIX: Use upsert to prevent deleting all players
 def save_players(players_df):
     try:
         expected_columns = ["name", "profile_image_url", "birthday"]
         players_df = players_df[expected_columns].copy()
-        # Use upsert to insert or update players without deleting existing ones
         supabase.table(players_table_name).upsert(players_df.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving players: {str(e)}")
@@ -53,20 +51,13 @@ def load_matches():
         st.error(f"Error loading matches: {str(e)}")
         return pd.DataFrame(columns=expected_columns)
 
-# FIX: Use upsert and ensure 'date' is in string format to prevent JSON serialization error
 def save_matches(df):
     try:
-        # Create a copy to avoid modifying the original DataFrame directly
         df_to_save = df.copy()
-        
-        # Explicitly convert to datetime, then to string for safety
         if 'date' in df_to_save.columns:
             df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
-            # Filter out any rows with NaT (Not a Time) values resulting from bad conversions
             df_to_save = df_to_save.dropna(subset=['date'])
             df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d')
-            
-        # Use upsert to insert or update matches
         supabase.table(matches_table_name).upsert(df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
@@ -74,21 +65,16 @@ def save_matches(df):
 def upload_image_to_supabase(file, file_name, image_type="match"):
     try:
         bucket = "profile" if image_type == "profile" else "ar"
-        
         file_path = f"2ep_1/{file_name}" if image_type == "match" else file_name
-        
         response = supabase.storage.from_(bucket).upload(
-            file_path, 
-            file.read(), 
+            file_path,
+            file.read(),
             {"content-type": file.type}
         )
-        # Check if response is an error dictionary or if upload failed
         if response is None or (isinstance(response, dict) and "error" in response):
             error_message = response.get("error", "Unknown error") if isinstance(response, dict) else "Upload failed"
             return ""
-        
         public_url = supabase.storage.from_(bucket).get_public_url(file_path)
-        # Check if the public_url is valid, otherwise it might indicate an issue
         if not public_url.startswith(f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v1/object/public/{bucket}/"):
              st.warning(f"Uploaded image URL does not match expected prefix. Got: {public_url}")
         return public_url
@@ -99,7 +85,6 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
-# Helper function to get the quarter based on the month
 def get_quarter(month):
     if 1 <= month <= 3:
         return "Q1"
@@ -110,12 +95,9 @@ def get_quarter(month):
     else:
         return "Q4"
 
-# New function to generate the human-readable match ID
 def generate_match_id(matches_df, match_date):
     year = match_date.year
     quarter = get_quarter(match_date.month)
-    
-    # Filter for matches in the same quarter and year
     if not matches_df.empty and 'date' in matches_df.columns:
         matches_df['date'] = pd.to_datetime(matches_df['date'], errors='coerce')
         filtered_matches = matches_df[
@@ -125,10 +107,8 @@ def generate_match_id(matches_df, match_date):
         serial_number = len(filtered_matches) + 1
     else:
         serial_number = 1
-        
     return f"AR{quarter}{year}-{serial_number:02d}"
 
-# Helper function for Player Insights
 def get_player_trend(player, matches, max_matches=5):
     player_matches = matches[
         (matches['team1_player1'] == player) |
@@ -159,9 +139,7 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
         player_info = players_df[players_df["name"] == selected_player].iloc[0]
         birthday = player_info.get("birthday", "Not set")
         profile_image = player_info.get("profile_image_url", "")
-        
         trend = get_player_trend(selected_player, matches_df)
-
         cols = st.columns([1, 5])
         with cols[0]:
             if profile_image:
@@ -196,57 +174,53 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                 st.markdown(f"**Partners Played With**: {dict(partner_wins_data[selected_player])}")
                 st.markdown(f"**Recent Trend**: {trend}")
 
-# Custom CSS for mobile-like app layout
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
     }
-    .match-thumbnail-container img { /* For match history images */
+    .match-thumbnail-container img {
         width: 50px;
         height: 50px;
         object-fit: cover;
         cursor: pointer;
-        border-radius: 50%; /* Changed to 50% for circular shape */
+        border-radius: 50%;
     }
-    .profile-thumbnail { /* For player profile tab large image */
+    .profile-thumbnail {
         width: 100px;
         height: 100px;
         object-fit: cover;
         border-radius: 50%;
         margin-right: 10px;
     }
-    .ranking-profile-image { /* For ranking list images */
+    .ranking-profile-image {
         width: 40px;
         height: 40px;
         object-fit: cover;
-        border-radius: 50%; /* Round images in ranking list */
+        border-radius: 50%;
         margin-right: 10px;
         vertical-align: middle;
     }
-
-    .rankings-table-container { 
+    .rankings-table-container {
         width: 100%;
         background: #ffffff;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-top: 0px !important; /* Force no top margin */
+        margin-top: 0px !important;
         padding: 10px;
     }
-    .rankings-table-scroll { 
+    .rankings-table-scroll {
         max-height: 500px;
         overflow-y: auto;
     }
-    
-    /* Card layout for all screen sizes */
     .ranking-header-row {
-        display: none; /* Hide header row for card layout */
+        display: none;
     }
     .ranking-row {
-        display: block; /* Stack elements vertically */
+        display: block;
         padding: 10px;
-        margin-bottom: 10px; /* Space between player cards */
+        margin-bottom: 10px;
         border: 1px solid #ddd;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -254,55 +228,48 @@ st.markdown("""
     .ranking-row:last-child {
         margin-bottom: 0;
     }
-
-    /* Adjust individual columns for card layout */
     .rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col {
-        width: 100%; /* Take full width */
-        text-align: left; /* Align text left */
+        width: 100%;
+        text-align: left;
         padding: 2px 0;
-        font-size: 1em; /* Base font size */
-        margin-bottom: 5px; /* Space between fields */
-        word-break: break-word; /* Ensure long names/values wrap */
+        font-size: 1em;
+        margin-bottom: 5px;
+        word-break: break-word;
     }
     .rank-col {
-        /* Ensure cup icon and rank number stay together */
-        display: inline-block; /* Allows content to shrink to fit */
-        white-space: nowrap; /* Prevent line break between cup and number */
-        font-size: 1.3em; /* Keep rank and player larger */
+        display: inline-block;
+        white-space: nowrap;
+        font-size: 1.3em;
         font-weight: bold;
         margin-right: 5px;
-        color: #fff500; /* Set rank color to optic yellow */
+        color: #fff500;
     }
     .profile-col {
-        text-align: left; /* Ensure image aligns left */
-        margin-bottom: 10px; /* More space after image */
-        display: inline-block; /* Allows it to sit next to rank/player in flex */
+        text-align: left;
+        margin-bottom: 10px;
+        display: inline-block;
         vertical-align: middle;
     }
     .player-col {
-        font-size: 1.3em; /* Keep rank and player larger */
+        font-size: 1.3em;
         font-weight: bold;
-        display: inline-block; /* Allows it to sit next to profile/rank in flex */
-        flex-grow: 1; /* Take remaining space in flex container */
+        display: inline-block;
+        flex-grow: 1;
         vertical-align: middle;
     }
-    
-    /* Group Profile, Rank and Player together in a flex container */
     .rank-profile-player-group {
         display: flex;
-        align-items: center; /* Vertically align items */
+        align-items: center;
         margin-bottom: 10px;
     }
     .rank-profile-player-group .rank-col {
-        width: auto; /* Shrink to fit content */
+        width: auto;
         margin-right: 10px;
     }
     .rank-profile-player-group .profile-col {
-         width: auto; /* Adjust to content */
+         width: auto;
          margin-right: 10px;
     }
-    
-    /* Add labels for stats and apply new color to labels only */
     .points-col::before { content: "Points: "; font-weight: bold; color: #bbbbbb; }
     .win-percent-col::before { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
     .matches-col::before { content: "Matches: "; font-weight: bold; color: #bbbbbb; }
@@ -311,26 +278,18 @@ st.markdown("""
     .games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
     .game-diff-avg-col::before { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
     .trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
-    
-    /* Ensure the actual values are white. Applies to the text content within the div, not the ::before. */
     .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col {
-        color: #fff500; /* Set values color to optic yellow */
+        color: #fff500;
     }
-
-    /* Remove extra space below the subheader for "Rankings as of dd/mm" */
-    /* Target the specific subheader element's container */
-    div.st-emotion-cache-1jm692n { /* This targets the div containing the subheader */
+    div.st-emotion-cache-1jm692n {
         margin-bottom: 0px !important;
         padding-bottom: 0px !important;
     }
-    /* Also target the subheader itself in case it has its own margin/padding */
     div.st-emotion-cache-1jm692n h3 {
         margin-bottom: 0px !important;
         padding-bottom: 0px !important;
-        line-height: 1 !important; /* Attempt to reduce line height */
+        line-height: 1 !important;
     }
-    
-    /* Ensure no margin/padding on the immediate children of the rankings table container */
     .rankings-table-container > div {
         margin-top: 0 !important;
         padding-top: 0 !important;
@@ -339,20 +298,17 @@ st.markdown("""
         margin-top: 0 !important;
         padding-top: 0 !important;
     }
-
-    /* Mobile App Layout */
     .stApp {
-        padding-bottom: 80px; /* Make space for the fixed navigation bar */
+        padding-bottom: 80px;
     }
-    
     .app-home-button {
         position: fixed;
         bottom: 0;
         left: 0;
         width: 100%;
         height: 60px;
-        background-color: #161e80; /* Dark blue background */
-        color: #fff500; /* Optic yellow text */
+        background-color: #161e80;
+        color: #fff500;
         border: none;
         padding: 10px;
         text-align: center;
@@ -360,9 +316,8 @@ st.markdown("""
         font-weight: bold;
         cursor: pointer;
         z-index: 1000;
-        border-top: 2px solid #fff500; /* Optic yellow top border */
+        border-top: 2px solid #fff500;
     }
-    
     .app-icon-container {
         text-align: center;
         margin: 10px;
@@ -394,24 +349,17 @@ st.markdown("""
         margin-top: 8px;
         font-weight: bold;
     }
-    
-    /* Center the main container content */
-    .st-emotion-cache-1jm692n { /* This class targets the main content container of the tab */
+    .st-emotion-cache-1jm692n {
         text-align: center;
     }
-
-    /* Added a class to center align the radio buttons */
     div[data-testid="stForm"] > div > div > div[data-testid="stRadio"] > div {
         justify-content: center;
     }
-
     </style>
 """, unsafe_allow_html=True)
 
-# Display dubai.png from local GitHub repository
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
 
-# Initialize players_df and page state
 if 'players_df' not in st.session_state:
     st.session_state.players_df = load_players()
 players_df = st.session_state.players_df
@@ -429,50 +377,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = generate_match_id(matches, match_date_for_id)
     save_matches(matches)
 
-
-# --- Landing Page ---
-def landing_page():
-    st.header("AR Tennis App")
-    st.markdown("##### Select a section to continue")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Rankings", key="btn_rankings", help="View player rankings", use_container_width=True):
-            st.session_state.page = 'rankings'
-            st.rerun()
-        if st.button("Player Profile", key="btn_player_profile", help="Manage player profiles", use_container_width=True):
-            st.session_state.page = 'player_profile'
-            st.rerun()
-    with col2:
-        if st.button("Matches", key="btn_matches", help="Post and view match results", use_container_width=True):
-            st.session_state.page = 'matches'
-            st.rerun()
-        if st.button("Court Locations", key="btn_courts", help="Find local tennis courts", use_container_width=True):
-            st.session_state.page = 'court_locations'
-            st.rerun()
-
-    # Injecting CSS for the buttons to act as app icons
-    st.markdown("""
-        <style>
-        div[data-testid="stButton"] button {
-            background-color: #161e80;
-            border: 2px solid #fff500;
-            border-radius: 10px;
-            color: #fff500;
-            height: 120px;
-            font-weight: bold;
-            font-size: 1.2em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            margin-top: 10px;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-
-# --- Rankings Page Content ---
-def rankings_page():
+def get_rank_df_and_partner_wins(players_df, matches):
     scores = defaultdict(float)
     wins = defaultdict(int)
     losses = defaultdict(int)
@@ -480,7 +385,6 @@ def rankings_page():
     games_won = defaultdict(int)
     game_diff = defaultdict(int)
     partner_wins = defaultdict(lambda: defaultdict(int))
-
     for _, row in matches.iterrows():
         if row['match_type'] == 'Doubles':
             t1 = [row['team1_player1'], row['team1_player2']]
@@ -488,57 +392,24 @@ def rankings_page():
         else:
             t1 = [row['team1_player1']]
             t2 = [row['team2_player1']]
-
-        team1_total_games = 0
-        team2_total_games = 0
-        for set_score in [row['set1'], row['set2'], row['set3']]:
-            if set_score and '-' in set_score:
-                try:
-                    team1_games, team2_games = map(int, set_score.split('-'))
-                    team1_total_games += team1_games
-                    team2_total_games += team2_games
-                except ValueError:
-                    continue
-
+        team1_total_games = sum(int(s.split('-')[0]) for s in [row['set1'], row['set2'], row['set3']] if s and '-' in s)
+        team2_total_games = sum(int(s.split('-')[1]) for s in [row['set1'], row['set2'], row['set3']] if s and '-' in s)
         if row["winner"] == "Team 1":
-            for p in t1:
-                scores[p] += 3
-                wins[p] += 1
-                matches_played[p] += 1
-                game_diff[p] += team1_total_games - team2_total_games
-            for p in t2:
-                scores[p] += 1
-                losses[p] += 1
-                matches_played[p] += 1
-                game_diff[p] += team2_total_games - team1_total_games
+            for p in t1: scores[p] += 3; wins[p] += 1; matches_played[p] += 1; game_diff[p] += team1_total_games - team2_total_games
+            for p in t2: scores[p] += 1; losses[p] += 1; matches_played[p] += 1; game_diff[p] += team2_total_games - team1_total_games
         elif row["winner"] == "Team 2":
-            for p in t2:
-                scores[p] += 3
-                wins[p] += 1
-                matches_played[p] += 1
-                game_diff[p] += team2_total_games - team1_total_games
-            for p in t1:
-                scores[p] += 1
-                losses[p] += 1
-                matches_played[p] += 1
-                game_diff[p] += team1_total_games - team2_total_games
+            for p in t2: scores[p] += 3; wins[p] += 1; matches_played[p] += 1; game_diff[p] += team2_total_games - team1_total_games
+            for p in t1: scores[p] += 1; losses[p] += 1; matches_played[p] += 1; game_diff[p] += team1_total_games - team2_total_games
         else:
-            for p in t1 + t2:
-                scores[p] += 1.5
-                matches_played[p] += 1
-                game_diff[p] += team1_total_games - team2_total_games if p in t1 else team2_total_games - team1_total_games
-
+            for p in t1 + t2: scores[p] += 1.5; matches_played[p] += 1; game_diff[p] += team1_total_games - team2_total_games if p in t1 else team2_total_games - team1_total_games
         for set_score in [row['set1'], row['set2'], row['set3']]:
             if set_score and '-' in set_score:
                 try:
                     team1_games, team2_games = map(int, set_score.split('-'))
-                    for p in t1:
-                        games_won[p] += team1_games
-                    for p in t2:
-                        games_won[p] += team2_games
+                    for p in t1: games_won[p] += team1_games
+                    for p in t2: games_won[p] += team2_games
                 except ValueError:
                     continue
-
         if row['match_type'] == 'Doubles':
             if row["winner"] == "Team 1":
                 partner_wins[row['team1_player1']][row['team1_player2']] += 1
@@ -546,7 +417,6 @@ def rankings_page():
             elif row["winner"] == "Team 2":
                 partner_wins[row['team2_player1']][row['team2_player2']] += 1
                 partner_wins[row['team2_player2']][row['team2_player1']] += 1
-
     rank_data = []
     for player in scores:
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
@@ -566,7 +436,6 @@ def rankings_page():
             "Game Diff Avg": round(game_diff_avg, 2),
             "Recent Trend": player_trend
         })
-
     rank_df = pd.DataFrame(rank_data)
     if not rank_df.empty:
         rank_df = rank_df.sort_values(
@@ -574,13 +443,52 @@ def rankings_page():
             ascending=[False, False, False, False, True]
         ).reset_index(drop=True)
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
+    return rank_df, partner_wins
 
+rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
+
+def landing_page():
+    st.header("AR Tennis App")
+    st.markdown("##### Select a section to continue")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Rankings", key="btn_rankings", help="View player rankings", use_container_width=True):
+            st.session_state.page = 'rankings'
+            st.rerun()
+        if st.button("Player Profile", key="btn_player_profile", help="Manage player profiles", use_container_width=True):
+            st.session_state.page = 'player_profile'
+            st.rerun()
+    with col2:
+        if st.button("Matches", key="btn_matches", help="Post and view match results", use_container_width=True):
+            st.session_state.page = 'matches'
+            st.rerun()
+        if st.button("Court Locations", key="btn_courts", help="Find local tennis courts", use_container_width=True):
+            st.session_state.page = 'court_locations'
+            st.rerun()
+    st.markdown("""
+        <style>
+        div[data-testid="stButton"] button {
+            background-color: #161e80;
+            border: 2px solid #fff500;
+            border-radius: 10px;
+            color: #fff500;
+            height: 120px;
+            font-weight: bold;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin-top: 10px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+def rankings_page(players_df, matches, rank_df, partner_wins_data):
     st.header("Rankings")
     view_mode = st.radio("Display View", ["Card View", "Table View"], horizontal=True, key="ranking_view_mode")
-    
     current_date_formatted = datetime.now().strftime("%d/%m")
     st.subheader(f"Rankings as of {current_date_formatted}")
-
     if view_mode == "Table View":
         if not rank_df.empty:
             table_df = rank_df.drop(columns=['Profile', 'Recent Trend'])
@@ -619,23 +527,19 @@ def rankings_page():
                 """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
-
     st.subheader("Player Insights")
     selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings")
     if not rank_df.empty:
-        display_player_insights(selected_player_rankings, players_df, matches, rank_df, partner_wins, key_prefix="rankings_")
+        display_player_insights(selected_player_rankings, players_df, matches, rank_df, partner_wins_data, key_prefix="rankings_")
     else:
         st.info("Player insights will be available once there is match data.")
 
-
-# --- Matches Page Content ---
-def matches_page():
+def matches_page(players_df, matches):
     st.header("Matches")
     with st.expander("➕ Post New Match Result"):
         st.subheader("Enter Match Result")
         match_type_new = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key="post_match_type_new")
         available_players = players.copy() if players else []
-
         if not available_players:
             st.warning("No players available. Please add players in the Player Profile tab.")
         else:
@@ -653,13 +557,11 @@ def matches_page():
                 p3_new = st.selectbox("Player 2", [""] + available_players_p2_new, key="s1p2_new_post")
                 p2_new = ""
                 p4_new = ""
-
             set1_new = st.selectbox("Set 1", tennis_scores(), index=4, key="set1_new_post")
             set2_new = st.selectbox("Set 2 (optional)", [""] + tennis_scores(), key="set2_new_post")
             set3_new = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), key="set3_new_post")
             winner_new = st.radio("Winner", ["Team 1", "Team 2", "Tie"], key="winner_new_post")
             match_image_new = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key="match_image_new_post")
-
             if st.button("Submit Match", key="submit_new_match_post"):
                 if match_type_new == "Doubles" and not all([p1_new, p2_new, p3_new, p4_new]):
                     st.error("Please select all four players for a doubles match.")
@@ -671,7 +573,6 @@ def matches_page():
                     image_url_new = ""
                     if match_image_new:
                         image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image_type="match")
-                    
                     new_match_entry = {
                         "match_id": match_id_new,
                         "date": new_match_date.strftime("%Y-%m-%d"),
@@ -690,17 +591,14 @@ def matches_page():
                     save_matches(matches)
                     st.success("Match submitted.")
                     st.rerun()
-
     st.markdown("---")
     st.subheader("Match History")
     match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True, key="match_history_filter")
-    
     filtered_matches = matches.copy()
     if match_filter != "All":
         filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
     filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
     filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
-
     def format_match_label(row):
         score_parts = [f"<span style='font-weight:bold; color:#fff500;'>{row['set1']}</span>"]
         if row['set2']:
@@ -726,7 +624,6 @@ def matches_page():
             else:
                 desc = f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
         return f"{desc} | {score} | {date_str} | {row['match_id']}"
-
     if filtered_matches.empty:
         st.info("No matches found.")
     else:
@@ -744,7 +641,6 @@ def matches_page():
             else:
                 with cols[1]:
                     st.markdown(f"- {match_label}", unsafe_allow_html=True)
-        
         st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
         st.markdown("### ✏️ Manage Existing Match")
         clean_match_options = []
@@ -760,20 +656,16 @@ def matches_page():
             else:
                 desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
             clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
-
         selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit")
-        
         if selected_match_to_edit:
             selected_id = selected_match_to_edit.split(" | ")[-1]
             row = matches[matches["match_id"] == selected_id].iloc[0]
             idx = matches[matches["match_id"] == selected_id].index[0]
-            
             current_date_dt = pd.to_datetime(row["date"])
             all_scores = [""] + tennis_scores()
             set1_index = all_scores.index(row["set1"]) if row["set1"] in all_scores else 0
             set2_index = all_scores.index(row["set2"]) if row["set2"] in all_scores else 0
             set3_index = all_scores.index(row["set3"]) if row["set3"] in all_scores else 0
-
             with st.expander("Edit Match Details"):
                 date_edit = st.date_input("Match Date", value=current_date_dt.date(), key=f"edit_date_{selected_id}")
                 match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
@@ -786,12 +678,10 @@ def matches_page():
                 set3_edit = st.selectbox("Set 3 (optional)", all_scores, index=set3_index, key=f"edit_set3_{selected_id}")
                 winner_edit = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
                 match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
-
                 if st.button("Save Changes", key=f"save_match_changes_{selected_id}"):
                     image_url_edit = row["match_image_url"]
                     if match_image_edit:
                         image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
-                    
                     matches.loc[idx] = {
                         "match_id": selected_id,
                         "date": date_edit,
@@ -815,12 +705,10 @@ def matches_page():
                 st.success("Match deleted.")
                 st.rerun()
 
-# --- Player Profile Page Content ---
-def player_profile_page():
+def player_profile_page(players_df, matches, rank_df, partner_wins_data):
     st.header("Player Profile")
     st.subheader("Player Insights")
     selected_player_profile_insights = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
-    rank_df = get_rank_df()
     if not rank_df.empty:
         display_player_insights(selected_player_profile_insights, players_df, matches, rank_df, partner_wins_data, key_prefix="profile_")
     else:
@@ -891,7 +779,6 @@ def player_profile_page():
                     st.success(f"{selected_player_manage} removed.")
                     st.rerun()
 
-# --- Court Locations Page Content ---
 def court_locations_page():
     st.header("Court Locations")
     st.markdown("### Arabian Ranches Tennis Courts")
@@ -916,98 +803,21 @@ def court_locations_page():
     st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
     st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
 
-
-# Helper function to get rank_df and partner_wins_data (moved from the rankings_page function)
-def get_rank_df_and_partner_wins():
-    scores = defaultdict(float)
-    wins = defaultdict(int)
-    losses = defaultdict(int)
-    matches_played = defaultdict(int)
-    games_won = defaultdict(int)
-    game_diff = defaultdict(int)
-    partner_wins = defaultdict(lambda: defaultdict(int))
-    for _, row in matches.iterrows():
-        if row['match_type'] == 'Doubles':
-            t1 = [row['team1_player1'], row['team1_player2']]
-            t2 = [row['team2_player1'], row['team2_player2']]
-        else:
-            t1 = [row['team1_player1']]
-            t2 = [row['team2_player1']]
-        team1_total_games = sum(int(s.split('-')[0]) for s in [row['set1'], row['set2'], row['set3']] if s and '-' in s)
-        team2_total_games = sum(int(s.split('-')[1]) for s in [row['set1'], row['set2'], row['set3']] if s and '-' in s)
-        if row["winner"] == "Team 1":
-            for p in t1: scores[p] += 3; wins[p] += 1; matches_played[p] += 1; game_diff[p] += team1_total_games - team2_total_games
-            for p in t2: scores[p] += 1; losses[p] += 1; matches_played[p] += 1; game_diff[p] += team2_total_games - team1_total_games
-        elif row["winner"] == "Team 2":
-            for p in t2: scores[p] += 3; wins[p] += 1; matches_played[p] += 1; game_diff[p] += team2_total_games - team1_total_games
-            for p in t1: scores[p] += 1; losses[p] += 1; matches_played[p] += 1; game_diff[p] += team1_total_games - team2_total_games
-        else:
-            for p in t1 + t2: scores[p] += 1.5; matches_played[p] += 1; game_diff[p] += team1_total_games - team2_total_games if p in t1 else team2_total_games - team1_total_games
-        for set_score in [row['set1'], row['set2'], row['set3']]:
-            if set_score and '-' in set_score:
-                try:
-                    team1_games, team2_games = map(int, set_score.split('-'))
-                    for p in t1: games_won[p] += team1_games
-                    for p in t2: games_won[p] += team2_games
-                except ValueError:
-                    continue
-        if row['match_type'] == 'Doubles':
-            if row["winner"] == "Team 1":
-                partner_wins[row['team1_player1']][row['team1_player2']] += 1
-                partner_wins[row['team1_player2']][row['team1_player1']] += 1
-            elif row["winner"] == "Team 2":
-                partner_wins[row['team2_player1']][row['team2_player2']] += 1
-                partner_wins[row['team2_player2']][row['team2_player1']] += 1
-    rank_data = []
-    for player in scores:
-        win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
-        game_diff_avg = (game_diff[player] / matches_played[player]) if matches_played[player] > 0 else 0
-        profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
-        player_trend = get_player_trend(player, matches)
-        rank_data.append({
-            "Rank": f"🏆 {len(rank_data) + 1}",
-            "Profile": profile_image,
-            "Player": player,
-            "Points": scores[player],
-            "Win %": round(win_percentage, 2),
-            "Matches": matches_played[player],
-            "Wins": wins[player],
-            "Losses": losses[player],
-            "Games Won": games_won[player],
-            "Game Diff Avg": round(game_diff_avg, 2),
-            "Recent Trend": player_trend
-        })
-    rank_df = pd.DataFrame(rank_data)
-    if not rank_df.empty:
-        rank_df = rank_df.sort_values(
-            by=["Points", "Win %", "Game Diff Avg", "Games Won", "Player"],
-            ascending=[False, False, False, False, True]
-        ).reset_index(drop=True)
-        rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
-    return rank_df, partner_wins
-
-rank_df, partner_wins_data = get_rank_df_and_partner_wins()
-
-
-# --- Main Application Logic ---
 if st.session_state.page == 'home':
     landing_page()
 elif st.session_state.page == 'rankings':
-    rankings_page()
+    rankings_page(players_df, matches, rank_df, partner_wins_data)
 elif st.session_state.page == 'matches':
-    matches_page()
+    matches_page(players_df, matches)
 elif st.session_state.page == 'player_profile':
-    player_profile_page()
+    player_profile_page(players_df, matches, rank_df, partner_wins_data)
 elif st.session_state.page == 'court_locations':
     court_locations_page()
 
-# --- Screen-wide Home Button ---
 if st.session_state.page != 'home':
     if st.button("🏠 Home", key="home_button", use_container_width=True):
         st.session_state.page = 'home'
         st.rerun()
-
-    # Apply CSS to make the home button fixed at the bottom
     st.markdown(f"""
         <style>
             [data-testid="stButton"][key="home_button"] {{
@@ -1029,7 +839,6 @@ if st.session_state.page != 'home':
             }}
         </style>
         """, unsafe_allow_html=True)
-
 
 st.markdown("""
 <div style='background-color: #161e80; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white; margin-top: 20px;'>
