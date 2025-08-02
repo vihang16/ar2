@@ -322,23 +322,36 @@ st.markdown("""
         margin-top: 20px;
         padding: 0 20px;
     }
-    .grid-button {
-        width: 125px;
-        height: 125px;
+    /* Updated styling for the buttons to use the 1.5:1 aspect ratio */
+    div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button {
+        width: 100% !important;
+        height: auto !important; /* Changed to auto to allow height to be calculated */
+        padding-top: 66.67% !important; /* (1 / 1.5) * 100% = 66.67% */
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
         color: #fff500;
         font-weight: bold;
         font-size: 1.2em;
+        position: relative; /* Added for absolute positioning of content */
+        margin: 5px;
+        transition: transform 0.2s;
+    }
+    div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button:hover {
+        transform: scale(1.05);
+    }
+    div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button > div {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-direction: column;
-        transition: transform 0.2s;
-    }
-    .grid-button:hover {
-        transform: scale(1.05);
+        padding: 10px; /* Add padding to prevent text touching edges */
+        box-sizing: border-box; /* Include padding in the element's total width and height */
     }
     </style>
 """, unsafe_allow_html=True)
@@ -467,22 +480,33 @@ def landing_page():
         <style>
         div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button {
             width: 100% !important;
-            height: 125px !important;
+            height: auto !important; /* Changed to auto to allow height to be calculated */
+            padding-top: 66.67% !important; /* (1 / 1.5) * 100% = 66.67% */
             background-color: #161e80;
             border: 2px solid #fff500;
             border-radius: 10px;
             color: #fff500;
             font-weight: bold;
             font-size: 1.2em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
+            position: relative; /* Added for absolute positioning of content */
             margin: 5px;
             transition: transform 0.2s;
         }
         div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button:hover {
             transform: scale(1.05);
+        }
+        div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button > div {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 10px;
+            box-sizing: border-box;
         }
         </style>
     """, unsafe_allow_html=True)
