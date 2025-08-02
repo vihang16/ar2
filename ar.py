@@ -53,9 +53,13 @@ def load_matches():
         st.error(f"Error loading matches: {str(e)}")
         return pd.DataFrame(columns=expected_columns)
 
-# FIX: Use upsert to prevent deleting all matches
+# FIX: Use upsert and ensure 'date' is in string format to prevent JSON serialization error
 def save_matches(df):
     try:
+        # Convert 'date' column to string format to be JSON serializable
+        if 'date' in df.columns and pd.api.types.is_datetime64_any_dtype(df['date']):
+            df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+            
         # Use upsert to insert or update matches without deleting existing ones
         supabase.table(matches_table_name).upsert(df.to_dict("records")).execute()
     except Exception as e:
