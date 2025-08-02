@@ -181,8 +181,8 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     **Matches Played**: {int(player_data["Matches"])}  
                     **Wins**: {int(player_data["Wins"])}  
                     **Losses**: {int(player_data["Losses"])}  
-                    **Games Won**: {int(player_data["Games Won"])}  
                     **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}  
+                    **Games Won**: {int(player_data["Games Won"])}  
                     **Birthday**: {birthday}  
                     **Partners Played With**: {dict(partner_wins_data[selected_player])}  
                     **Recent Trend**: {trend}  
@@ -530,8 +530,8 @@ with tabs[0]: # Rankings Tab
                 <div class="matches-col">{int(row["Matches"])}</div>
                 <div class="wins-col">{int(row["Wins"])}</div>
                 <div class="losses-col">{int(row["Losses"])}</div>
-                <div class="games-won-col">{int(row["Games Won"])}</div>
                 <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                <div class="games-won-col">{int(row["Games Won"])}</div>
                 <div class="trend-col">{trend_value_styled}</div>
             </div>
             """, unsafe_allow_html=True)
