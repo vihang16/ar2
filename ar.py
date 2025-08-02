@@ -339,6 +339,9 @@ st.markdown("""
         font-size: 1.5em;
         font-weight: bold;
     }
+    .app-logo {
+        height: 40px;
+    }
     .menu-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
@@ -368,7 +371,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Add the new fixed header with a home button
+# Add the new fixed header with a home button and the dubai.png image
 st.markdown("""
     <div class="app-header">
         <div onclick="window.parent.postMessage({ type: 'streamlit:setSessionState', state: { page: 'home' } }, '*')">
@@ -378,7 +381,9 @@ st.markdown("""
             </svg>
         </div>
         <div class="app-title">AR Tennis</div>
-        <div></div>
+        <div>
+            <img src="https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png" class="app-logo" alt="Dubai.png">
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -525,6 +530,9 @@ def landing_page():
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
     """Renders the rankings page."""
+    if st.button("⬅️ Back to Home"):
+        st.session_state.page = 'home'
+        st.rerun()
     st.header("Rankings")
     view_mode = st.radio("Display View", ["Card View", "Table View"], horizontal=True, key="ranking_view_mode")
     current_date_formatted = datetime.now().strftime("%d/%m")
@@ -576,6 +584,9 @@ def rankings_page(players_df, matches, rank_df, partner_wins_data):
 
 def matches_page(players_df, matches):
     """Renders the matches page."""
+    if st.button("⬅️ Back to Home"):
+        st.session_state.page = 'home'
+        st.rerun()
     st.header("Matches")
     with st.expander("➕ Post New Match Result"):
         st.subheader("Enter Match Result")
@@ -738,6 +749,7 @@ def matches_page(players_df, matches):
                         "match_image_url": image_url
                     }
                     save_matches(matches)
+                    st.session_state.players_df = load_players()
                     st.success("Match updated.")
                     st.rerun()
             if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
@@ -748,6 +760,9 @@ def matches_page(players_df, matches):
 
 def player_profile_page(players_df, matches, rank_df, partner_wins_data):
     """Renders the player profile page."""
+    if st.button("⬅️ Back to Home"):
+        st.session_state.page = 'home'
+        st.rerun()
     st.header("Player Profile")
     st.subheader("Player Insights")
     selected_player_profile_insights = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
@@ -823,6 +838,9 @@ def player_profile_page(players_df, matches, rank_df, partner_wins_data):
 
 def court_locations_page():
     """Renders the court locations page."""
+    if st.button("⬅️ Back to Home"):
+        st.session_state.page = 'home'
+        st.rerun()
     st.header("Court Locations")
     st.markdown("### Arabian Ranches Tennis Courts")
     st.markdown("- [Alvorado 1 & 2](https://maps.google.com/?q=25.041792,55.259258)")
