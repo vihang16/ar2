@@ -669,8 +669,14 @@ with tabs[1]: # Matches Tab
             selected_id = selected_match_to_edit.split(" | ")[-1]
             row = matches[matches["match_id"] == selected_id].iloc[0]
             idx = matches[matches["match_id"] == selected_id].index[0]
+            
+            # Convert date string to datetime object for the date_input widget
+            current_date_dt = pd.to_datetime(row["date"])
 
             with st.expander("Edit Match Details"):
+                # Allow editing the match date
+                date_edit = st.date_input("Match Date", value=current_date_dt.date(), key=f"edit_date_{selected_id}")
+                
                 match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
                 p1_edit = st.text_input("Team 1 - Player 1", value=row["team1_player1"], key=f"edit_t1p1_{selected_id}")
                 p2_edit = st.text_input("Team 1 - Player 2", value=row["team1_player2"], key=f"edit_t1p2_{selected_id}")
@@ -689,7 +695,7 @@ with tabs[1]: # Matches Tab
                     
                     matches.loc[idx] = {
                         "match_id": selected_id,
-                        "date": row["date"], # Date should not be changed here
+                        "date": date_edit,  # Use the new date input
                         "match_type": match_type_edit,
                         "team1_player1": p1_edit,
                         "team1_player2": p2_edit,
