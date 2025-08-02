@@ -339,15 +339,19 @@ st.markdown("""
         text-decoration: underline !important;
     }
     
-    /* NEW CSS for the homepage button grid to ensure correct aspect ratio */
+    /* Updated CSS for the homepage button grid to ensure 1:1.5 aspect ratio and centered 2x2 grid */
     .home-button-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px; /* Adds space between buttons */
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* Two columns of equal width */
+        gap: 20px; /* Space between buttons */
+        justify-content: center; /* Center the grid horizontally */
+        max-width: 600px; /* Limit max width for larger screens */
+        margin: 0 auto; /* Center the grid container */
+        padding: 20px; /* Add padding for spacing */
     }
     .home-button-row > div {
-        flex: 1 1 45%; /* Makes columns flexible and approximately 45% width for a 2x2 grid with gap */
-        min-width: 150px;
+        width: 100%;
+        position: relative;
     }
     .home-button-row .stButton {
         width: 100%;
@@ -367,7 +371,7 @@ st.markdown("""
         text-align: center;
         width: 100%;
         height: 0;
-        padding-bottom: 150%; /* This creates the 1 wide x 1.5 tall aspect ratio */
+        padding-bottom: 150%; /* Creates 1:1.5 aspect ratio (height = 1.5 * width) */
         position: relative;
         overflow: hidden;
     }
@@ -383,12 +387,22 @@ st.markdown("""
         transform: scale(1.05);
         background-color: #0d1259;
     }
+    /* Ensure responsiveness for smaller screens */
+    @media (max-width: 600px) {
+        .home-button-row {
+            grid-template-columns: repeat(2, 1fr); /* Maintain 2x2 grid */
+            gap: 10px; /* Reduce gap for smaller screens */
+            padding: 10px;
+        }
+        .home-button-row .stButton > button {
+            font-size: 1em; /* Slightly smaller font for smaller screens */
+        }
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # Main Header Image
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
-
 
 if 'players_df' not in st.session_state:
     st.session_state.players_df = load_players()
@@ -481,7 +495,7 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 def home_page_buttons():
     """Renders the main landing page with a two-column button grid."""
     st.markdown('<div class="home-button-row">', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1, 1])  # Equal width columns
     with col1:
         if st.button("Rankings", key="btn_rankings"):
             st.session_state.page = 'rankings'
@@ -490,8 +504,7 @@ def home_page_buttons():
         if st.button("Matches", key="btn_matches"):
             st.session_state.page = 'matches'
             st.rerun()
-
-    col3, col4 = st.columns(2)
+    col3, col4 = st.columns([1, 1])  # Equal width columns
     with col3:
         if st.button("Player Profile", key="btn_player_profile"):
             st.session_state.page = 'player_profile'
@@ -501,7 +514,6 @@ def home_page_buttons():
             st.session_state.page = 'court_locations'
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
-
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
     """Renders the rankings page."""
@@ -858,7 +870,6 @@ elif st.session_state.page == 'rankings':
 elif st.session_state.page == 'matches':
     matches_page(players_df, matches)
 elif st.session_state.page == 'player_profile':
-    # Pass the 'players' list to the function to ensure it's in scope.
     player_profile_page(players_df, matches, rank_df, partner_wins_data, players)
 elif st.session_state.page == 'court_locations':
     court_locations_page()
