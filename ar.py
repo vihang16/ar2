@@ -56,12 +56,18 @@ def load_matches():
 # FIX: Use upsert and ensure 'date' is in string format to prevent JSON serialization error
 def save_matches(df):
     try:
-        # Convert 'date' column to string format to be JSON serializable
-        if 'date' in df.columns and pd.api.types.is_datetime64_any_dtype(df['date']):
-            df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+        # Create a copy to avoid modifying the original DataFrame directly
+        df_to_save = df.copy()
+        
+        # Explicitly convert to datetime, then to string for safety
+        if 'date' in df_to_save.columns:
+            df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
+            # Filter out any rows with NaT (Not a Time) values resulting from bad conversions
+            df_to_save = df_to_save.dropna(subset=['date'])
+            df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d')
             
-        # Use upsert to insert or update matches without deleting existing ones
-        supabase.table(matches_table_name).upsert(df.to_dict("records")).execute()
+        # Use upsert to insert or update matches
+        supabase.table(matches_table_name).upsert(df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
 
