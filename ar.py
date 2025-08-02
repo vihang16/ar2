@@ -339,38 +339,32 @@ st.markdown("""
         text-decoration: underline !important;
     }
     
-    /* CSS for the homepage button grid to maintain 1:1.5 aspect ratio and centered 2x2 grid */
-    .home-button-row {
+    /* CSS for the homepage button grid to ensure 2x2 grid and 1:1.5 aspect ratio */
+    .home-button-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(120px, 180px)); /* Two columns with min/max width */
-        grid-template-rows: repeat(2, auto); /* Two rows */
-        gap: 15px; /* Space between buttons */
+        grid-template-rows: repeat(2, minmax(180px, 270px)); /* Two rows with height based on 1:1.5 ratio */
+        gap: 10px; /* Controlled gap between buttons */
         justify-content: center; /* Center grid horizontally */
         align-content: center; /* Center grid vertically */
         max-width: 400px; /* Constrain width for larger screens */
         margin: 20px auto; /* Center the grid container */
-        padding: 20px 10px; /* Padding for spacing */
-        box-sizing: border-box;
+        padding: 10px; /* Minimal padding */
     }
-    .home-button-container {
-        width: 100%;
-        aspect-ratio: 1 / 1.5; /* Explicit 1:1.5 aspect ratio (width:height) */
-        position: relative;
-    }
-    .home-button-container .stButton {
+    .home-button-grid .stButton {
         width: 100%;
         height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
+        margin: 0 !important; /* Override Streamlit margins */
+        padding: 0 !important; /* Override Streamlit padding */
     }
-    .home-button-container .stButton > button {
+    .home-button-grid .stButton > button {
         width: 100%;
         height: 100%;
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
         color: #fff500;
+        font-family: 'Offside', sans-serif;
         font-weight: bold;
         font-size: clamp(1em, 4vw, 1.2em); /* Responsive font size */
         display: flex;
@@ -378,21 +372,28 @@ st.markdown("""
         justify-content: center;
         text-align: center;
         transition: transform 0.2s, background-color 0.2s;
-        overflow: hidden;
+        box-sizing: border-box;
+        aspect-ratio: 1 / 1.5; /* Enforce 1:1.5 aspect ratio */
     }
-    .home-button-container .stButton > button:hover {
+    .home-button-grid .stButton > button:hover {
         transform: scale(1.05);
         background-color: #0d1259;
     }
+    /* Override Streamlit's default button container styles */
+    .home-button-grid div[class*="st-emotion-cache"] {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
     /* Ensure responsiveness for smaller screens */
     @media (max-width: 600px) {
-        .home-button-row {
+        .home-button-grid {
             grid-template-columns: repeat(2, minmax(100px, 140px)); /* Smaller buttons */
-            gap: 10px; /* Reduced gap */
+            grid-template-rows: repeat(2, minmax(150px, 210px)); /* Adjust height for 1:1.5 ratio */
+            gap: 8px; /* Smaller gap */
             max-width: 90vw; /* Responsive width */
-            padding: 10px 5px;
+            padding: 8px;
         }
-        .home-button-container .stButton > button {
+        .home-button-grid .stButton > button {
             font-size: clamp(0.9em, 3.5vw, 1em); /* Smaller font */
         }
     }
@@ -492,27 +493,19 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def home_page_buttons():
     """Renders the main landing page with a two-column button grid."""
-    st.markdown('<div class="home-button-row">', unsafe_allow_html=True)
-    st.markdown('<div class="home-button-container">', unsafe_allow_html=True)
+    st.markdown('<div class="home-button-grid">', unsafe_allow_html=True)
     if st.button("Rankings", key="btn_rankings"):
         st.session_state.page = 'rankings'
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="home-button-container">', unsafe_allow_html=True)
     if st.button("Matches", key="btn_matches"):
         st.session_state.page = 'matches'
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="home-button-container">', unsafe_allow_html=True)
     if st.button("Player Profile", key="btn_player_profile"):
         st.session_state.page = 'player_profile'
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="home-button-container">', unsafe_allow_html=True)
     if st.button("Court Locations", key="btn_courts"):
         st.session_state.page = 'court_locations'
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
@@ -859,7 +852,7 @@ def court_locations_page():
     st.markdown("- [Mira 4](https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A)")
     st.markdown("- [Mira 5 A & B](https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6)")
     st.markdown("- [Mira Oasis 1](https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8)")
-    st.markdown("- [Mira Oasis 2](https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9)")
+    st.markdown("- [Mira Oasis 2](https://maps.app.goo.gl/ZNJteRu8aYVCy8sd9)")
     st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
     st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
 
