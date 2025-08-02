@@ -342,66 +342,67 @@ st.markdown("""
     /* Updated CSS for the homepage button grid to ensure 1:1.5 aspect ratio and centered 2x2 grid */
     .home-button-row {
         display: grid;
-        grid-template-columns: repeat(2, minmax(120px, 200px)); /* Two columns with min/max width */
+        grid-template-columns: repeat(2, minmax(120px, 180px)); /* Two columns with min/max width */
         grid-template-rows: repeat(2, auto); /* Two rows */
-        gap: 20px; /* Space between buttons */
+        gap: 15px; /* Space between buttons */
         justify-content: center; /* Center grid horizontally */
         align-content: center; /* Center grid vertically */
-        max-width: 500px; /* Limit max width for larger screens */
-        margin: 20px auto; /* Center the grid container with margin */
+        max-width: 400px; /* Constrain width for larger screens */
+        margin: 20px auto; /* Center the grid container */
         padding: 20px 10px; /* Padding for spacing */
         box-sizing: border-box;
     }
-    .home-button-row > div {
+    .home-button {
         width: 100%;
         aspect-ratio: 1 / 1.5; /* Explicit 1:1.5 aspect ratio (width:height) */
-        position: relative;
-    }
-    .home-button-row .stButton {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
-    .home-button-row .stButton > button {
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
         color: #fff500;
         font-weight: bold;
         font-size: clamp(1em, 4vw, 1.2em); /* Responsive font size */
-        transition: transform 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
         text-align: center;
-        width: 100%;
-        height: 100%; /* Fill the container */
-        position: absolute;
+        cursor: pointer;
+        transition: transform 0.2s, background-color 0.2s;
+        position: relative;
         overflow: hidden;
     }
-    .home-button-row .stButton > button span {
-        width: 90%;
-        line-height: 1.2;
-    }
-    .home-button-row .stButton > button:hover {
+    .home-button:hover {
         transform: scale(1.05);
         background-color: #0d1259;
     }
     /* Ensure responsiveness for smaller screens */
     @media (max-width: 600px) {
         .home-button-row {
-            grid-template-columns: repeat(2, minmax(100px, 150px)); /* Smaller buttons */
+            grid-template-columns: repeat(2, minmax(100px, 140px)); /* Smaller buttons */
             gap: 10px; /* Reduced gap */
             max-width: 90vw; /* Responsive width */
             padding: 10px 5px;
         }
-        .home-button-row .stButton > button {
+        .home-button {
             font-size: clamp(0.9em, 3.5vw, 1em); /* Smaller font */
         }
     }
     </style>
+    
+    <script>
+    function navigate(page) {
+        // Create a form to submit the page change to Streamlit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'page';
+        input.value = page;
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+    </script>
 """, unsafe_allow_html=True)
 
 # Main Header Image
@@ -497,12 +498,18 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def home_page_buttons():
     """Renders the main landing page with a two-column button grid."""
-    st.markdown('<div class="home-button-row">', unsafe_allow_html=True)
-    st.button("Rankings", key="btn_rankings", on_click=lambda: st.session_state.update({'page': 'rankings'}))
-    st.button("Matches", key="btn_matches", on_click=lambda: st.session_state.update({'page': 'matches'}))
-    st.button("Player Profile", key="btn_player_profile", on_click=lambda: st.session_state.update({'page': 'player_profile'}))
-    st.button("Court Locations", key="btn_courts", on_click=lambda: st.session_state.update({'page': 'court_locations'}))
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="home-button-row">
+        <div class="home-button" onclick="navigate('rankings')">Rankings</div>
+        <div class="home-button" onclick="navigate('matches')">Matches</div>
+        <div class="home-button" onclick="navigate('player_profile')">Player Profile</div>
+        <div class="home-button" onclick="navigate('court_locations')">Court Locations</div>
+    </div>
+    """, unsafe_allow_html=True)
+    # Handle navigation via form submission
+    if 'page' in st.session_state and st.session_state.page != 'home':
+        st.session_state.page = st.session_state.page
+        st.rerun()
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
     """Renders the rankings page."""
