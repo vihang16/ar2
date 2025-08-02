@@ -463,7 +463,7 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def home_page_buttons():
     """Renders the main landing page with a two-column button grid."""
-    st.markdown("### Choose a section:")
+    # The "Choose a section" text has been removed as requested.
     # Use a custom div to ensure a 2-column grid layout on all screen sizes
     st.markdown('<div class="home-button-row">', unsafe_allow_html=True)
     if st.button("Rankings", key="btn_rankings"):
