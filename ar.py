@@ -90,8 +90,8 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
         
         public_url = supabase.storage.from_(bucket).get_public_url(file_path)
         # Check if the public_url is valid, otherwise it might indicate an issue
-        if not public_url.startswith(f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v1/object/public/{bucket}/"):
-             st.warning(f"Uploaded image URL does not match expected prefix. Got: {public_url}")
+        if not public_url.startswith(f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v trolley
+            st.warning(f"Uploaded image URL does not match expected prefix. Got: {public_url}")
         return public_url
     except Exception as e:
         st.error(f"Error uploading image to bucket '{bucket}/{file_path}': {str(e)}")
@@ -248,7 +248,7 @@ st.markdown("""
         display: block; /* Stack elements vertically */
         padding: 10px;
         margin-bottom: 10px; /* Space between player cards */
-        border: 1px solid #ddd;
+        border: 1px solid #808080; /* Changed from #ddd to #808080 for darker grey */
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
@@ -318,14 +318,11 @@ st.markdown("""
         color: #fff500; /* Set values color to optic yellow */
     }
 
-
     /* Remove extra space below the subheader for "Rankings as of dd/mm" */
-    /* Target the specific subheader element's container */
     div.st-emotion-cache-1jm692n { /* This targets the div containing the subheader */
         margin-bottom: 0px !important;
         padding-bottom: 0px !important;
     }
-    /* Also target the subheader itself in case it has its own margin/padding */
     div.st-emotion-cache-1jm692n h3 {
         margin-bottom: 0px !important;
         padding-bottom: 0px !important;
@@ -574,31 +571,22 @@ with tabs[1]: # Matches Tab
     with st.expander("➕ Post New Match Result"):
         st.subheader("Enter Match Result")
         match_type_new = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key="post_match_type_new")
-        
-        # Prepare the list of players for the dropdowns
-        all_players_and_visitor = players + ["Visitor"]
+        available_players = players.copy() if players else []
 
-        if not players:
+        if not available_players:
             st.warning("No players available. Please add players in the Player Profile tab.")
         else:
             if match_type_new == "Doubles":
-                p1_new = st.selectbox("Team 1 - Player 1", [""] + all_players_and_visitor, key="t1p1_new_post")
-                available_players_t1p2_new = [p for p in all_players_and_visitor if p != p1_new] if p1_new and p1_new != "Visitor" else all_players_and_visitor
+                p1_new = st.selectbox("Team 1 - Player 1", [""] + available_players, key="t1p1_new_post")
+                available_players_t1p2_new = [p for p in available_players if p != p1_new] if p1_new else available_players
                 p2_new = st.selectbox("Team 1 - Player 2", [""] + available_players_t1p2_new, key="t1p2_new_post")
-                
-                # Update available players for team 2, preventing a second visitor
-                available_players_t2p1_new = [p for p in all_players_and_visitor if p != p1_new and p != p2_new]
-                if "Visitor" in [p1_new, p2_new]:
-                    available_players_t2p1_new = [p for p in available_players_t2p1_new if p != "Visitor"]
+                available_players_t2p1_new = [p for p in available_players_t1p2_new if p != p2_new] if p2_new else available_players_t1p2_new
                 p3_new = st.selectbox("Team 2 - Player 1", [""] + available_players_t2p1_new, key="t2p1_new_post")
-                
-                available_players_t2p2_new = [p for p in all_players_and_visitor if p != p1_new and p != p2_new and p != p3_new]
-                if "Visitor" in [p1_new, p2_new, p3_new]:
-                    available_players_t2p2_new = [p for p in available_players_t2p2_new if p != "Visitor"]
+                available_players_t2p2_new = [p for p in available_players_t1p2_new if p != p3_new] if p3_new else available_players_t1p2_new
                 p4_new = st.selectbox("Team 2 - Player 2", [""] + available_players_t2p2_new, key="t2p2_new_post")
             else:
-                p1_new = st.selectbox("Player 1", [""] + players, key="s1p1_new_post")
-                available_players_p2_new = [p for p in players if p != p1_new] if p1_new else players
+                p1_new = st.selectbox("Player 1", [""] + available_players, key="s1p1_new_post")
+                available_players_p2_new = [p for p in available_players if p != p1_new] if p1_new else available_players
                 p3_new = st.selectbox("Player 2", [""] + available_players_p2_new, key="s1p2_new_post")
                 p2_new = ""
                 p4_new = ""
@@ -748,18 +736,15 @@ with tabs[1]: # Matches Tab
         set2_index = all_scores.index(row["set2"]) if row["set2"] in all_scores else 0
         set3_index = all_scores.index(row["set3"]) if row["set3"] in all_scores else 0
 
-
         with st.expander("Edit Match Details"):
             # Allow editing the match date
             date_edit = st.date_input("Match Date", value=current_date_dt.date(), key=f"edit_date_{selected_id}")
             
             match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
-            
             p1_edit = st.text_input("Team 1 - Player 1", value=row["team1_player1"], key=f"edit_t1p1_{selected_id}")
             p2_edit = st.text_input("Team 1 - Player 2", value=row["team1_player2"], key=f"edit_t1p2_{selected_id}")
             p3_edit = st.text_input("Team 2 - Player 1", value=row["team2_player1"], key=f"edit_t2p1_{selected_id}")
             p4_edit = st.text_input("Team 2 - Player 2", value=row["team2_player2"], key=f"edit_t2p2_{selected_id}")
-            
             set1_edit = st.selectbox("Set 1", all_scores, index=set1_index, key=f"edit_set1_{selected_id}")
             set2_edit = st.selectbox("Set 2 (optional)", all_scores, index=set2_index, key=f"edit_set2_{selected_id}")
             set3_edit = st.selectbox("Set 3 (optional)", all_scores, index=set3_index, key=f"edit_set3_{selected_id}")
@@ -767,21 +752,6 @@ with tabs[1]: # Matches Tab
             match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
 
             if st.button("Save Changes", key=f"save_match_changes_{selected_id}"):
-                
-                # Check for visitor count in doubles
-                if match_type_edit == "Doubles":
-                    players_list = [p1_edit, p2_edit, p3_edit, p4_edit]
-                    visitor_count = players_list.count("Visitor")
-                    if visitor_count > 1:
-                        st.error("Only one 'Visitor' is allowed per doubles match.")
-                        st.stop() # Stop the script execution
-                elif match_type_edit == "Singles":
-                     # No visitors allowed in singles
-                    if "Visitor" in [p1_edit, p3_edit]:
-                        st.error("No 'Visitor' is allowed in a singles match.")
-                        st.stop()
-
-
                 image_url_edit = row["match_image_url"]
                 if match_image_edit:
                     image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
@@ -840,7 +810,7 @@ with tabs[2]: # Player Profile Tab
                 else:
                     st.warning(f"{new_player} already exists.")
             else:
-                st.warning("Please enter a player name to add.")
+                st.warning("Please enter a player name».
 
         st.markdown("---") # Separator
 
