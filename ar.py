@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from collections import defaultdict, Counter
 from supabase import create_client, Client
+import json
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis", layout="centered")
@@ -185,6 +186,31 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                 st.markdown(f"**Partners Played With**: {dict(partner_wins_data[selected_player])}")
                 st.markdown(f"**Recent Trend**: {trend}")
 
+# Define the HTML and CSS for the buttons and the grid
+BUTTON_HTML = """
+    <div class="button-grid-container">
+        <button id="btn_rankings">Rankings</button>
+        <button id="btn_matches">Matches</button>
+        <button id="btn_player_profile">Player Profile</button>
+        <button id="btn_courts">Court Locations</button>
+    </div>
+"""
+
+# JavaScript to listen for button clicks and send a message to Streamlit
+BUTTON_JS = """
+<script>
+    const buttons = document.querySelectorAll('.button-grid-container button');
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            const buttonId = button.id;
+            const message = { type: 'button_click', buttonId: buttonId };
+            window.parent.postMessage({ type: 'streamlit:setComponentValue', value: message }, '*');
+        });
+    });
+</script>
+"""
+
+# Style the app using Markdown
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
@@ -313,44 +339,36 @@ st.markdown("""
         padding-top: 80px;
     }
     
-    /* NEW CSS for the fixed two-column layout */
-    .stButton button {
-        width: 100% !important;
-        height: auto !important;
-        padding-top: 150% !important; /* Retains the 1.5:1 aspect ratio */
+    /* Custom grid layout for buttons */
+    .button-grid-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .button-grid-container button {
+        width: 100%;
+        aspect-ratio: 1.5; /* Retains the 1.5:1 aspect ratio */
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
         color: #fff500;
         font-weight: bold;
         font-size: 1.2em;
-        position: relative;
-        margin: 5px;
         transition: transform 0.2s;
-    }
-    .stButton button:hover {
-        transform: scale(1.05);
-    }
-    .stButton button > div {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-direction: column;
-        padding: 10px;
-        box-sizing: border-box;
+        text-align: center;
+        cursor: pointer;
+    }
+    
+    .button-grid-container button:hover {
+        transform: scale(1.05);
+        background-color: #0d1259;
     }
 
-    /* Custom grid layout for buttons */
-    .button-grid-container {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -448,22 +466,23 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def landing_page():
     """Renders the main landing page with a two-column button grid."""
-    # Updated to use custom HTML and CSS for a consistent 2-column grid on all devices.
-    st.markdown("""
-        <div class="button-grid-container">
-            <button onclick="document.querySelector('#btn_rankings').click()">Rankings</button>
-            <button onclick="document.querySelector('#btn_matches').click()">Matches</button>
-            <button onclick="document.querySelector('#btn_player_profile').click()">Player Profile</button>
-            <button onclick="document.querySelector('#btn_courts').click()">Court Locations</button>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Hidden buttons to capture clicks from the HTML
-    st.button("Rankings", key="btn_rankings", help="View player rankings", on_click=lambda: st.session_state.update(page='rankings'))
-    st.button("Matches", key="btn_matches", help="View and post match results", on_click=lambda: st.session_state.update(page='matches'))
-    st.button("Player Profile", key="btn_player_profile", help="Manage player profiles", on_click=lambda: st.session_state.update(page='player_profile'))
-    st.button("Court Locations", key="btn_courts", help="Find court locations", on_click=lambda: st.session_state.update(page='court_locations'))
+    # Use a single markdown block for the buttons to prevent Streamlit from adding extra widgets.
+    st.markdown(BUTTON_HTML + BUTTON_JS, unsafe_allow_html=True)
 
+# Main logic to handle messages from the HTML buttons
+if st.session_state.get('last_message_from_js'):
+    message = st.session_state.pop('last_message_from_js')
+    if message['type'] == 'button_click':
+        button_id = message['buttonId']
+        if button_id == 'btn_rankings':
+            st.session_state.page = 'rankings'
+        elif button_id == 'btn_matches':
+            st.session_state.page = 'matches'
+        elif button_id == 'btn_player_profile':
+            st.session_state.page = 'player_profile'
+        elif button_id == 'btn_courts':
+            st.session_state.page = 'court_locations'
+        st.rerun()
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
     """Renders the rankings page."""
