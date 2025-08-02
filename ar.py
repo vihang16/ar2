@@ -344,6 +344,13 @@ st.markdown("""
         padding: 10px;
         box-sizing: border-box;
     }
+
+    /* Custom grid layout for buttons */
+    .button-grid-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -441,29 +448,21 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def landing_page():
     """Renders the main landing page with a two-column button grid."""
-    # Define the buttons
-    buttons_data = [
-        {"label": "Rankings", "key": "btn_rankings", "help": "View player rankings", "page": "rankings"},
-        {"label": "Matches", "key": "btn_matches", "help": "View and post match results", "page": "matches"},
-        {"label": "Player Profile", "key": "btn_player_profile", "help": "Manage player profiles", "page": "player_profile"},
-        {"label": "Court Locations", "key": "btn_courts", "help": "Find court locations", "page": "court_locations"},
-    ]
-
-    # Create a two-column layout
-    col1, col2 = st.columns(2)
-
-    # Place buttons in the columns
-    for i, btn in enumerate(buttons_data):
-        if i % 2 == 0:
-            with col1:
-                if st.button(btn["label"], key=btn["key"], help=btn["help"], use_container_width=True):
-                    st.session_state.page = btn["page"]
-                    st.rerun()
-        else:
-            with col2:
-                if st.button(btn["label"], key=btn["key"], help=btn["help"], use_container_width=True):
-                    st.session_state.page = btn["page"]
-                    st.rerun()
+    # Updated to use custom HTML and CSS for a consistent 2-column grid on all devices.
+    st.markdown("""
+        <div class="button-grid-container">
+            <button onclick="document.querySelector('#btn_rankings').click()">Rankings</button>
+            <button onclick="document.querySelector('#btn_matches').click()">Matches</button>
+            <button onclick="document.querySelector('#btn_player_profile').click()">Player Profile</button>
+            <button onclick="document.querySelector('#btn_courts').click()">Court Locations</button>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Hidden buttons to capture clicks from the HTML
+    st.button("Rankings", key="btn_rankings", help="View player rankings", on_click=lambda: st.session_state.update(page='rankings'))
+    st.button("Matches", key="btn_matches", help="View and post match results", on_click=lambda: st.session_state.update(page='matches'))
+    st.button("Player Profile", key="btn_player_profile", help="Manage player profiles", on_click=lambda: st.session_state.update(page='player_profile'))
+    st.button("Court Locations", key="btn_courts", help="Find court locations", on_click=lambda: st.session_state.update(page='court_locations'))
 
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
