@@ -30,12 +30,13 @@ def load_players():
         st.error(f"Error loading players: {str(e)}")
         return pd.DataFrame(columns=["name", "profile_image_url", "birthday"])
 
+# FIX: Use upsert to prevent deleting all players
 def save_players(players_df):
     try:
         expected_columns = ["name", "profile_image_url", "birthday"]
         players_df = players_df[expected_columns].copy()
-        supabase.table(players_table_name).delete().neq("name", "").execute()
-        supabase.table(players_table_name).insert(players_df.to_dict("records")).execute()
+        # Use upsert to insert or update players without deleting existing ones
+        supabase.table(players_table_name).upsert(players_df.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving players: {str(e)}")
 
@@ -52,10 +53,11 @@ def load_matches():
         st.error(f"Error loading matches: {str(e)}")
         return pd.DataFrame(columns=expected_columns)
 
+# FIX: Use upsert to prevent deleting all matches
 def save_matches(df):
     try:
-        supabase.table(matches_table_name).delete().neq("match_id", "").execute()
-        supabase.table(matches_table_name).insert(df.to_dict("records")).execute()
+        # Use upsert to insert or update matches without deleting existing ones
+        supabase.table(matches_table_name).upsert(df.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
 
@@ -454,6 +456,7 @@ with tabs[0]: # Rankings Tab
 
     rank_df = pd.DataFrame(rank_data)
 
+    # FIX: Check if rank_df is not empty before sorting
     if not rank_df.empty:
         rank_df = rank_df.sort_values(
             by=["Points", "Win %", "Games Won", "Player"],
