@@ -182,6 +182,7 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     **Wins**: {int(player_data["Wins"])}  
                     **Losses**: {int(player_data["Losses"])}  
                     **Games Won**: {int(player_data["Games Won"])}  
+                    **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}  
                     **Birthday**: {birthday}  
                     **Partners Played With**: {dict(partner_wins_data[selected_player])}  
                     **Recent Trend**: {trend}  
@@ -255,7 +256,7 @@ st.markdown("""
     }
 
     /* Adjust individual columns for card layout */
-    .rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .trend-col {
+    .rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col {
         width: 100%; /* Take full width */
         text-align: left; /* Align text left */
         padding: 2px 0;
@@ -308,10 +309,11 @@ st.markdown("""
     .wins-col::before { content: "Wins: "; font-weight: bold; color: #bbbbbb; }
     .losses-col::before { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
     .games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
+    .game-diff-avg-col::before { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
     .trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
     
     /* Ensure the actual values are white. Applies to the text content within the div, not the ::before. */
-    .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .trend-col {
+    .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col {
         color: #fff500; /* Set values color to optic yellow */
     }
 
@@ -394,6 +396,7 @@ with tabs[0]: # Rankings Tab
     losses = defaultdict(int)
     matches_played = defaultdict(int)
     games_won = defaultdict(int)
+    game_diff = defaultdict(int)  # New dictionary for game difference
     partner_wins = defaultdict(lambda: defaultdict(int))
 
     for _, row in matches.iterrows():
@@ -404,28 +407,46 @@ with tabs[0]: # Rankings Tab
             t1 = [row['team1_player1']]
             t2 = [row['team2_player1']]
 
+        team1_total_games = 0
+        team2_total_games = 0
+
+        for set_score in [row['set1'], row['set2'], row['set3']]:
+            if set_score and '-' in set_score:
+                try:
+                    team1_games, team2_games = map(int, set_score.split('-'))
+                    team1_total_games += team1_games
+                    team2_total_games += team2_games
+                except ValueError:
+                    continue
+
         if row["winner"] == "Team 1":
             for p in t1:
                 scores[p] += 3
                 wins[p] += 1
                 matches_played[p] += 1
+                game_diff[p] += team1_total_games - team2_total_games
             for p in t2:
                 scores[p] += 1
                 losses[p] += 1
                 matches_played[p] += 1
+                game_diff[p] += team2_total_games - team1_total_games
         elif row["winner"] == "Team 2":
             for p in t2:
                 scores[p] += 3
                 wins[p] += 1
                 matches_played[p] += 1
+                game_diff[p] += team2_total_games - team1_total_games
             for p in t1:
                 scores[p] += 1
                 losses[p] += 1
                 matches_played[p] += 1
-        else:
+                game_diff[p] += team1_total_games - team2_total_games
+        else: # Tie
             for p in t1 + t2:
                 scores[p] += 1.5
                 matches_played[p] += 1
+                # For a tie, game difference is calculated as a win/loss
+                game_diff[p] += team1_total_games - team2_total_games if p in t1 else team2_total_games - team1_total_games
 
         for set_score in [row['set1'], row['set2'], row['set3']]:
             if set_score and '-' in set_score:
@@ -449,6 +470,7 @@ with tabs[0]: # Rankings Tab
     rank_data = []
     for player in scores:
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
+        game_diff_avg = (game_diff[player] / matches_played[player]) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
         player_trend = get_player_trend(player, matches) # Calculate trend
         rank_data.append({
@@ -461,6 +483,7 @@ with tabs[0]: # Rankings Tab
             "Wins": wins[player],
             "Losses": losses[player],
             "Games Won": games_won[player],
+            "Game Diff Avg": round(game_diff_avg, 2),  # Add new metric
             "Recent Trend": player_trend # Add trend to data
         })
 
@@ -469,8 +492,8 @@ with tabs[0]: # Rankings Tab
     # FIX: Check if rank_df is not empty before sorting
     if not rank_df.empty:
         rank_df = rank_df.sort_values(
-            by=["Points", "Win %", "Games Won", "Player"],
-            ascending=[False, False, False, True]
+            by=["Points", "Win %", "Game Diff Avg", "Games Won", "Player"],
+            ascending=[False, False, False, False, True]
         ).reset_index(drop=True)
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
@@ -508,6 +531,7 @@ with tabs[0]: # Rankings Tab
                 <div class="wins-col">{int(row["Wins"])}</div>
                 <div class="losses-col">{int(row["Losses"])}</div>
                 <div class="games-won-col">{int(row["Games Won"])}</div>
+                <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
                 <div class="trend-col">{trend_value_styled}</div>
             </div>
             """, unsafe_allow_html=True)
