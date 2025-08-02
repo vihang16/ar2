@@ -382,7 +382,7 @@ st.markdown("""
         </div>
         <div class="app-title">AR Tennis</div>
         <div>
-            <img src="https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png" class="app-logo" alt="Dubai.png">
+            <img src="https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png" class="app-logo" alt="Dubai Logo">
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -758,7 +758,7 @@ def matches_page(players_df, matches):
                 st.success("Match deleted.")
                 st.rerun()
 
-def player_profile_page(players_df, matches, rank_df, partner_wins_data):
+def player_profile_page(players_df, matches, rank_df, partner_wins_data, players):
     """Renders the player profile page."""
     if st.button("⬅️ Back to Home"):
         st.session_state.page = 'home'
@@ -871,7 +871,8 @@ elif st.session_state.page == 'rankings':
 elif st.session_state.page == 'matches':
     matches_page(players_df, matches)
 elif st.session_state.page == 'player_profile':
-    player_profile_page(players_df, matches, rank_df, partner_wins_data)
+    # Pass the 'players' list to the function to ensure it's in scope.
+    player_profile_page(players_df, matches, rank_df, partner_wins_data, players)
 elif st.session_state.page == 'court_locations':
     court_locations_page()
 
