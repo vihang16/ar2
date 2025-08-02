@@ -325,12 +325,12 @@ st.markdown("""
     .back-button-container .stButton > button {
         width: auto !important;
         height: auto !important;
-        padding: 5px 10px !important; /* Make padding smaller */
+        padding: 5px 10px !important;
         background-color: transparent !important;
         border: 1px solid #fff500 !important;
         border-radius: 5px !important;
         color: #fff500 !important;
-        font-size: 0.9em !important; /* Smaller font size */
+        font-size: 0.9em !important;
         transition: background-color 0.2s;
     }
     .back-button-container .stButton > button:hover {
@@ -342,20 +342,27 @@ st.markdown("""
     /* Updated CSS for the homepage button grid to ensure 1:1.5 aspect ratio and centered 2x2 grid */
     .home-button-row {
         display: grid;
-        grid-template-columns: repeat(2, 1fr); /* Two columns of equal width */
+        grid-template-columns: repeat(2, minmax(120px, 200px)); /* Two columns with min/max width */
+        grid-template-rows: repeat(2, auto); /* Two rows */
         gap: 20px; /* Space between buttons */
-        justify-content: center; /* Center the grid horizontally */
-        max-width: 600px; /* Limit max width for larger screens */
-        margin: 0 auto; /* Center the grid container */
-        padding: 20px; /* Add padding for spacing */
+        justify-content: center; /* Center grid horizontally */
+        align-content: center; /* Center grid vertically */
+        max-width: 500px; /* Limit max width for larger screens */
+        margin: 20px auto; /* Center the grid container with margin */
+        padding: 20px 10px; /* Padding for spacing */
+        box-sizing: border-box;
     }
     .home-button-row > div {
         width: 100%;
+        aspect-ratio: 1 / 1.5; /* Explicit 1:1.5 aspect ratio (width:height) */
         position: relative;
     }
     .home-button-row .stButton {
         width: 100%;
-        position: relative;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
     }
     .home-button-row .stButton > button {
         background-color: #161e80;
@@ -363,23 +370,18 @@ st.markdown("""
         border-radius: 10px;
         color: #fff500;
         font-weight: bold;
-        font-size: 1.2em;
+        font-size: clamp(1em, 4vw, 1.2em); /* Responsive font size */
         transition: transform 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
         text-align: center;
         width: 100%;
-        height: 0;
-        padding-bottom: 150%; /* Creates 1:1.5 aspect ratio (height = 1.5 * width) */
-        position: relative;
+        height: 100%; /* Fill the container */
+        position: absolute;
         overflow: hidden;
     }
     .home-button-row .stButton > button span {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
         width: 90%;
         line-height: 1.2;
     }
@@ -390,12 +392,13 @@ st.markdown("""
     /* Ensure responsiveness for smaller screens */
     @media (max-width: 600px) {
         .home-button-row {
-            grid-template-columns: repeat(2, 1fr); /* Maintain 2x2 grid */
-            gap: 10px; /* Reduce gap for smaller screens */
-            padding: 10px;
+            grid-template-columns: repeat(2, minmax(100px, 150px)); /* Smaller buttons */
+            gap: 10px; /* Reduced gap */
+            max-width: 90vw; /* Responsive width */
+            padding: 10px 5px;
         }
         .home-button-row .stButton > button {
-            font-size: 1em; /* Slightly smaller font for smaller screens */
+            font-size: clamp(0.9em, 3.5vw, 1em); /* Smaller font */
         }
     }
     </style>
@@ -495,24 +498,10 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 def home_page_buttons():
     """Renders the main landing page with a two-column button grid."""
     st.markdown('<div class="home-button-row">', unsafe_allow_html=True)
-    col1, col2 = st.columns([1, 1])  # Equal width columns
-    with col1:
-        if st.button("Rankings", key="btn_rankings"):
-            st.session_state.page = 'rankings'
-            st.rerun()
-    with col2:
-        if st.button("Matches", key="btn_matches"):
-            st.session_state.page = 'matches'
-            st.rerun()
-    col3, col4 = st.columns([1, 1])  # Equal width columns
-    with col3:
-        if st.button("Player Profile", key="btn_player_profile"):
-            st.session_state.page = 'player_profile'
-            st.rerun()
-    with col4:
-        if st.button("Court Locations", key="btn_courts"):
-            st.session_state.page = 'court_locations'
-            st.rerun()
+    st.button("Rankings", key="btn_rankings", on_click=lambda: st.session_state.update({'page': 'rankings'}))
+    st.button("Matches", key="btn_matches", on_click=lambda: st.session_state.update({'page': 'matches'}))
+    st.button("Player Profile", key="btn_player_profile", on_click=lambda: st.session_state.update({'page': 'player_profile'}))
+    st.button("Court Locations", key="btn_courts", on_click=lambda: st.session_state.update({'page': 'court_locations'}))
     st.markdown('</div>', unsafe_allow_html=True)
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
