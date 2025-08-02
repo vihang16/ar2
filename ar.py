@@ -671,7 +671,8 @@ with tabs[1]: # Matches Tab
         if row['set3']:
             score_parts.append(f"<span style='font-weight:bold; color:#fff500;'>{row['set3']}</span>")
         score = ", ".join(score_parts)
-        date_str = row['date'].strftime('%Y-%m-%d')
+        # Change the date format to 'dd mmm yy'
+        date_str = row['date'].strftime('%d %b %y')
         return f"{score} | {date_str}"
 
     if filtered_matches.empty:
@@ -706,7 +707,7 @@ with tabs[1]: # Matches Tab
             score_plain += f", {row['set2']}"
         if row['set3']:
             score_plain += f", {row['set3']}"
-        date_plain = row['date'].strftime('%Y-%m-%d')
+        date_plain = row['date'].strftime('%d %b %y')
         if row["match_type"] == "Singles":
             desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
         else:
