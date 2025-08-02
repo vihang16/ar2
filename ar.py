@@ -497,47 +497,65 @@ with tabs[0]: # Rankings Tab
         ).reset_index(drop=True)
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
-    # Display rankings using custom HTML/CSS
+    # --- New code for the toggle and table view ---
+    st.header("Rankings")
+    view_mode = st.radio("Display View", ["Card View", "Table View"], horizontal=True, key="ranking_view_mode")
+    
     current_date_formatted = datetime.now().strftime("%d/%m")
     st.subheader(f"Rankings as of {current_date_formatted}")
-    st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
-    st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
 
-    if rank_df.empty:
-        st.info("No ranking data available. Please add players and matches.")
+    if view_mode == "Table View":
+        # Table View
+        if not rank_df.empty:
+            # Drop the 'Profile' column for the table view
+            table_df = rank_df.drop(columns=['Profile', 'Recent Trend'])
+            # Reorder columns for a cleaner look
+            column_order = ["Rank", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Game Diff Avg", "Games Won"]
+            table_df = table_df[column_order]
+            st.dataframe(table_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No ranking data available. Please add players and matches.")
     else:
-        # Data Rows
-        for index, row in rank_df.iterrows():
-            # Using the new ranking-profile-image class
-            profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
-            # Apply bold and optic yellow to Player Name
-            player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-            # Apply bold and optic yellow to Points value
-            points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-            
-            # Style the Recent Trend value
-            trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+        # Card View (Existing code)
+        st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
+        st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
 
-            st.markdown(f"""
-            <div class="ranking-row">
-                <div class="rank-profile-player-group">
-                    <div class="rank-col">{row["Rank"]}</div>
-                    <div class="profile-col">{profile_html}</div>
-                    <div class="player-col">{player_styled}</div>
+        if rank_df.empty:
+            st.info("No ranking data available. Please add players and matches.")
+        else:
+            # Data Rows
+            for index, row in rank_df.iterrows():
+                # Using the new ranking-profile-image class
+                profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
+                # Apply bold and optic yellow to Player Name
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                # Apply bold and optic yellow to Points value
+                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                
+                # Style the Recent Trend value
+                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+
+                st.markdown(f"""
+                <div class="ranking-row">
+                    <div class="rank-profile-player-group">
+                        <div class="rank-col">{row["Rank"]}</div>
+                        <div class="profile-col">{profile_html}</div>
+                        <div class="player-col">{player_styled}</div>
+                    </div>
+                    <div class="points-col">{points_value_styled}</div>
+                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                    <div class="matches-col">{int(row["Matches"])}</div>
+                    <div class="wins-col">{int(row["Wins"])}</div>
+                    <div class="losses-col">{int(row["Losses"])}</div>
+                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                    <div class="games-won-col">{int(row["Games Won"])}</div>
+                    <div class="trend-col">{trend_value_styled}</div>
                 </div>
-                <div class="points-col">{points_value_styled}</div>
-                <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                <div class="matches-col">{int(row["Matches"])}</div>
-                <div class="wins-col">{int(row["Wins"])}</div>
-                <div class="losses-col">{int(row["Losses"])}</div>
-                <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                <div class="games-won-col">{int(row["Games Won"])}</div>
-                <div class="trend-col">{trend_value_styled}</div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    # --- End of new code for the toggle and table view ---
 
     # Player Insights for Rankings Tab
     st.subheader("Player Insights")
