@@ -322,11 +322,11 @@ st.markdown("""
         margin-top: 20px;
         padding: 0 20px;
     }
-    /* Updated styling for the buttons to use the 1.5:1 aspect ratio */
+    /* Updated styling for the buttons to use the 1.5:1 aspect ratio (tall x wide) */
     div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button {
         width: 100% !important;
         height: auto !important; /* Changed to auto to allow height to be calculated */
-        padding-top: 66.67% !important; /* (1 / 1.5) * 100% = 66.67% */
+        padding-top: 150% !important; /* (1.5 / 1) * 100% = 150% */
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
@@ -481,7 +481,7 @@ def landing_page():
         div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button {
             width: 100% !important;
             height: auto !important; /* Changed to auto to allow height to be calculated */
-            padding-top: 66.67% !important; /* (1 / 1.5) * 100% = 66.67% */
+            padding-top: 150% !important; /* (1.5 / 1) * 100% = 150% */
             background-color: #161e80;
             border: 2px solid #fff500;
             border-radius: 10px;
