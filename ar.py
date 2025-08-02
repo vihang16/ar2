@@ -90,7 +90,7 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
         
         public_url = supabase.storage.from_(bucket).get_public_url(file_path)
         # Check if the public_url is valid, otherwise it might indicate an issue
-        if not public_url.startswith(f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v trolley
+        if not public_url.startswith(f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v1/object/public/{bucket}/"):
             st.warning(f"Uploaded image URL does not match expected prefix. Got: {public_url}")
         return public_url
     except Exception as e:
@@ -607,8 +607,8 @@ with tabs[1]: # Matches Tab
                     match_id_new = generate_match_id(matches, new_match_date)
                     image_url_new = ""
                     if match_image_new:
-                        image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image_type="match")
-                    
+                        image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image形式
+
                     new_match_entry = {
                         "match_id": match_id_new,
                         "date": new_match_date.strftime("%Y-%m-%d"),
@@ -810,7 +810,7 @@ with tabs[2]: # Player Profile Tab
                 else:
                     st.warning(f"{new_player} already exists.")
             else:
-                st.warning("Please enter a player name».
+                st.warning("Please enter a player name to add.")
 
         st.markdown("---") # Separator
 
