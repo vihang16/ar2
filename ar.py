@@ -315,10 +315,40 @@ st.markdown("""
         padding-top: 80px;
     }
     
-    /* Custom grid layout for buttons */
-    .stButton>button {
+    /* Styling for the small, discreet back button */
+    .back-button-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+    }
+    .back-button-container .stButton > button {
+        width: auto !important;
+        height: auto !important;
+        padding: 5px 10px !important; /* Make padding smaller */
+        background-color: transparent !important;
+        border: 1px solid #fff500 !important;
+        border-radius: 5px !important;
+        color: #fff500 !important;
+        font-size: 0.9em !important; /* Smaller font size */
+        transition: background-color 0.2s;
+    }
+    .back-button-container .stButton > button:hover {
+        background-color: #161e80 !important;
+        color: #fff500 !important;
+        text-decoration: underline !important;
+    }
+
+    /* Fix the home page buttons to be a 2x2 grid */
+    .home-button-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* Always two columns */
+        gap: 10px;
+    }
+    /* Style for the buttons inside the home-button-row */
+    .home-button-row .stButton > button {
         width: 100%;
-        aspect-ratio: 1.5; /* Retains the 1.5:1 aspect ratio */
+        aspect-ratio: 1.5;
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
@@ -332,45 +362,9 @@ st.markdown("""
         text-align: center;
         cursor: pointer;
     }
-    
-    .stButton>button:hover {
+    .home-button-row .stButton > button:hover {
         transform: scale(1.05);
         background-color: #0d1259;
-    }
-
-    /* Styling for the small, discreet back button */
-    .back-button-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1000;
-        font-size: 0.8em;
-    }
-    .back-button-container .stButton button {
-        width: auto;
-        height: auto;
-        aspect-ratio: auto;
-        padding: 5px 10px;
-        background-color: transparent;
-        border: 1px solid #fff500;
-        border-radius: 5px;
-        color: #fff500;
-        font-size: 1em;
-        transition: background-color 0.2s;
-    }
-    .back-button-container .stButton button:hover {
-        background-color: #161e80;
-        color: #fff500;
-        text-decoration: underline;
-    }
-    
-    /* Responsive layout for home page buttons on mobile */
-    @media (max-width: 600px) {
-        .home-button-row {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -472,21 +466,18 @@ def home_page_buttons():
     st.markdown("### Choose a section:")
     # Use a custom div to ensure a 2-column grid layout on all screen sizes
     st.markdown('<div class="home-button-row">', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Rankings", key="btn_rankings"):
-            st.session_state.page = 'rankings'
-            st.rerun()
-        if st.button("Matches", key="btn_matches"):
-            st.session_state.page = 'matches'
-            st.rerun()
-    with col2:
-        if st.button("Player Profile", key="btn_player_profile"):
-            st.session_state.page = 'player_profile'
-            st.rerun()
-        if st.button("Court Locations", key="btn_courts"):
-            st.session_state.page = 'court_locations'
-            st.rerun()
+    if st.button("Rankings", key="btn_rankings"):
+        st.session_state.page = 'rankings'
+        st.rerun()
+    if st.button("Matches", key="btn_matches"):
+        st.session_state.page = 'matches'
+        st.rerun()
+    if st.button("Player Profile", key="btn_player_profile"):
+        st.session_state.page = 'player_profile'
+        st.rerun()
+    if st.button("Court Locations", key="btn_courts"):
+        st.session_state.page = 'court_locations'
+        st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
 
