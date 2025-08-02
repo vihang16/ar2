@@ -344,24 +344,33 @@ st.markdown("""
         top: 20px;
         right: 20px;
         z-index: 1000;
+        font-size: 0.8em;
     }
-    .back-button-container > .stButton > button {
-        width: 50px;
-        height: 50px;
-        aspect-ratio: 1;
-        background-color: #000;
-        border-radius: 50%;
-        border: 2px solid #fff500;
+    .back-button-container .stButton button {
+        width: auto;
+        height: auto;
+        aspect-ratio: auto;
+        padding: 5px 10px;
+        background-color: transparent;
+        border: 1px solid #fff500;
+        border-radius: 5px;
         color: #fff500;
-        font-size: 1.5em;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        font-size: 1em;
+        transition: background-color 0.2s;
     }
-    .back-button-container > .stButton > button:hover {
+    .back-button-container .stButton button:hover {
         background-color: #161e80;
+        color: #fff500;
+        text-decoration: underline;
+    }
+    
+    /* Responsive layout for home page buttons on mobile */
+    @media (max-width: 600px) {
+        .home-button-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -461,6 +470,8 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 def home_page_buttons():
     """Renders the main landing page with a two-column button grid."""
     st.markdown("### Choose a section:")
+    # Use a custom div to ensure a 2-column grid layout on all screen sizes
+    st.markdown('<div class="home-button-row">', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Rankings", key="btn_rankings"):
@@ -476,12 +487,14 @@ def home_page_buttons():
         if st.button("Court Locations", key="btn_courts"):
             st.session_state.page = 'court_locations'
             st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
     """Renders the rankings page."""
     with st.container():
         st.markdown('<div class="back-button-container">', unsafe_allow_html=True)
-        if st.button("🏠", key="back_to_home_rankings"):
+        if st.button("Back to Home", key="back_to_home_rankings"):
             st.session_state.page = 'home'
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -538,7 +551,7 @@ def matches_page(players_df, matches):
     """Renders the matches page."""
     with st.container():
         st.markdown('<div class="back-button-container">', unsafe_allow_html=True)
-        if st.button("🏠", key="back_to_home_matches"):
+        if st.button("Back to Home", key="back_to_home_matches"):
             st.session_state.page = 'home'
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -717,7 +730,7 @@ def player_profile_page(players_df, matches, rank_df, partner_wins_data, players
     """Renders the player profile page."""
     with st.container():
         st.markdown('<div class="back-button-container">', unsafe_allow_html=True)
-        if st.button("🏠", key="back_to_home_profile"):
+        if st.button("Back to Home", key="back_to_home_profile"):
             st.session_state.page = 'home'
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -798,7 +811,7 @@ def court_locations_page():
     """Renders the court locations page."""
     with st.container():
         st.markdown('<div class="back-button-container">', unsafe_allow_html=True)
-        if st.button("🏠", key="back_to_home_courts"):
+        if st.button("Back to Home", key="back_to_home_courts"):
             st.session_state.page = 'home'
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
