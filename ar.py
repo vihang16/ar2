@@ -338,17 +338,31 @@ st.markdown("""
         color: #fff500 !important;
         text-decoration: underline !important;
     }
-
-    /* Fix the home page buttons to be a 2x2 grid */
-    .home-button-row {
+    
+    /* Correct styling for the homepage button grid */
+    .home-button-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr); /* Always two columns */
+        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
-    /* Style for the buttons inside the home-button-row */
-    .home-button-row .stButton > button {
+    
+    .home-button-grid > div {
         width: 100%;
-        aspect-ratio: 1.5;
+        padding-bottom: 150%; /* 1 wide : 1.5 tall aspect ratio */
+        position: relative;
+    }
+    
+    .home-button-grid .stButton {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .home-button-grid .stButton > button {
+        width: 100% !important;
+        height: 100% !important;
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
@@ -362,10 +376,11 @@ st.markdown("""
         text-align: center;
         cursor: pointer;
     }
-    .home-button-row .stButton > button:hover {
+    .home-button-grid .stButton > button:hover {
         transform: scale(1.05);
         background-color: #0d1259;
     }
+
     </style>
 """, unsafe_allow_html=True)
 
@@ -463,9 +478,8 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def home_page_buttons():
     """Renders the main landing page with a two-column button grid."""
-    # The "Choose a section" text has been removed as requested.
-    # Use a custom div to ensure a 2-column grid layout on all screen sizes
-    st.markdown('<div class="home-button-row">', unsafe_allow_html=True)
+    # Use a custom div with CSS to ensure a 2-column grid layout on all screen sizes
+    st.markdown('<div class="home-button-grid">', unsafe_allow_html=True)
     if st.button("Rankings", key="btn_rankings"):
         st.session_state.page = 'rankings'
         st.rerun()
