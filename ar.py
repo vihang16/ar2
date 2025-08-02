@@ -340,11 +340,20 @@ st.markdown("""
     }
     
     /* NEW CSS for the homepage button grid to ensure correct aspect ratio */
-    .home-button-row > div > div > .stButton {
+    .home-button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px; /* Adds space between buttons */
+    }
+    .home-button-row > div {
+        flex: 1 1 45%; /* Makes columns flexible and approximately 45% width for a 2x2 grid with gap */
+        min-width: 150px;
+    }
+    .home-button-row .stButton {
         width: 100%;
         position: relative;
     }
-    .home-button-row > div > div > .stButton > button {
+    .home-button-row .stButton > button {
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
@@ -356,12 +365,13 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         text-align: center;
+        width: 100%;
         height: 0;
         padding-bottom: 150%; /* This creates the 1 wide x 1.5 tall aspect ratio */
         position: relative;
         overflow: hidden;
     }
-    .home-button-row > div > div > .stButton > button span {
+    .home-button-row .stButton > button span {
         position: absolute;
         top: 50%;
         left: 50%;
@@ -369,7 +379,7 @@ st.markdown("""
         width: 90%;
         line-height: 1.2;
     }
-    .home-button-row > div > div > .stButton > button:hover {
+    .home-button-row .stButton > button:hover {
         transform: scale(1.05);
         background-color: #0d1259;
     }
@@ -470,7 +480,6 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def home_page_buttons():
     """Renders the main landing page with a two-column button grid."""
-    # Use st.columns to create a 2x2 grid
     st.markdown('<div class="home-button-row">', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
