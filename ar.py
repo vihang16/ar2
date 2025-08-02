@@ -248,7 +248,7 @@ st.markdown("""
         display: block; /* Stack elements vertically */
         padding: 10px;
         margin-bottom: 10px; /* Space between player cards */
-        border: 1px solid #808080; /* Changed from #ddd to #808080 for darker grey */
+        border: 1px solid #696969; /* Changed from #ddd to ##696969 for darker grey */
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
