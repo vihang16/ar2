@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from collections import defaultdict, Counter
 from supabase import create_client, Client
+import re
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
@@ -664,16 +665,25 @@ with tabs[1]: # Matches Tab
                 return f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
 
     def format_match_scores_and_date(row):
-        # Format set scores in bold and optic yellow
-        score_parts = [f"<span style='font-weight:bold; color:#fff500;'>{row['set1']}</span>"]
-        if row['set2']:
-            score_parts.append(f"<span style='font-weight:bold; color:#fff500;'>{row['set2']}</span>")
-        if row['set3']:
-            score_parts.append(f"<span style='font-weight:bold; color:#fff500;'>{row['set3']}</span>")
-        score = ", ".join(score_parts)
-        # Change the date format to 'dd mmm yy'
+        # Create a list of plain text scores to calculate padding
+        score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
+        score_text = ", ".join(score_parts_plain)
+        
+        # Calculate padding to ensure the date starts after 30 characters
+        # Assuming a monospace font or a fixed-width container for consistent alignment
+        target_width = 30
+        padding_spaces = " " * (target_width - len(score_text))
+        
+        # Format the scores with bold and yellow color
+        score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
+        score_html = ", ".join(score_parts_html)
+        
+        # Format the date as 'dd mmm yy'
         date_str = row['date'].strftime('%d %b %y')
-        return f"{score} | {date_str}"
+
+        # Combine scores, padding, and date within a fixed-width container for alignment
+        # The `<div style='font-family: monospace; white-space: pre;'>` ensures the spaces are preserved
+        return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
 
     if filtered_matches.empty:
         st.info("No matches found.")
@@ -689,8 +699,8 @@ with tabs[1]: # Matches Tab
             with cols[1]:
                 # Display player names on the first line, without the bullet point
                 st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
-                # Display scores and date on the second line
-                st.markdown(f"  {format_match_scores_and_date(row)}", unsafe_allow_html=True)
+                # Display scores and date on the second line with fixed vertical alignment for the date
+                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
             
             # Add a thin grey line after each match entry
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
