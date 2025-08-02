@@ -186,30 +186,6 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                 st.markdown(f"**Partners Played With**: {dict(partner_wins_data[selected_player])}")
                 st.markdown(f"**Recent Trend**: {trend}")
 
-# Define the HTML and CSS for the buttons and the grid
-BUTTON_HTML = """
-    <div class="button-grid-container">
-        <button id="btn_rankings">Rankings</button>
-        <button id="btn_matches">Matches</button>
-        <button id="btn_player_profile">Player Profile</button>
-        <button id="btn_courts">Court Locations</button>
-    </div>
-"""
-
-# JavaScript to listen for button clicks and send a message to Streamlit
-BUTTON_JS = """
-<script>
-    const buttons = document.querySelectorAll('.button-grid-container button');
-    buttons.forEach(button => {
-        button.addEventListener('click', () => {
-            const buttonId = button.id;
-            const message = { type: 'button_click', buttonId: buttonId };
-            window.parent.postMessage({ type: 'streamlit:setComponentValue', value: message }, '*');
-        });
-    });
-</script>
-"""
-
 # Style the app using Markdown
 st.markdown("""
     <style>
@@ -340,14 +316,7 @@ st.markdown("""
     }
     
     /* Custom grid layout for buttons */
-    .button-grid-container {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    
-    .button-grid-container button {
+    .stButton>button {
         width: 100%;
         aspect-ratio: 1.5; /* Retains the 1.5:1 aspect ratio */
         background-color: #161e80;
@@ -364,7 +333,7 @@ st.markdown("""
         cursor: pointer;
     }
     
-    .button-grid-container button:hover {
+    .stButton>button:hover {
         transform: scale(1.05);
         background-color: #0d1259;
     }
@@ -466,23 +435,22 @@ rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def landing_page():
     """Renders the main landing page with a two-column button grid."""
-    # Use a single markdown block for the buttons to prevent Streamlit from adding extra widgets.
-    st.markdown(BUTTON_HTML + BUTTON_JS, unsafe_allow_html=True)
-
-# Main logic to handle messages from the HTML buttons
-if st.session_state.get('last_message_from_js'):
-    message = st.session_state.pop('last_message_from_js')
-    if message['type'] == 'button_click':
-        button_id = message['buttonId']
-        if button_id == 'btn_rankings':
+    st.markdown("### Choose a section:")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Rankings", key="btn_rankings"):
             st.session_state.page = 'rankings'
-        elif button_id == 'btn_matches':
+            st.rerun()
+        if st.button("Matches", key="btn_matches"):
             st.session_state.page = 'matches'
-        elif button_id == 'btn_player_profile':
+            st.rerun()
+    with col2:
+        if st.button("Player Profile", key="btn_player_profile"):
             st.session_state.page = 'player_profile'
-        elif button_id == 'btn_courts':
+            st.rerun()
+        if st.button("Court Locations", key="btn_courts"):
             st.session_state.page = 'court_locations'
-        st.rerun()
+            st.rerun()
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
     """Renders the rankings page."""
