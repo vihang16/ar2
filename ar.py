@@ -686,8 +686,8 @@ with tabs[1]: # Matches Tab
                     except Exception as e:
                         st.error(f"Error displaying match image: {str(e)}")
             with cols[1]:
-                # Display player names on the first line
-                st.markdown(f"- {format_match_players(row)}", unsafe_allow_html=True)
+                # Display player names on the first line, without the bullet point
+                st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
                 # Display scores and date on the second line
                 st.markdown(f"  {format_match_scores_and_date(row)}", unsafe_allow_html=True)
             
