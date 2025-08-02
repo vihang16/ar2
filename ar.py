@@ -677,7 +677,7 @@ with tabs[1]: # Matches Tab
     if filtered_matches.empty:
         st.info("No matches found.")
     else:
-        for _, row in filtered_matches.iterrows():
+        for index, row in filtered_matches.iterrows():
             cols = st.columns([1, 10])
             if row["match_image_url"]:
                 with cols[0]:
@@ -690,6 +690,9 @@ with tabs[1]: # Matches Tab
                 st.markdown(f"- {format_match_players(row)}", unsafe_allow_html=True)
                 # Display scores and date on the second line
                 st.markdown(f"  {format_match_scores_and_date(row)}", unsafe_allow_html=True)
+            
+            # Add a thin grey line after each match entry
+            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
     # --- END OF MODIFIED MATCH HISTORY FORMATTING ---
     
     st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
