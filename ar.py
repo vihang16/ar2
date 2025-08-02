@@ -312,35 +312,26 @@ st.markdown("""
     .stApp {
         padding-top: 80px;
     }
-
-    /* NEW CSS for Header and Responsive Grid */
-    .menu-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
-        gap: 20px;
-        justify-items: center;
-        margin-top: 20px;
-        padding: 0 20px;
-    }
-    /* Updated styling for the buttons to use the 1.5:1 aspect ratio (tall x wide) */
-    div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button {
+    
+    /* NEW CSS for the fixed two-column layout */
+    .stButton button {
         width: 100% !important;
-        height: auto !important; /* Changed to auto to allow height to be calculated */
-        padding-top: 150% !important; /* (1.5 / 1) * 100% = 150% */
+        height: auto !important;
+        padding-top: 150% !important; /* Retains the 1.5:1 aspect ratio */
         background-color: #161e80;
         border: 2px solid #fff500;
         border-radius: 10px;
         color: #fff500;
         font-weight: bold;
         font-size: 1.2em;
-        position: relative; /* Added for absolute positioning of content */
+        position: relative;
         margin: 5px;
         transition: transform 0.2s;
     }
-    div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button:hover {
+    .stButton button:hover {
         transform: scale(1.05);
     }
-    div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button > div {
+    .stButton button > div {
         position: absolute;
         top: 0;
         left: 0;
@@ -350,8 +341,8 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         flex-direction: column;
-        padding: 10px; /* Add padding to prevent text touching edges */
-        box-sizing: border-box; /* Include padding in the element's total width and height */
+        padding: 10px;
+        box-sizing: border-box;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -449,67 +440,31 @@ def get_rank_df_and_partner_wins(players_df, matches):
 rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
 def landing_page():
-    """Renders the main landing page with the menu grid."""
-    st.markdown("<div class='menu-grid'>", unsafe_allow_html=True)
+    """Renders the main landing page with a two-column button grid."""
+    # Define the buttons
+    buttons_data = [
+        {"label": "Rankings", "key": "btn_rankings", "help": "View player rankings", "page": "rankings"},
+        {"label": "Matches", "key": "btn_matches", "help": "View and post match results", "page": "matches"},
+        {"label": "Player Profile", "key": "btn_player_profile", "help": "Manage player profiles", "page": "player_profile"},
+        {"label": "Court Locations", "key": "btn_courts", "help": "Find court locations", "page": "court_locations"},
+    ]
 
-    # Using st.button with custom CSS classes for the grid layout
+    # Create a two-column layout
     col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Rankings", key="btn_rankings", help="View player rankings", use_container_width=True):
-            st.session_state.page = 'rankings'
-            st.rerun()
-    with col2:
-        if st.button("Matches", key="btn_matches", help="View and post match results", use_container_width=True):
-            st.session_state.page = 'matches'
-            st.rerun()
 
-    col3, col4 = st.columns(2)
-    with col3:
-        if st.button("Player Profile", key="btn_player_profile", help="Manage player profiles", use_container_width=True):
-            st.session_state.page = 'player_profile'
-            st.rerun()
-    with col4:
-        if st.button("Court Locations", key="btn_courts", help="Find court locations", use_container_width=True):
-            st.session_state.page = 'court_locations'
-            st.rerun()
+    # Place buttons in the columns
+    for i, btn in enumerate(buttons_data):
+        if i % 2 == 0:
+            with col1:
+                if st.button(btn["label"], key=btn["key"], help=btn["help"], use_container_width=True):
+                    st.session_state.page = btn["page"]
+                    st.rerun()
+        else:
+            with col2:
+                if st.button(btn["label"], key=btn["key"], help=btn["help"], use_container_width=True):
+                    st.session_state.page = btn["page"]
+                    st.rerun()
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # Custom CSS for the buttons within the Streamlit columns
-    st.markdown("""
-        <style>
-        div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button {
-            width: 100% !important;
-            height: auto !important; /* Changed to auto to allow height to be calculated */
-            padding-top: 150% !important; /* (1.5 / 1) * 100% = 150% */
-            background-color: #161e80;
-            border: 2px solid #fff500;
-            border-radius: 10px;
-            color: #fff500;
-            font-weight: bold;
-            font-size: 1.2em;
-            position: relative; /* Added for absolute positioning of content */
-            margin: 5px;
-            transition: transform 0.2s;
-        }
-        div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button:hover {
-            transform: scale(1.05);
-        }
-        div[data-testid="stColumn"] > div > div > div[data-testid="stButton"] button > div {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        </style>
-    """, unsafe_allow_html=True)
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
     """Renders the rankings page."""
@@ -689,7 +644,7 @@ def matches_page(players_df, matches):
             if row["match_type"] == "Singles":
                 desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
             else:
-                desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+                desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team2_player2']}"
             clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
         selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit")
         if selected_match_to_edit:
