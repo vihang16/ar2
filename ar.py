@@ -32,7 +32,7 @@ def load_players():
 
 def save_players(players_df):
     try:
-        expected_columns = [\"name\", \"profile_image_url\", \"birthday\"]
+        expected_columns = ["name", "profile_image_url", "birthday"]
         players_df = players_df[expected_columns].copy()
         supabase.table(players_table_name).upsert(players_df.to_dict("records")).execute()
     except Exception as e:
@@ -153,17 +153,17 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
             if selected_player in rank_df["Player"].values:
                 player_data = rank_df[rank_df["Player"] == selected_player].iloc[0]
                 st.markdown(f"""
-                    **Rank**: {player_data["Rank"]}  
-                    **Points**: {player_data["Points"]}  
-                    **Win Percentage**: {player_data["Win %"]}%  
-                    **Matches Played**: {int(player_data["Matches"])}  
-                    **Wins**: {int(player_data["Wins"])}  
-                    **Losses**: {int(player_data["Losses"])}  
-                    **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}  
-                    **Games Won**: {int(player_data["Games Won"])}  
-                    **Birthday**: {birthday}  
-                    **Partners Played With**: {dict(partner_wins_data[selected_player])}  
-                    **Recent Trend**: {trend}  
+                    **Rank**: {player_data["Rank"]}
+                    **Points**: {player_data["Points"]}
+                    **Win Percentage**: {player_data["Win %"]}%
+                    **Matches Played**: {int(player_data["Matches"])}
+                    **Wins**: {int(player_data["Wins"])}
+                    **Losses**: {int(player_data["Losses"])}
+                    **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}
+                    **Games Won**: {int(player_data["Games Won"])}
+                    **Birthday**: {birthday}
+                    **Partners Played With**: {dict(partner_wins_data[selected_player])}
+                    **Recent Trend**: {trend}
                 """)
                 if partner_wins_data[selected_player]:
                     best_partner, best_wins = max(partner_wins_data[selected_player].items(), key=lambda x: x[1])
@@ -723,9 +723,9 @@ def matches_page(players_df, matches):
                 winner_edit = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
                 match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
                 if st.button("Save Changes", key=f"save_match_changes_{selected_id}"):
-                    image_url_edit = row["match_image_url"]
+                    image_url = row["match_image_url"]
                     if match_image_edit:
-                        image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
+                        image_url = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
                     matches.loc[idx] = {
                         "match_id": selected_id,
                         "date": date_edit,
@@ -738,7 +738,7 @@ def matches_page(players_df, matches):
                         "set2": set2_edit,
                         "set3": set3_edit,
                         "winner": winner_edit,
-                        "match_image_url": image_url_edit
+                        "match_image_url": image_url
                     }
                     save_matches(matches)
                     st.success("Match updated.")
