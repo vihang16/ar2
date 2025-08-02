@@ -338,6 +338,31 @@ st.markdown("""
         background-color: #0d1259;
     }
 
+    /* Styling for the small, discreet back button */
+    .back-button-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+    }
+    .back-button-container > .stButton > button {
+        width: 50px;
+        height: 50px;
+        aspect-ratio: 1;
+        background-color: #000;
+        border-radius: 50%;
+        border: 2px solid #fff500;
+        color: #fff500;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .back-button-container > .stButton > button:hover {
+        background-color: #161e80;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -433,7 +458,7 @@ def get_rank_df_and_partner_wins(players_df, matches):
 
 rank_df, partner_wins_data = get_rank_df_and_partner_wins(players_df, matches)
 
-def landing_page():
+def home_page_buttons():
     """Renders the main landing page with a two-column button grid."""
     st.markdown("### Choose a section:")
     col1, col2 = st.columns(2)
@@ -454,9 +479,12 @@ def landing_page():
 
 def rankings_page(players_df, matches, rank_df, partner_wins_data):
     """Renders the rankings page."""
-    if st.button("⬅️ Back to Home"):
-        st.session_state.page = 'home'
-        st.rerun()
+    with st.container():
+        st.markdown('<div class="back-button-container">', unsafe_allow_html=True)
+        if st.button("🏠", key="back_to_home_rankings"):
+            st.session_state.page = 'home'
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
     st.header("Rankings")
     view_mode = st.radio("Display View", ["Card View", "Table View"], horizontal=True, key="ranking_view_mode")
     current_date_formatted = datetime.now().strftime("%d/%m")
@@ -508,9 +536,12 @@ def rankings_page(players_df, matches, rank_df, partner_wins_data):
 
 def matches_page(players_df, matches):
     """Renders the matches page."""
-    if st.button("⬅️ Back to Home"):
-        st.session_state.page = 'home'
-        st.rerun()
+    with st.container():
+        st.markdown('<div class="back-button-container">', unsafe_allow_html=True)
+        if st.button("🏠", key="back_to_home_matches"):
+            st.session_state.page = 'home'
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
     st.header("Matches")
     with st.expander("➕ Post New Match Result"):
         st.subheader("Enter Match Result")
@@ -684,9 +715,12 @@ def matches_page(players_df, matches):
 
 def player_profile_page(players_df, matches, rank_df, partner_wins_data, players):
     """Renders the player profile page."""
-    if st.button("⬅️ Back to Home"):
-        st.session_state.page = 'home'
-        st.rerun()
+    with st.container():
+        st.markdown('<div class="back-button-container">', unsafe_allow_html=True)
+        if st.button("🏠", key="back_to_home_profile"):
+            st.session_state.page = 'home'
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
     st.header("Player Profile")
     st.subheader("Player Insights")
     selected_player_profile_insights = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
@@ -762,9 +796,12 @@ def player_profile_page(players_df, matches, rank_df, partner_wins_data, players
 
 def court_locations_page():
     """Renders the court locations page."""
-    if st.button("⬅️ Back to Home"):
-        st.session_state.page = 'home'
-        st.rerun()
+    with st.container():
+        st.markdown('<div class="back-button-container">', unsafe_allow_html=True)
+        if st.button("🏠", key="back_to_home_courts"):
+            st.session_state.page = 'home'
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
     st.header("Court Locations")
     st.markdown("### Arabian Ranches Tennis Courts")
     st.markdown("- [Alvorado 1 & 2](https://maps.google.com/?q=25.041792,55.259258)")
@@ -789,7 +826,7 @@ def court_locations_page():
     st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
 
 if st.session_state.page == 'home':
-    landing_page()
+    home_page_buttons()
 elif st.session_state.page == 'rankings':
     rankings_page(players_df, matches, rank_df, partner_wins_data)
 elif st.session_state.page == 'matches':
