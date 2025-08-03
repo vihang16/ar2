@@ -632,8 +632,18 @@ with tabs[1]: # Matches Tab
 
     st.subheader("Match History")
     match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True, key="match_history_filter")
-    match_view_mode = st.radio("Display View", ["Card View", "Table View"], horizontal=True, key="match_view_mode")
     
+    # NEW: Download button for CSV backup
+    if not matches.empty:
+        csv = matches.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Download Match Data as CSV",
+            data=csv,
+            file_name=f'ar_tennis_matches_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
+            mime='text/csv',
+            help="Download a complete backup of all match records as a CSV file."
+        )
+
     filtered_matches = matches.copy()
     if match_filter != "All":
         filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
@@ -642,81 +652,52 @@ with tabs[1]: # Matches Tab
     filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
     filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
 
-    if match_view_mode == "Table View":
-        # Create a cleaner DataFrame for display
-        if not filtered_matches.empty:
-            table_df = filtered_matches.copy()
-            
-            # Create a 'Match Description' column for readability
-            def create_description(row):
-                if row['match_type'] == 'Singles':
-                    players_str = f"{row['team1_player1']} vs {row['team2_player1']}"
-                else:
-                    players_str = f"{row['team1_player1']} & {row['team1_player2']} vs {row['team2_player1']} & {row['team2_player2']}"
-                
-                scores_str = ", ".join([s for s in [row['set1'], row['set2'], row['set3']] if s])
-                
-                return f"{players_str} ({scores_str})"
+    def format_match_players(row):
+        # Format player names in bold and optic yellow
+        if row["match_type"] == "Singles":
+            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
+            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
+            if row["winner"] == "Team 1":
+                return f"{p1_styled} def. {p2_styled}"
+            else:
+                return f"{p2_styled} def. {p1_styled}"
+        else: # Doubles
+            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
+            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player2']}</span>"
+            p3_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
+            p4_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player2']}</span>"
+            if row["winner"] == "Team 1":
+                return f"{p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
+            else:
+                return f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
 
-            table_df['Match Summary'] = table_df.apply(create_description, axis=1)
-            
-            # Create 'Date' and 'Winner' columns
-            table_df['Date'] = table_df['date'].dt.strftime('%d %b %y')
-            table_df['Winner'] = table_df['winner']
-            
-            # Select and reorder the columns for the table view, including set scores
-            display_columns = ['Date', 'Match Summary', 'set1', 'set2', 'set3', 'Winner', 'match_type', 'match_id']
-            st.dataframe(table_df[display_columns], use_container_width=True, hide_index=True)
-        else:
-            st.info("No matches found.")
-    
-    else: # Card View
-        def format_match_players(row):
-            # Format player names in bold and optic yellow
-            if row["match_type"] == "Singles":
-                p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
-                p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
-                if row["winner"] == "Team 1":
-                    return f"{p1_styled} def. {p2_styled}"
-                else:
-                    return f"{p2_styled} def. {p1_styled}"
-            else: # Doubles
-                p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
-                p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player2']}</span>"
-                p3_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
-                p4_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player2']}</span>"
-                if row["winner"] == "Team 1":
-                    return f"{p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
-                else:
-                    return f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
+    def format_match_scores_and_date(row):
+        score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
+        score_text = ", ".join(score_parts_plain)
+        target_width = 30
+        padding_spaces = " " * (target_width - len(score_text))
+        score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
+        score_html = ", ".join(score_parts_html)
+        date_str = row['date'].strftime('%d %b %y')
+        return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
 
-        def format_match_scores_and_date(row):
-            score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
-            score_text = ", ".join(score_parts_plain)
-            target_width = 30
-            padding_spaces = " " * (target_width - len(score_text))
-            score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
-            score_html = ", ".join(score_parts_html)
-            date_str = row['date'].strftime('%d %b %y')
-            return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
+    if filtered_matches.empty:
+        st.info("No matches found.")
+    else:
+        for index, row in filtered_matches.iterrows():
+            cols = st.columns([1, 10])
+            if row["match_image_url"]:
+                with cols[0]:
+                    try:
+                        st.image(row["match_image_url"], width=50, caption="")
+                    except Exception as e:
+                        st.error(f"Error displaying match image: {str(e)}")
+            with cols[1]:
+                st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
+                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
+            
+            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
 
-        if filtered_matches.empty:
-            st.info("No matches found.")
-        else:
-            for index, row in filtered_matches.iterrows():
-                cols = st.columns([1, 10])
-                if row["match_image_url"]:
-                    with cols[0]:
-                        try:
-                            st.image(row["match_image_url"], width=50, caption="")
-                        except Exception as e:
-                            st.error(f"Error displaying match image: {str(e)}")
-                with cols[1]:
-                    st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
-                    st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
-                
-                st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
-    
     st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
     st.markdown("### ✏️ Manage Existing Match")
     clean_match_options = []
