@@ -13,7 +13,7 @@ st.set_page_config(page_title="AR Tennis")
 st.markdown("""
 <style>
 .stApp {
-  background-image: url("https://raw.githubusercontent.com/mahadevbk/ar2/main/bg2.jpg");
+  background-image: url("https://raw.githubusercontent.com/mahadevbk/ar2/main/bg1.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
