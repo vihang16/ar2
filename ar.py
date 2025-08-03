@@ -155,7 +155,7 @@ def get_player_trend(player, matches, max_matches=5):
             trend.append('L')
     return ' '.join(trend) if trend else 'No recent matches'
 
-def display_player_insights(selected_player, players_df, matches_df, rank_df, partner_wins_data, key_prefix=""):
+def display_player_insights(selected_player, players_df, matches_df, rank_df, partner_wins, key_prefix=""):
     if selected_player:
         player_info = players_df[players_df["name"] == selected_player].iloc[0]
         birthday = player_info.get("birthday", "Not set")
@@ -185,16 +185,16 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}  
                     **Games Won**: {int(player_data["Games Won"])}  
                     **Birthday**: {birthday}  
-                    **Partners Played With**: {dict(partner_wins_data[selected_player])}  
+                    **Partners Played With**: {dict(partner_wins[selected_player])}  
                     **Recent Trend**: {trend}  
                 """)
-                if partner_wins_data[selected_player]:
-                    best_partner, best_wins = max(partner_wins_data[selected_player].items(), key=lambda x: x[1])
+                if partner_wins[selected_player]:
+                    best_partner, best_wins = max(partner_wins[selected_player].items(), key=lambda x: x[1])
                     st.markdown(f"**Most Effective Partner**: {best_partner} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
             else:
                 st.markdown(f"No match data available for {selected_player}.")  
                 st.markdown(f"**Birthday**: {birthday}")
-                st.markdown(f"**Partners Played With**: {dict(partner_wins_data[selected_player])}")
+                st.markdown(f"**Partners Played With**: {dict(partner_wins[selected_player])}")
                 st.markdown(f"**Recent Trend**: {trend}")
 
 # Custom CSS
@@ -394,7 +394,7 @@ with tabs[0]: # Rankings Tab
     losses = defaultdict(int)
     matches_played = defaultdict(int)
     games_won = defaultdict(int)
-    game_diff = defaultdict(int)  # New dictionary for game difference
+    game_diff = defaultdict(float)  # Changed to float to store average game difference
     partner_wins = defaultdict(lambda: defaultdict(int))
 
     for _, row in matches.iterrows():
@@ -407,44 +407,55 @@ with tabs[0]: # Rankings Tab
 
         team1_total_games = 0
         team2_total_games = 0
+        match_gd_sum = 0
+        set_count = 0
 
+        # --- MODIFIED: Calculate game difference per set and sum them up ---
         for set_score in [row['set1'], row['set2'], row['set3']]:
             if set_score and '-' in set_score:
                 try:
                     team1_games, team2_games = map(int, set_score.split('-'))
                     team1_total_games += team1_games
                     team2_total_games += team2_games
+                    
+                    # Calculate game difference for this set and add to sum
+                    match_gd_sum += team1_games - team2_games
+                    set_count += 1
                 except ValueError:
                     continue
+
+        # Calculate average game difference for the match
+        match_gd_avg = match_gd_sum / set_count if set_count > 0 else 0
+        # --- END MODIFIED SECTION ---
 
         if row["winner"] == "Team 1":
             for p in t1:
                 scores[p] += 3
                 wins[p] += 1
                 matches_played[p] += 1
-                game_diff[p] += team1_total_games - team2_total_games
+                game_diff[p] += match_gd_avg  # Add the match's average GD to the cumulative total
             for p in t2:
                 scores[p] += 1
                 losses[p] += 1
                 matches_played[p] += 1
-                game_diff[p] += team2_total_games - team1_total_games
+                game_diff[p] -= match_gd_avg # Subtract for the losing team
         elif row["winner"] == "Team 2":
             for p in t2:
                 scores[p] += 3
                 wins[p] += 1
                 matches_played[p] += 1
-                game_diff[p] += team2_total_games - team1_total_games
+                game_diff[p] -= match_gd_avg # The total game difference is from team 2's perspective
             for p in t1:
                 scores[p] += 1
                 losses[p] += 1
                 matches_played[p] += 1
-                game_diff[p] += team1_total_games - team2_total_games
+                game_diff[p] += match_gd_avg
         else: # Tie
             for p in t1 + t2:
                 scores[p] += 1.5
                 matches_played[p] += 1
                 # For a tie, game difference is calculated as a win/loss
-                game_diff[p] += team1_total_games - team2_total_games if p in t1 else team2_total_games - team1_total_games
+                game_diff[p] += match_gd_avg if p in t1 else -match_gd_avg
 
         for set_score in [row['set1'], row['set2'], row['set3']]:
             if set_score and '-' in set_score:
