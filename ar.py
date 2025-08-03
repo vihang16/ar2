@@ -201,25 +201,6 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
-    
-    .stApp {
-        background-image: url("https://raw.githubusercontent.com/mahadevbk/ar2/main/tenniscourt2.jpg");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }
-
-    .stApp::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.6);
-        z-index: -1;
-    }
-    
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
     }
