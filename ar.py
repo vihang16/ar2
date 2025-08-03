@@ -664,8 +664,8 @@ with tabs[1]: # Matches Tab
             table_df['Date'] = table_df['date'].dt.strftime('%d %b %y')
             table_df['Winner'] = table_df['winner']
             
-            # Select and reorder the columns for the table view
-            display_columns = ['Date', 'Match Summary', 'Winner', 'match_type', 'match_id']
+            # Select and reorder the columns for the table view, including set scores
+            display_columns = ['Date', 'Match Summary', 'set1', 'set2', 'set3', 'Winner', 'match_type', 'match_id']
             st.dataframe(table_df[display_columns], use_container_width=True, hide_index=True)
         else:
             st.info("No matches found.")
