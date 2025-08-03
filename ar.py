@@ -355,6 +355,121 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Function to calculate rankings based on a filtered set of matches
+def calculate_rankings(matches_to_rank):
+    scores = defaultdict(float)
+    wins = defaultdict(int)
+    losses = defaultdict(int)
+    matches_played = defaultdict(int)
+    games_won = defaultdict(int)
+    game_diff = defaultdict(float)
+    partner_wins = defaultdict(lambda: defaultdict(int))
+
+    for _, row in matches_to_rank.iterrows():
+        if row['match_type'] == 'Doubles':
+            t1 = [row['team1_player1'], row['team1_player2']]
+            t2 = [row['team2_player1'], row['team2_player2']]
+        else:
+            t1 = [row['team1_player1']]
+            t2 = [row['team2_player1']]
+
+        team1_total_games = 0
+        team2_total_games = 0
+        match_gd_sum = 0
+        set_count = 0
+
+        for set_score in [row['set1'], row['set2'], row['set3']]:
+            if set_score and '-' in set_score:
+                try:
+                    team1_games, team2_games = map(int, set_score.split('-'))
+                    team1_total_games += team1_games
+                    team2_total_games += team2_games
+                    
+                    match_gd_sum += team1_games - team2_games
+                    set_count += 1
+                except ValueError:
+                    continue
+
+        match_gd_avg = match_gd_sum / set_count if set_count > 0 else 0
+
+        if row["winner"] == "Team 1":
+            for p in t1:
+                scores[p] += 3
+                wins[p] += 1
+                matches_played[p] += 1
+                game_diff[p] += match_gd_avg
+            for p in t2:
+                scores[p] += 1
+                losses[p] += 1
+                matches_played[p] += 1
+                game_diff[p] -= match_gd_avg
+        elif row["winner"] == "Team 2":
+            for p in t2:
+                scores[p] += 3
+                wins[p] += 1
+                matches_played[p] += 1
+                game_diff[p] -= match_gd_avg
+            for p in t1:
+                scores[p] += 1
+                losses[p] += 1
+                matches_played[p] += 1
+                game_diff[p] += match_gd_avg
+        else: # Tie
+            for p in t1 + t2:
+                scores[p] += 1.5
+                matches_played[p] += 1
+                game_diff[p] += match_gd_avg if p in t1 else -match_gd_avg
+
+        for set_score in [row['set1'], row['set2'], row['set3']]:
+            if set_score and '-' in set_score:
+                try:
+                    team1_games, team2_games = map(int, set_score.split('-'))
+                    for p in t1:
+                        games_won[p] += team1_games
+                    for p in t2:
+                        games_won[p] += team2_games
+                except ValueError:
+                    continue
+
+        if row['match_type'] == 'Doubles':
+            if row["winner"] == "Team 1":
+                partner_wins[row['team1_player1']][row['team1_player2']] += 1
+                partner_wins[row['team1_player2']][row['team1_player1']] += 1
+            elif row["winner"] == "Team 2":
+                partner_wins[row['team2_player1']][row['team2_player2']] += 1
+                partner_wins[row['team2_player2']][row['team2_player1']] += 1
+
+    rank_data = []
+    for player in scores:
+        win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
+        game_diff_avg = (game_diff[player] / matches_played[player]) if matches_played[player] > 0 else 0
+        profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
+        player_trend = get_player_trend(player, matches_to_rank)
+        rank_data.append({
+            "Rank": f"🏆 {len(rank_data) + 1}",
+            "Profile": profile_image,
+            "Player": player,
+            "Points": scores[player],
+            "Win %": round(win_percentage, 2),
+            "Matches": matches_played[player],
+            "Wins": wins[player],
+            "Losses": losses[player],
+            "Games Won": games_won[player],
+            "Game Diff Avg": round(game_diff_avg, 2),
+            "Recent Trend": player_trend
+        })
+
+    rank_df = pd.DataFrame(rank_data)
+
+    if not rank_df.empty:
+        rank_df = rank_df.sort_values(
+            by=["Points", "Win %", "Game Diff Avg", "Games Won", "Player"],
+            ascending=[False, False, False, False, True]
+        ).reset_index(drop=True)
+        rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
+    
+    return rank_df, partner_wins
+
 # Display dubai.png from local GitHub repository
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
 
@@ -388,189 +503,74 @@ tabs = st.tabs(tab_names)
 
 # --- Content for each tab ---
 with tabs[0]: # Rankings Tab
-    # ----- RANKINGS -----
-    scores = defaultdict(float)
-    wins = defaultdict(int)
-    losses = defaultdict(int)
-    matches_played = defaultdict(int)
-    games_won = defaultdict(int)
-    game_diff = defaultdict(float)  # Changed to float to store average game difference
-    partner_wins = defaultdict(lambda: defaultdict(int))
-
-    for _, row in matches.iterrows():
-        if row['match_type'] == 'Doubles':
-            t1 = [row['team1_player1'], row['team1_player2']]
-            t2 = [row['team2_player1'], row['team2_player2']]
-        else:
-            t1 = [row['team1_player1']]
-            t2 = [row['team2_player1']]
-
-        team1_total_games = 0
-        team2_total_games = 0
-        match_gd_sum = 0
-        set_count = 0
-
-        # --- MODIFIED: Calculate game difference per set and sum them up ---
-        for set_score in [row['set1'], row['set2'], row['set3']]:
-            if set_score and '-' in set_score:
-                try:
-                    team1_games, team2_games = map(int, set_score.split('-'))
-                    team1_total_games += team1_games
-                    team2_total_games += team2_games
-                    
-                    # Calculate game difference for this set and add to sum
-                    match_gd_sum += team1_games - team2_games
-                    set_count += 1
-                except ValueError:
-                    continue
-
-        # Calculate average game difference for the match
-        match_gd_avg = match_gd_sum / set_count if set_count > 0 else 0
-        # --- END MODIFIED SECTION ---
-
-        if row["winner"] == "Team 1":
-            for p in t1:
-                scores[p] += 3
-                wins[p] += 1
-                matches_played[p] += 1
-                game_diff[p] += match_gd_avg  # Add the match's average GD to the cumulative total
-            for p in t2:
-                scores[p] += 1
-                losses[p] += 1
-                matches_played[p] += 1
-                game_diff[p] -= match_gd_avg # Subtract for the losing team
-        elif row["winner"] == "Team 2":
-            for p in t2:
-                scores[p] += 3
-                wins[p] += 1
-                matches_played[p] += 1
-                game_diff[p] -= match_gd_avg # The total game difference is from team 2's perspective
-            for p in t1:
-                scores[p] += 1
-                losses[p] += 1
-                matches_played[p] += 1
-                game_diff[p] += match_gd_avg
-        else: # Tie
-            for p in t1 + t2:
-                scores[p] += 1.5
-                matches_played[p] += 1
-                # For a tie, game difference is calculated as a win/loss
-                game_diff[p] += match_gd_avg if p in t1 else -match_gd_avg
-
-        for set_score in [row['set1'], row['set2'], row['set3']]:
-            if set_score and '-' in set_score:
-                try:
-                    team1_games, team2_games = map(int, set_score.split('-'))
-                    for p in t1:
-                        games_won[p] += team1_games
-                    for p in t2:
-                        games_won[p] += team2_games
-                except ValueError:
-                    continue
-
-        if row['match_type'] == 'Doubles':
-            if row["winner"] == "Team 1":
-                partner_wins[row['team1_player1']][row['team1_player2']] += 1
-                partner_wins[row['team1_player2']][row['team1_player1']] += 1
-            elif row["winner"] == "Team 2":
-                partner_wins[row['team2_player1']][row['team2_player2']] += 1
-                partner_wins[row['team2_player2']][row['team2_player1']] += 1
-
-    rank_data = []
-    for player in scores:
-        win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
-        game_diff_avg = (game_diff[player] / matches_played[player]) if matches_played[player] > 0 else 0
-        profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
-        player_trend = get_player_trend(player, matches) # Calculate trend
-        rank_data.append({
-            "Rank": f"🏆 {len(rank_data) + 1}",
-            "Profile": profile_image,
-            "Player": player,
-            "Points": scores[player],
-            "Win %": round(win_percentage, 2),
-            "Matches": matches_played[player],
-            "Wins": wins[player],
-            "Losses": losses[player],
-            "Games Won": games_won[player],
-            "Game Diff Avg": round(game_diff_avg, 2),  # Add new metric
-            "Recent Trend": player_trend # Add trend to data
-        })
-
-    rank_df = pd.DataFrame(rank_data)
-
-    # FIX: Check if rank_df is not empty before sorting
-    if not rank_df.empty:
-        rank_df = rank_df.sort_values(
-            by=["Points", "Win %", "Game Diff Avg", "Games Won", "Player"],
-            ascending=[False, False, False, False, True]
-        ).reset_index(drop=True)
-        rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
-
-    # --- New code for the toggle and table view ---
     st.header("Rankings")
-    view_mode = st.radio("Display View", ["Card View", "Table View"], horizontal=True, key="ranking_view_mode")
     
+    # NEW: Radio button to select ranking type
+    ranking_type = st.radio(
+        "Select Ranking View",
+        ["Combined", "Doubles", "Singles"],
+        horizontal=True,
+        key="ranking_type_selector"
+    )
+
+    # Filter matches based on the selected radio button
+    if ranking_type == "Doubles":
+        filtered_matches = matches[matches['match_type'] == 'Doubles'].copy()
+    elif ranking_type == "Singles":
+        filtered_matches = matches[matches['match_type'] == 'Singles'].copy()
+    else: # Combined
+        filtered_matches = matches.copy()
+        
+    # Calculate rankings using the new function
+    rank_df, partner_wins = calculate_rankings(filtered_matches)
+
     current_date_formatted = datetime.now().strftime("%d/%m")
     st.subheader(f"Rankings as of {current_date_formatted}")
 
-    if view_mode == "Table View":
-        # Table View
-        if not rank_df.empty:
-            # Drop the 'Profile' column for the table view
-            table_df = rank_df.drop(columns=['Profile', 'Recent Trend'])
-            # Reorder columns for a cleaner look
-            column_order = ["Rank", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Game Diff Avg", "Games Won"]
-            table_df = table_df[column_order]
-            st.dataframe(table_df, use_container_width=True, hide_index=True)
-        else:
-            st.info("No ranking data available. Please add players and matches.")
+    st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
+    st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
+
+    if rank_df.empty:
+        st.info("No ranking data available for this view.")
     else:
-        # Card View (Existing code)
-        st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
-        st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
+        # Data Rows
+        for index, row in rank_df.iterrows():
+            # Using the new ranking-profile-image class
+            profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
+            # Apply bold and optic yellow to Player Name
+            player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+            # Apply bold and optic yellow to Points value
+            points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+            
+            # Style the Recent Trend value
+            trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
 
-        if rank_df.empty:
-            st.info("No ranking data available. Please add players and matches.")
-        else:
-            # Data Rows
-            for index, row in rank_df.iterrows():
-                # Using the new ranking-profile-image class
-                profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
-                # Apply bold and optic yellow to Player Name
-                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                # Apply bold and optic yellow to Points value
-                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                
-                # Style the Recent Trend value
-                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-
-                st.markdown(f"""
-                <div class="ranking-row">
-                    <div class="rank-profile-player-group">
-                        <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">{profile_html}</div>
-                        <div class="player-col">{player_styled}</div>
-                    </div>
-                    <div class="points-col">{points_value_styled}</div>
-                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                    <div class="matches-col">{int(row["Matches"])}</div>
-                    <div class="wins-col">{int(row["Wins"])}</div>
-                    <div class="losses-col">{int(row["Losses"])}</div>
-                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                    <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col">{trend_value_styled}</div>
+            st.markdown(f"""
+            <div class="ranking-row">
+                <div class="rank-profile-player-group">
+                    <div class="rank-col">{row["Rank"]}</div>
+                    <div class="profile-col">{profile_html}</div>
+                    <div class="player-col">{player_styled}</div>
                 </div>
-                """, unsafe_allow_html=True)
+                <div class="points-col">{points_value_styled}</div>
+                <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                <div class="matches-col">{int(row["Matches"])}</div>
+                <div class="wins-col">{int(row["Wins"])}</div>
+                <div class="losses-col">{int(row["Losses"])}</div>
+                <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                <div class="games-won-col">{int(row["Games Won"])}</div>
+                <div class="trend-col">{trend_value_styled}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    # --- End of new code for the toggle and table view ---
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # Player Insights for Rankings Tab
     st.subheader("Player Insights")
     selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings")
     if not rank_df.empty:
-        display_player_insights(selected_player_rankings, players_df, matches, rank_df, partner_wins, key_prefix="rankings_")
+        display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_wins, key_prefix="rankings_")
     else:
         st.info("Player insights will be available once there is match data.")
 
@@ -777,9 +777,11 @@ with tabs[2]: # Player Profile Tab
 
     # Player Insights for Player Profile Tab (moved to top)
     st.subheader("Player Insights")
+    # Need to pass the combined matches here to show overall stats in this tab
+    rank_df_combined, partner_wins_combined = calculate_rankings(matches)
     selected_player_profile_insights = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
-    if not rank_df.empty:
-        display_player_insights(selected_player_profile_insights, players_df, matches, rank_df, partner_wins, key_prefix="profile_")
+    if not rank_df_combined.empty:
+        display_player_insights(selected_player_profile_insights, players_df, matches, rank_df_combined, partner_wins_combined, key_prefix="profile_")
     else:
         st.info("Player insights will be available once there is match data.")
 
