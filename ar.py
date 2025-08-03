@@ -6,8 +6,172 @@ from collections import defaultdict, Counter
 from supabase import create_client, Client
 import re
 
-# Set the page title
+# Set the page title and background
 st.set_page_config(page_title="AR Tennis")
+
+# Custom CSS for tiled background and other styles
+st.markdown("""
+<style>
+.stApp {
+  background-image: url("https://raw.githubusercontent.com/mahadevbk/ar2/main/grassrepeat.png");
+  background-size: 400px 400px;
+  background-repeat: repeat;
+  background-attachment: fixed;
+}
+@import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
+html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
+    font-family: 'Offside', sans-serif !important;
+}
+.match-thumbnail-container img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    cursor: pointer;
+    border-radius: 50%;
+}
+.profile-thumbnail {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+.ranking-profile-image {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.rankings-table-container { 
+    width: 100%;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 0px !important;
+    padding: 10px;
+}
+.rankings-table-scroll { 
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Card layout for all screen sizes */
+.ranking-header-row {
+    display: none;
+}
+.ranking-row {
+    display: block;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #696969;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.ranking-row:last-child {
+    margin-bottom: 0;
+}
+
+/* Adjust individual columns for card layout */
+.rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col {
+    width: 100%;
+    text-align: left;
+    padding: 2px 0;
+    font-size: 1em;
+    margin-bottom: 5px;
+    word-break: break-word;
+}
+.rank-col {
+    display: inline-block;
+    white-space: nowrap;
+    font-size: 1.3em;
+    font-weight: bold;
+    margin-right: 5px;
+    color: #fff500;
+}
+.profile-col {
+    text-align: left;
+    margin-bottom: 10px;
+    display: inline-block;
+    vertical-align: middle;
+}
+.player-col {
+    font-size: 1.3em;
+    font-weight: bold;
+    display: inline-block;
+    flex-grow: 1;
+    vertical-align: middle;
+}
+
+/* Group Profile, Rank and Player together in a flex container */
+.rank-profile-player-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.rank-profile-player-group .rank-col {
+    width: auto;
+    margin-right: 10px;
+}
+.rank-profile-player-group .profile-col {
+     width: auto;
+     margin-right: 10px;
+}
+
+/* Add labels for stats and apply new color to labels only */
+.points-col::before { content: "Points: "; font-weight: bold; color: #bbbbbb; }
+.win-percent-col::before { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
+.matches-col::before { content: "Matches: "; font-weight: bold; color: #bbbbbb; }
+.wins-col::before { content: "Wins: "; font-weight: bold; color: #bbbbbb; }
+.losses-col::before { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
+.games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
+.game-diff-avg-col::before { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
+.trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
+
+/* Ensure the actual values are white. Applies to the text content within the div, not the ::before. */
+.points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col {
+    color: #fff500;
+}
+
+/* Remove extra space below the subheader for "Rankings as of dd/mm" */
+div.st-emotion-cache-1jm692n {
+    margin-bottom: 0px !important;
+    padding-bottom: 0px !important;
+}
+div.st-emotion-cache-1jm692n h3 {
+    margin-bottom: 0px !important;
+    padding-bottom: 0px !important;
+    line-height: 1 !important;
+}
+
+/* Ensure no margin/padding on the immediate children of the rankings table container */
+.rankings-table-container > div {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+.rankings-table-container > .rankings-table-scroll {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Streamlit tabs for mobile responsiveness */
+.stTabs [data-baseweb="tab-list"] {
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    flex: 1 0 auto;
+    padding: 10px 0;
+    font-size: 14px;
+    text-align: center;
+    margin: 2px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 # Supabase setup
 supabase_url = st.secrets["supabase"]["supabase_url"]
@@ -197,163 +361,6 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                 st.markdown(f"**Partners Played With**: {dict(partner_wins[selected_player])}")
                 st.markdown(f"**Recent Trend**: {trend}")
 
-# Custom CSS
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
-    html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
-        font-family: 'Offside', sans-serif !important;
-    }
-    .match-thumbnail-container img { /* For match history images */
-        width: 50px;
-        height: 50px;
-        object-fit: cover;
-        cursor: pointer;
-        border-radius: 50%; /* Changed to 50% for circular shape */
-    }
-    .profile-thumbnail { /* For player profile tab large image */
-        width: 100px;
-        height: 100px;
-        object-fit: cover;
-        border-radius: 50%;
-        margin-right: 10px;
-    }
-    .ranking-profile-image { /* For ranking list images */
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        border-radius: 50%; /* Round images in ranking list */
-        margin-right: 10px;
-        vertical-align: middle;
-    }
-
-    .rankings-table-container { 
-        width: 100%;
-        background: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-top: 0px !important; /* Force no top margin */
-        padding: 10px;
-    }
-    .rankings-table-scroll { 
-        max-height: 500px;
-        overflow-y: auto;
-    }
-    
-    /* Card layout for all screen sizes */
-    .ranking-header-row {
-        display: none; /* Hide header row for card layout */
-    }
-    .ranking-row {
-        display: block; /* Stack elements vertically */
-        padding: 10px;
-        margin-bottom: 10px; /* Space between player cards */
-        border: 1px solid #696969; /* Changed from #ddd to ##696969 for darker grey */
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .ranking-row:last-child {
-        margin-bottom: 0;
-    }
-
-    /* Adjust individual columns for card layout */
-    .rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col {
-        width: 100%; /* Take full width */
-        text-align: left; /* Align text left */
-        padding: 2px 0;
-        font-size: 1em; /* Base font size */
-        margin-bottom: 5px; /* Space between fields */
-        word-break: break-word; /* Ensure long names/values wrap */
-    }
-    .rank-col {
-        /* Ensure cup icon and rank number stay together */
-        display: inline-block; /* Allows content to shrink to fit */
-        white-space: nowrap; /* Prevent line break between cup and number */
-        font-size: 1.3em; /* Keep rank and player larger */
-        font-weight: bold;
-        margin-right: 5px;
-        color: #fff500; /* Set rank color to optic yellow */
-    }
-    .profile-col {
-        text-align: left; /* Ensure image aligns left */
-        margin-bottom: 10px; /* More space after image */
-        display: inline-block; /* Allows it to sit next to rank/player in flex */
-        vertical-align: middle;
-    }
-    .player-col {
-        font-size: 1.3em; /* Keep rank and player larger */
-        font-weight: bold;
-        display: inline-block; /* Allows it to sit next to profile/rank in flex */
-        flex-grow: 1; /* Take remaining space in flex container */
-        vertical-align: middle;
-    }
-    
-    /* Group Profile, Rank and Player together in a flex container */
-    .rank-profile-player-group {
-        display: flex;
-        align-items: center; /* Vertically align items */
-        margin-bottom: 10px;
-    }
-    .rank-profile-player-group .rank-col {
-        width: auto; /* Shrink to fit content */
-        margin-right: 10px;
-    }
-    .rank-profile-player-group .profile-col {
-         width: auto; /* Adjust to content */
-         margin-right: 10px;
-    }
-    
-    /* Add labels for stats and apply new color to labels only */
-    .points-col::before { content: "Points: "; font-weight: bold; color: #bbbbbb; }
-    .win-percent-col::before { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
-    .matches-col::before { content: "Matches: "; font-weight: bold; color: #bbbbbb; }
-    .wins-col::before { content: "Wins: "; font-weight: bold; color: #bbbbbb; }
-    .losses-col::before { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
-    .games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
-    .game-diff-avg-col::before { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
-    .trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
-    
-    /* Ensure the actual values are white. Applies to the text content within the div, not the ::before. */
-    .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col {
-        color: #fff500; /* Set values color to optic yellow */
-    }
-
-    /* Remove extra space below the subheader for "Rankings as of dd/mm" */
-    div.st-emotion-cache-1jm692n { /* This targets the div containing the subheader */
-        margin-bottom: 0px !important;
-        padding-bottom: 0px !important;
-    }
-    div.st-emotion-cache-1jm692n h3 {
-        margin-bottom: 0px !important;
-        padding-bottom: 0px !important;
-        line-height: 1 !important; /* Attempt to reduce line height */
-    }
-    
-    /* Ensure no margin/padding on the immediate children of the rankings table container */
-    .rankings-table-container > div {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-    }
-    .rankings-table-container > .rankings-table-scroll {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-    }
-
-    /* Streamlit tabs for mobile responsiveness */
-    .stTabs [data-baseweb="tab-list"] {
-        flex-wrap: wrap; /* Allows tabs to wrap to multiple lines */
-        gap: 5px; /* Adds space between tabs */
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        flex: 1 0 auto; /* Allow tabs to grow and shrink, but not less than content */
-        padding: 10px 0; /* Adjust padding for better look on smaller screens */
-        font-size: 14px; /* Smaller font size for tabs */
-        text-align: center;
-        margin: 2px; /* Small margin around each tab button */
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 # Function to calculate rankings based on a filtered set of matches
 def calculate_rankings(matches_to_rank):
