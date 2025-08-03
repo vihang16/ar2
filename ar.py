@@ -203,7 +203,7 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
     
     .stApp {
-        background-image: url("https://raw.githubusercontent.com/mahadevbk/ar2/main/tenniscourt1.jpg");
+        background-image: url("https://raw.githubusercontent.com/mahadevbk/ar2/main/tenniscourt2.jpg");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
