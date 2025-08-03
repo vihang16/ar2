@@ -1,11 +1,11 @@
 [theme]
-primaryColor="#ccff00"
-backgroundColor="#0b200d"
-secondaryBackgroundColor="#161e80"
-textColor="#ffffff"
-
 #primaryColor="#ccff00"
-#backgroundColor="#1a1846"
+#backgroundColor="#0b200d"
 #secondaryBackgroundColor="#161e80"
 #textColor="#ffffff"
+
+primaryColor="#ccff00"
+backgroundColor="#1a1846"
+secondaryBackgroundColor="#161e80"
+textColor="#ffffff"
 
