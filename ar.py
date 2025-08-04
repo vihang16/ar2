@@ -537,7 +537,7 @@ with tabs[1]:
                     p2_new = st.selectbox("Team 1 - Player 2", [""] + available_players_t1p2_new, key=f"t1p2_new_post_{st.session_state.form_key_suffix}")
                     available_players_t2p1_new = [p for p in available_players_t1p2_new if p != p2_new] if p2_new else available_players_t1p2_new
                     p3_new = st.selectbox("Team 2 - Player 1", [""] + available_players_t2p1_new, key=f"t2p1_new_post_{st.session_state.form_key_suffix}")
-                    available_players_t2p2_new = [p for p in available_players_t1p2_new if p != p3_new] if p3_new else available_players_t1p2_new
+                    available_players_t2p2_new = [p for p in available_players_t2p1_new if p != p3_new] if p3_new else available_players_t2p1_new
                     p4_new = st.selectbox("Team 2 - Player 2", [""] + available_players_t2p2_new, key=f"t2p2_new_post_{st.session_state.form_key_suffix}")
                 else:
                     p1_new = st.selectbox("Player 1", [""] + available_players, key=f"s1p1_new_post_{st.session_state.form_key_suffix}")
