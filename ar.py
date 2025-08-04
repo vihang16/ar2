@@ -332,11 +332,10 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
         with cols[1]:
             if selected_player in rank_df["Player"].values:
                 player_data = rank_df[rank_df["Player"] == selected_player].iloc[0]
-                partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])
                 
                 st.markdown(f"""
                     **Rank**: {player_data["Rank"]}
-                    **Points**: {player_data["Points"]}
+                    **Points**: {player_data["Points"]:.1f}
                     **Win Percentage**: {player_data["Win %"]}%
                     **Matches Played**: {int(player_data["Matches"])}
                     **Wins**: {int(player_data["Wins"])}
@@ -344,10 +343,14 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}
                     **Games Won**: {int(player_data["Games Won"])}
                     **Birthday**: {birthday}
-                    **Partners Played With**: {partners_list}
                     **Recent Trend**: {trend}
                 """)
-                if partner_wins[selected_player]:
+
+                # Display partners played with and most effective partner
+                if selected_player in partner_wins and partner_wins[selected_player]:
+                    partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])
+                    st.markdown(f"**Partners Played With**: {partners_list}")
+                    
                     # Find the most effective partner based on wins, then game difference average
                     sorted_partners = sorted(
                         partner_wins[selected_player].items(),
@@ -358,11 +361,14 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     best_wins = sorted_partners[0][1]['wins']
                     st.markdown(f"**Most Effective Partner**: {best_partner_name} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
             else:
-                partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])
-                st.markdown(f"No match data available for {selected_player}.")
-                st.markdown(f"**Birthday**: {birthday}")
-                st.markdown(f"**Partners Played With**: {partners_list}")
-                st.markdown(f"**Recent Trend**: {trend}")
+                partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins.get(selected_player, {}).items()])
+                st.markdown(f"""
+                    No match data available for {selected_player}.
+                    **Birthday**: {birthday}
+                    **Partners Played With**: {partners_list if partners_list else 'None'}
+                    **Recent Trend**: {trend}
+                """)
+
 
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
@@ -574,10 +580,10 @@ with tabs[0]:
         st.markdown('</div>', unsafe_allow_html=True)
         st.subheader("Player Insights")
         selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_doubles")
-        if not rank_df.empty:
+        if selected_player_rankings:
             display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_wins, key_prefix="rankings_doubles_")
         else:
-            st.info("Player insights will be available once there is match data.")
+            st.info("Player insights will be available once a player is selected.")
     elif ranking_type == "Singles":
         filtered_matches = matches[matches['match_type'] == 'Singles'].copy()
         rank_df, partner_wins = calculate_rankings(filtered_matches)
@@ -614,10 +620,10 @@ with tabs[0]:
         st.markdown('</div>', unsafe_allow_html=True)
         st.subheader("Player Insights")
         selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_singles")
-        if not rank_df.empty:
+        if selected_player_rankings:
             display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_wins, key_prefix="rankings_singles_")
         else:
-            st.info("Player insights will be available once there is match data.")
+            st.info("Player insights will be available once a player is selected.")
     elif ranking_type == "Nerdy Data":
         if matches.empty or players_df.empty:
             st.info("No match data available to generate interesting stats.")
@@ -826,10 +832,10 @@ with tabs[0]:
         st.markdown('</div>', unsafe_allow_html=True)
         st.subheader("Player Insights")
         selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_combined")
-        if not rank_df.empty:
+        if selected_player_rankings:
             display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_wins, key_prefix="rankings_combined_")
         else:
-            st.info("Player insights will be available once there is match data.")
+            st.info("Player insights will be available once a player is selected.")
 
 with tabs[1]:
     st.header("Matches")
@@ -1015,10 +1021,11 @@ with tabs[2]:
     st.subheader("Player Insights")
     rank_df_combined, partner_wins_combined = calculate_rankings(st.session_state.matches_df)
     selected_player_profile_insights = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
-    if not rank_df_combined.empty:
+    if selected_player_profile_insights:
         display_player_insights(selected_player_profile_insights, players_df, st.session_state.matches_df, rank_df_combined, partner_wins_combined, key_prefix="profile_")
     else:
-        st.info("Player insights will be available once there is match data.")
+        st.info("Player insights will be available once a player is selected.")
+        
     st.subheader("Manage & Edit Player Profiles")
     with st.expander("Add, Edit or Remove Player"):
         st.markdown("##### Add New Player")
