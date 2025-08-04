@@ -1133,7 +1133,7 @@ if not st.session_state.matches_df.empty:
         help="Download a complete backup of all match records as a CSV file."
     )
 st.markdown("""
-<div style='background-color: #123d22; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
+<div style='background-color: #0d5384; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
 Built with ❤️ using <a href='https://streamlit.io/' style='color: #ccff00;'>Streamlit</a> — free and open source.
 <a href='https://devs-scripts.streamlit.app/' style='color: #ccff00;'>Other Scripts by dev</a> on Streamlit.
 </div>
