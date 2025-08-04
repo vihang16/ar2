@@ -337,7 +337,7 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     f"""
                     **Rank**: <span style='color:#fff500;'>{player_data["Rank"]}</span>\n
                     **Win Percentage**: <span style='color:#fff500;'>{player_data["Win %"]:.1f}%</span>\n
-                    **Matches Played**: <span style='color:#fff500;'>{int(player_data["Matches"])}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Wins**: <span style='color:#fff500;'>{int(player_data["Wins"])}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Losses**: <span style='color:#fff500;'>{int(player_data["Losses"])}</span>\n
+                    **Matches Played**: <span style='color:#fff500;'>{int(player_data["Matches"])}</span>     **Wins**: <span style='color:#fff500;'>{int(player_data["Wins"])}</span>     **Losses**: <span style='color:#fff500;'>{int(player_data["Losses"])}</span>\n
                     **Game Diff Avg**: <span style='color:#fff500;'>{player_data["Game Diff Avg"]:.2f}</span>\n
                     **Games Won**: <span style='color:#fff500;'>{int(player_data["Games Won"])}</span>\n
                     **Birthday**: <span style='color:#fff500;'>{birthday}</span>\n
@@ -519,7 +519,7 @@ def display_rankings_table(df, title):
     st.subheader(f"{title} Player Rankings Table")
     # Drop the 'Profile' and 'Recent Trend' columns as they don't fit well in a simple table
     display_df = df.drop(columns=['Profile', 'Recent Trend'])
-    st.dataframe(display_df, use_container_width=True)
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
 
 # --- Main App Logic ---
 load_players()
