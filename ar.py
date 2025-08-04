@@ -13,12 +13,12 @@ st.set_page_config(page_title="AR Tennis")
 st.markdown("""
 <style>
 .stApp {
-  background-image: url("https://raw.githubusercontent.com/mahadevbk/ar2/main/bg3.jpg");
+  background: linear-gradient(to bottom, #53840d, #182704); /* Updated gradient background */
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
   background-attachment: fixed;
-  background-color: #262730; /* Fallback background color */
+  background-color: #182704; /* Fallback background color */
 }
 /* ... rest of your custom CSS ... */
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
@@ -963,7 +963,7 @@ with tabs[1]:
         if row["match_type"] == "Singles":
             desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
         else:
-            desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team2_player2']}"
+            desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team4_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
     selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit")
     if selected_match_to_edit:
