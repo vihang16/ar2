@@ -342,9 +342,9 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}  
                     **Games Won**: {int(player_data["Games Won"])}  
                     **Birthday**: {birthday}  
-                    **Partners Played With**: {', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])}  
-                    **Recent Trend**: {trend}  
+                    **Partners Played With**: {', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])}
                 """)
+                st.markdown(f"**Recent Trend**: {trend}")
                 if partner_wins[selected_player]:
                     # Find the most effective partner based on wins, then game difference average
                     sorted_partners = sorted(
@@ -356,11 +356,11 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     best_wins = sorted_partners[0][1]['wins']
                     st.markdown(f"**Most Effective Partner**: {best_partner_name} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
             else:
-                st.markdown(f"No match data available for {selected_player}.")  
+                st.markdown(f"No match data available for {selected_player}.")
                 st.markdown(f"**Birthday**: {birthday}")
-                st.markdown(f"**Partners Played With**: {', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])}  
-                    **Recent Trend**: {trend}  
-                ")
+                st.markdown(f"**Partners Played With**: {', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])}")
+                st.markdown(f"**Recent Trend**: {trend}")
+
 
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
