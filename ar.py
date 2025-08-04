@@ -581,7 +581,7 @@ with tabs[1]:
                     load_matches()  # Reload data from DB
                     st.success("Match submitted.")
                     st.session_state.form_key_suffix += 1
-                    st.experimental_rerun()
+                    st.rerun()
 
     st.markdown("---")
     st.subheader("Match History")
@@ -693,13 +693,13 @@ with tabs[1]:
                 save_matches(st.session_state.matches_df)
                 load_matches()
                 st.success("Match updated.")
-                st.experimental_rerun()
+                st.rerun()
         if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
             st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df["match_id"] != selected_id].reset_index(drop=True)
             save_matches(st.session_state.matches_df)
             load_matches()
             st.success("Match deleted.")
-            st.experimental_rerun()
+            st.rerun()
 
 with tabs[2]:
     st.header("Player Profile")
@@ -722,7 +722,7 @@ with tabs[2]:
                     save_players(st.session_state.players_df)
                     load_players()
                     st.success(f"{new_player} added.")
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.warning(f"{new_player} already exists.")
             else:
@@ -765,14 +765,14 @@ with tabs[2]:
                     save_players(st.session_state.players_df)
                     load_players()
                     st.success("Profile updated.")
-                    st.experimental_rerun()
+                    st.rerun()
             with col_delete:
                 if st.button("🗑️ Remove Player", key=f"remove_player_button_{selected_player_manage}"):
                     st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
                     save_players(st.session_state.players_df)
                     load_players()
                     st.success(f"{selected_player_manage} removed.")
-                    st.experimental_rerun()
+                    st.rerun()
 
 with tabs[3]:
     st.header("Court Locations")
