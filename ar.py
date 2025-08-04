@@ -528,7 +528,7 @@ tabs = st.tabs(tab_names)
 
 with tabs[0]:
     st.header("Rankings")
-    ranking_type = st.radio("Select Ranking View", ["Combined", "Doubles", "Singles", "Interesting Stuff", "Table View"], horizontal=True, key="ranking_type_selector")
+    ranking_type = st.radio("Select Ranking View", ["Combined", "Doubles", "Singles", "Nerdy Data", "Table View"], horizontal=True, key="ranking_type_selector")
     if ranking_type == "Doubles":
         filtered_matches = matches[matches['match_type'] == 'Doubles'].copy()
         rank_df, partner_wins = calculate_rankings(filtered_matches)
@@ -608,8 +608,7 @@ with tabs[0]:
             display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_wins, key_prefix="rankings_singles_")
         else:
             st.info("Player insights will be available once there is match data.")
-    elif ranking_type == "Interesting Stuff":
-        st.subheader("Interesting Tennis Stats")
+    elif ranking_type == "Nerdy Data":
         if matches.empty or players_df.empty:
             st.info("No match data available to generate interesting stats.")
         else:
