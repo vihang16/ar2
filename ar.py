@@ -719,6 +719,33 @@ with tabs[0]:
                 st.info("No match data available to determine the most frequent player.")
             
             st.markdown("---")
+            
+            # Player with highest Game Difference
+            st.markdown("### 📈 Player with highest Game Difference")
+            cumulative_game_diff = defaultdict(int)
+            for _, row in matches.iterrows():
+                t1 = [row['team1_player1'], row['team1_player2']] if row['match_type'] == 'Doubles' else [row['team1_player1']]
+                t2 = [row['team2_player1'], row['team2_player2']] if row['match_type'] == 'Doubles' else [row['team2_player1']]
+                for set_score in [row['set1'], row['set2'], row['set3']]:
+                    if set_score and '-' in set_score:
+                        try:
+                            team1_games, team2_games = map(int, set_score.split('-'))
+                            set_gd = team1_games - team2_games
+                            for p in t1:
+                                if p: cumulative_game_diff[p] += set_gd
+                            for p in t2:
+                                if p: cumulative_game_diff[p] -= set_gd
+                        except ValueError:
+                            continue
+
+            if cumulative_game_diff:
+                highest_gd_player, highest_gd_value = max(cumulative_game_diff.items(), key=lambda item: item[1])
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{highest_gd_player}</span>"
+                st.markdown(f"The player with the highest cumulative game difference is {player_styled} with a total of **{highest_gd_value}** games.", unsafe_allow_html=True)
+            else:
+                st.info("No match data available to calculate game difference.")
+
+            st.markdown("---")
 
             # Other interesting stats
             if not rank_df.empty:
