@@ -1,8 +1,14 @@
 [theme]
 primaryColor="#ccff00"
-backgroundColor="#0b200d"
-secondaryBackgroundColor="#123d22"
+backgroundColor="#052134"
+secondaryBackgroundColor="#0d5384"
 textColor="#ffffff"
+
+#[theme]
+#primaryColor="#ccff00"
+#backgroundColor="#0b200d"
+#secondaryBackgroundColor="#123d22"
+#textColor="#ffffff"
 
 #primaryColor="#ccff00"
 #backgroundColor="#1a1846"
