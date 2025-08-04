@@ -333,18 +333,19 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
             if selected_player in rank_df["Player"].values:
                 player_data = rank_df[rank_df["Player"] == selected_player].iloc[0]
                 
-                st.markdown(f"""
-                    **Rank**: {player_data["Rank"]}
-                    **Points**: {player_data["Points"]:.1f}
-                    **Win Percentage**: {player_data["Win %"]}%
-                    **Matches Played**: {int(player_data["Matches"])}
-                    **Wins**: {int(player_data["Wins"])}
-                    **Losses**: {int(player_data["Losses"])}
-                    **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}
-                    **Games Won**: {int(player_data["Games Won"])}
-                    **Birthday**: {birthday}
+                st.markdown(
+                    f"""
+                    **Rank**: {player_data["Rank"]}\n
+                    **Win Percentage**: {player_data["Win %"]:.1f}%\n
+                    **Matches Played**: {int(player_data["Matches"])}\n
+                    **Wins**: {int(player_data["Wins"])}\n
+                    **Losses**: {int(player_data["Losses"])}\n
+                    **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}\n
+                    **Games Won**: {int(player_data["Games Won"])}\n
+                    **Birthday**: {birthday}\n
                     **Recent Trend**: {trend}
-                """)
+                    """
+                )
 
                 # Display partners played with and most effective partner
                 if selected_player in partner_wins and partner_wins[selected_player]:
@@ -363,9 +364,9 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
             else:
                 partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins.get(selected_player, {}).items()])
                 st.markdown(f"""
-                    No match data available for {selected_player}.
-                    **Birthday**: {birthday}
-                    **Partners Played With**: {partners_list if partners_list else 'None'}
+                    No match data available for {selected_player}.\n
+                    **Birthday**: {birthday}\n
+                    **Partners Played With**: {partners_list if partners_list else 'None'}\n
                     **Recent Trend**: {trend}
                 """)
 
