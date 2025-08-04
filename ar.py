@@ -15,7 +15,7 @@ st.markdown("""
 .stApp {
   background: linear-gradient(to bottom, #07314f, #031827); /* New gradient background */
   background-size: cover;
-  background-repeat: no-repeat;
+  background-repeat: repeat;
   background-position: center;
   background-attachment: fixed;
   background-color: #031827; /* Fallback background color */
