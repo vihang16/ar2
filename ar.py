@@ -342,7 +342,7 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}  
                     **Games Won**: {int(player_data["Games Won"])}  
                     **Birthday**: {birthday}  
-                    **Partners Played With**: {', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])}
+                    **Partners Played With**: {', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])}  
                     **Recent Trend**: {trend}  
                 """)
                 if partner_wins[selected_player]:
@@ -358,8 +358,9 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
             else:
                 st.markdown(f"No match data available for {selected_player}.")  
                 st.markdown(f"**Birthday**: {birthday}")
-                st.markdown(f"**Partners Played With**: {', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])}")
-                st.markdown(f"**Recent Trend**: {trend}")
+                st.markdown(f"**Partners Played With**: {', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])}  
+                    **Recent Trend**: {trend}  
+                ")
 
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
