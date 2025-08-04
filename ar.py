@@ -240,6 +240,12 @@ def save_matches(df):
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
 
+def delete_match_from_db(match_id):
+    try:
+        supabase.table(matches_table_name).delete().eq("match_id", match_id).execute()
+    except Exception as e:
+        st.error(f"Error deleting match from database: {str(e)}")
+
 def upload_image_to_supabase(file, file_name, image_type="match"):
     try:
         bucket = "profile" if image_type == "profile" else "ar"
@@ -695,8 +701,7 @@ with tabs[1]:
                 st.success("Match updated.")
                 st.rerun()
         if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
-            st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df["match_id"] != selected_id].reset_index(drop=True)
-            save_matches(st.session_state.matches_df)
+            delete_match_from_db(selected_id)
             load_matches()
             st.success("Match deleted.")
             st.rerun()
