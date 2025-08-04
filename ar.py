@@ -576,7 +576,7 @@ with tabs[0]:
         else:
             st.info("Player insights will be available once there is match data.")
     elif ranking_type == "Interesting Stuff":
-        st.subheader("Interesting Tennis Stats")
+        st.subheader("Nerdy Data Analysis")
         if matches.empty or players_df.empty:
             st.info("No match data available to generate interesting stats.")
         else:
