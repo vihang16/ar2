@@ -532,17 +532,16 @@ with tabs[1]:
         else:
             with st.form(key=f"new_match_form_{st.session_state.form_key_suffix}"):
                 if match_type_new == "Doubles":
-                    p1_new = st.selectbox("Team 1 - Player 1", [""] + available_players, key=f"t1p1_new_post_{st.session_state.form_key_suffix}")
-                    available_players_t1p2_new = [p for p in available_players if p != p1_new] if p1_new else available_players
-                    p2_new = st.selectbox("Team 1 - Player 2", [""] + available_players_t1p2_new, key=f"t1p2_new_post_{st.session_state.form_key_suffix}")
-                    available_players_t2p1_new = [p for p in available_players_t1p2_new if p != p2_new] if p2_new else available_players_t1p2_new
-                    p3_new = st.selectbox("Team 2 - Player 1", [""] + available_players_t2p1_new, key=f"t2p1_new_post_{st.session_state.form_key_suffix}")
-                    available_players_t2p2_new = [p for p in available_players_t2p1_new if p != p3_new] if p3_new else available_players_t2p1_new
-                    p4_new = st.selectbox("Team 2 - Player 2", [""] + available_players_t2p2_new, key=f"t2p2_new_post_{st.session_state.form_key_suffix}")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        p1_new = st.selectbox("Team 1 - Player 1", [""] + available_players, key=f"t1p1_new_post_{st.session_state.form_key_suffix}")
+                        p2_new = st.selectbox("Team 1 - Player 2", [""] + available_players, key=f"t1p2_new_post_{st.session_state.form_key_suffix}")
+                    with col2:
+                        p3_new = st.selectbox("Team 2 - Player 1", [""] + available_players, key=f"t2p1_new_post_{st.session_state.form_key_suffix}")
+                        p4_new = st.selectbox("Team 2 - Player 2", [""] + available_players, key=f"t2p2_new_post_{st.session_state.form_key_suffix}")
                 else:
                     p1_new = st.selectbox("Player 1", [""] + available_players, key=f"s1p1_new_post_{st.session_state.form_key_suffix}")
-                    available_players_p2_new = [p for p in available_players if p != p1_new] if p1_new else available_players
-                    p3_new = st.selectbox("Player 2", [""] + available_players_p2_new, key=f"s1p2_new_post_{st.session_state.form_key_suffix}")
+                    p3_new = st.selectbox("Player 2", [""] + available_players, key=f"s1p2_new_post_{st.session_state.form_key_suffix}")
                     p2_new = ""
                     p4_new = ""
                 set1_new = st.selectbox("Set 1", tennis_scores(), index=4, key=f"set1_new_post_{st.session_state.form_key_suffix}")
@@ -552,10 +551,11 @@ with tabs[1]:
                 match_image_new = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"match_image_new_post_{st.session_state.form_key_suffix}")
                 submit_button = st.form_submit_button("Submit Match")
             if submit_button:
-                if match_type_new == "Doubles" and not all([p1_new, p2_new, p3_new, p4_new]):
-                    st.error("Please select all four players for a doubles match.")
-                elif match_type_new == "Singles" and not all([p1_new, p3_new]):
-                    st.error("Please select both players for a singles match.")
+                selected_players = [p1_new, p2_new, p3_new, p4_new] if match_type_new == "Doubles" else [p1_new, p3_new]
+                if "" in selected_players:
+                    st.error("Please select all players.")
+                elif len(selected_players) != len(set(selected_players)):
+                    st.error("Please select different players for each position.")
                 else:
                     new_match_date = datetime.now()
                     match_id_new = generate_match_id(matches, new_match_date)
