@@ -13,17 +13,17 @@ st.set_page_config(page_title="AR Tennis")
 st.markdown("""
 <style>
 .stApp {
-  background: linear-gradient(to bottom, #53840d, #182704); /* Updated gradient background */
+  background: linear-gradient(to bottom, #07314f, #031827); /* New gradient background */
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
   background-attachment: fixed;
-  background-color: #182704; /* Fallback background color */
+  background-color: #031827; /* Fallback background color */
 }
 
-/* Apply the same gradient to the header/menu bar */
+/* Apply the reversed gradient to the header/menu bar */
 [data-testid="stHeader"] {
-  background: linear-gradient(to bottom, #53840d, #182704) !important;
+  background: linear-gradient(to top, #07314f, #031827) !important;
 }
 
 /* ... rest of your custom CSS ... */
