@@ -780,6 +780,9 @@ with tabs[0]:
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{most_wins_player['Player']}</span>"
                 st.markdown(f"{player_styled} holds the record for most wins with **{int(most_wins_player['Wins'])}** wins.", unsafe_allow_html=True)
 
+                # ADDED DIVIDING LINE HERE
+                st.markdown("---") 
+
                 # Player with the highest win percentage (minimum 5 matches)
                 st.markdown(f"### 🔥 Highest Win Percentage (Min. 5 Matches)")
                 eligible_players = rank_df[rank_df['Matches'] >= 5].sort_values(by="Win %", ascending=False)
