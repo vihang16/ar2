@@ -582,8 +582,8 @@ with tabs[0]:
         else:
             rank_df, partner_wins = calculate_rankings(matches)
             
-            # Best Player to Partner With
-            st.markdown("### 🤝 Best Player to Partner With")
+            # Most Effective Partnership
+            st.markdown("### 🤝 Most Effective Partnership")
             best_partner = None
             max_value = -1
             for player, partners in partner_wins.items():
@@ -598,7 +598,79 @@ with tabs[0]:
                 p1, p2, stats = best_partner
                 st.markdown(f"The most effective partnership is **{p1}** and **{p2}** with a combined score of wins and average game difference. They have **{stats['wins']}** wins and a total game difference of **{stats['game_diff_sum']:.2f}**.")
             else:
-                st.info("No doubles matches have been played to determine the best partnership.")
+                st.info("No doubles matches have been played to determine the most effective partnership.")
+            
+            st.markdown("---")
+            
+            # Best Player to Partner With
+            st.markdown("### 🥇 Best Player to Partner With")
+            player_stats = defaultdict(lambda: {'wins': 0, 'gd_sum': 0, 'partners': set()})
+            for _, row in matches.iterrows():
+                if row['match_type'] == 'Doubles':
+                    t1 = [row['team1_player1'], row['team1_player2']]
+                    t2 = [row['team2_player1'], row['team2_player2']]
+
+                    match_gd_sum = 0
+                    set_count = 0
+                    for set_score in [row['set1'], row['set2'], row['set3']]:
+                        if set_score and '-' in set_score:
+                            try:
+                                team1_games, team2_games = map(int, set_score.split('-'))
+                                match_gd_sum += team1_games - team2_games
+                                set_count += 1
+                            except ValueError:
+                                continue
+                    
+                    if set_count > 0:
+                        if row["winner"] == "Team 1":
+                            for p in t1:
+                                player_stats[p]['wins'] += 1
+                                player_stats[p]['gd_sum'] += match_gd_sum
+                                for partner in t1:
+                                    if partner != p:
+                                        player_stats[p]['partners'].add(partner)
+                        elif row["winner"] == "Team 2":
+                            for p in t2:
+                                player_stats[p]['wins'] += 1
+                                player_stats[p]['gd_sum'] += match_gd_sum
+                                for partner in t2:
+                                    if partner != p:
+                                        player_stats[p]['partners'].add(partner)
+
+            if player_stats:
+                best_partner_candidate = None
+                max_score = -1
+
+                wins_list = [stats['wins'] for stats in player_stats.values()]
+                gd_list = [stats['gd_sum'] for stats in player_stats.values()]
+                partners_list = [len(stats['partners']) for stats in player_stats.values()]
+
+                max_wins = max(wins_list) if wins_list else 1
+                max_gd = max(gd_list) if gd_list else 1
+                max_partners = max(partners_list) if partners_list else 1
+
+                for player, stats in player_stats.items():
+                    # Normalize scores and create a composite score
+                    normalized_wins = stats['wins'] / max_wins
+                    normalized_gd = stats['gd_sum'] / max_gd
+                    normalized_partners = len(stats['partners']) / max_partners
+                    
+                    composite_score = normalized_wins + normalized_gd + normalized_partners
+                    
+                    if composite_score > max_score:
+                        max_score = composite_score
+                        best_partner_candidate = (player, stats)
+                
+                if best_partner_candidate:
+                    player_name, stats = best_partner_candidate
+                    st.markdown(f"The best player to partner with is **{player_name}** based on their high number of wins, game difference sum, and variety of partners. They have:")
+                    st.markdown(f"- **Total Wins**: {stats['wins']}")
+                    st.markdown(f"- **Total Game Difference**: {stats['gd_sum']:.2f}")
+                    st.markdown(f"- **Unique Partners Played With**: {len(stats['partners'])}")
+                else:
+                    st.info("Not enough data to determine the best player to partner with.")
+            else:
+                st.info("No doubles matches have been recorded yet.")
             
             st.markdown("---")
             
