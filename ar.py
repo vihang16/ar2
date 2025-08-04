@@ -49,7 +49,7 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     vertical-align: middle;
 }
 
-.rankings-table-container { 
+.rankings-table-container {
     width: 100%;
     background: #ffffff;
     border-radius: 8px;
@@ -57,7 +57,7 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     margin-top: 0px !important;
     padding: 10px;
 }
-.rankings-table-scroll { 
+.rankings-table-scroll {
     max-height: 500px;
     overflow-y: auto;
 }
@@ -335,17 +335,17 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                 partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])
                 
                 st.markdown(f"""
-                    **Rank**: {player_data["Rank"]}  
-                    **Points**: {player_data["Points"]}  
-                    **Win Percentage**: {player_data["Win %"]}%  
-                    **Matches Played**: {int(player_data["Matches"])}  
-                    **Wins**: {int(player_data["Wins"])}  
-                    **Losses**: {int(player_data["Losses"])}  
-                    **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}  
-                    **Games Won**: {int(player_data["Games Won"])}  
-                    **Birthday**: {birthday}  
+                    **Rank**: {player_data["Rank"]}
+                    **Points**: {player_data["Points"]}
+                    **Win Percentage**: {player_data["Win %"]}%
+                    **Matches Played**: {int(player_data["Matches"])}
+                    **Wins**: {int(player_data["Wins"])}
+                    **Losses**: {int(player_data["Losses"])}
+                    **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}
+                    **Games Won**: {int(player_data["Games Won"])}
+                    **Birthday**: {birthday}
                     **Partners Played With**: {partners_list}
-                    **Recent Trend**: {trend}  
+                    **Recent Trend**: {trend}
                 """)
                 if partner_wins[selected_player]:
                     # Find the most effective partner based on wins, then game difference average
@@ -629,7 +629,9 @@ with tabs[0]:
 
             if best_partner:
                 p1, p2, stats = best_partner
-                st.markdown(f"The most effective partnership is **{p1}** and **{p2}** with a combined score of wins and average game difference. They have **{stats['wins']}** wins and a total game difference of **{stats['game_diff_sum']:.2f}**.")
+                p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{p1}</span>"
+                p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{p2}</span>"
+                st.markdown(f"The most effective partnership is {p1_styled} and {p2_styled} with a combined score of wins and average game difference. They have **{stats['wins']}** wins and a total game difference of **{stats['game_diff_sum']:.2f}**.", unsafe_allow_html=True)
             else:
                 st.info("No doubles matches have been played to determine the most effective partnership.")
             
@@ -696,7 +698,8 @@ with tabs[0]:
                 
                 if best_partner_candidate:
                     player_name, stats = best_partner_candidate
-                    st.markdown(f"The best player to partner with is **{player_name}** based on their high number of wins, game difference sum, and variety of partners. They have:")
+                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{player_name}</span>"
+                    st.markdown(f"The best player to partner with is {player_styled} based on their high number of wins, game difference sum, and variety of partners. They have:", unsafe_allow_html=True)
                     st.markdown(f"- **Total Wins**: {stats['wins']}")
                     st.markdown(f"- **Total Game Difference**: {stats['gd_sum']:.2f}")
                     st.markdown(f"- **Unique Partners Played With**: {len(stats['partners'])}")
@@ -711,7 +714,8 @@ with tabs[0]:
             st.markdown("### 🏟️ Most Frequent Player")
             if not rank_df.empty:
                 most_frequent_player = rank_df.sort_values(by="Matches", ascending=False).iloc[0]
-                st.markdown(f"**{most_frequent_player['Player']}** has played the most matches, with a total of **{int(most_frequent_player['Matches'])}** matches played.")
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{most_frequent_player['Player']}</span>"
+                st.markdown(f"{player_styled} has played the most matches, with a total of **{int(most_frequent_player['Matches'])}** matches played.", unsafe_allow_html=True)
             else:
                 st.info("No match data available to determine the most frequent player.")
             
@@ -722,14 +726,16 @@ with tabs[0]:
                 # Player with the most wins
                 most_wins_player = rank_df.sort_values(by="Wins", ascending=False).iloc[0]
                 st.markdown(f"### 👑 Player with the Most Wins")
-                st.markdown(f"**{most_wins_player['Player']}** holds the record for most wins with **{int(most_wins_player['Wins'])}** wins.")
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{most_wins_player['Player']}</span>"
+                st.markdown(f"{player_styled} holds the record for most wins with **{int(most_wins_player['Wins'])}** wins.", unsafe_allow_html=True)
 
                 # Player with the highest win percentage (minimum 5 matches)
                 st.markdown(f"### 🔥 Highest Win Percentage (Min. 5 Matches)")
                 eligible_players = rank_df[rank_df['Matches'] >= 5].sort_values(by="Win %", ascending=False)
                 if not eligible_players.empty:
                     highest_win_percent_player = eligible_players.iloc[0]
-                    st.markdown(f"**{highest_win_percent_player['Player']}** has the highest win percentage at **{highest_win_percent_player['Win %']:.2f}%**.")
+                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{highest_win_percent_player['Player']}</span>"
+                    st.markdown(f"{player_styled} has the highest win percentage at **{highest_win_percent_player['Win %']:.2f}%**.", unsafe_allow_html=True)
                 else:
                     st.info("No players have played enough matches to calculate a meaningful win percentage.")
     elif ranking_type == "Table View":
