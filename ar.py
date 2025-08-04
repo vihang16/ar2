@@ -499,6 +499,9 @@ def display_match_table(df, title):
         'match_image_url': 'Image URL'
     }, inplace=True)
     
+    # Format the date column as dd MMM yy
+    display_df['Date'] = pd.to_datetime(display_df['Date']).dt.strftime('%d %b %y')
+    
     st.dataframe(display_df, height=300)
 
 # --- Main App Logic ---
@@ -875,7 +878,7 @@ with tabs[1]:
         padding_spaces = " " * (target_width - len(score_text))
         score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
         score_html = ", ".join(score_parts_html)
-        date_str = row['date'].strftime('%d %b %y %H:%M')
+        date_str = row['date'].strftime('%d %b %y')
         return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
     if filtered_matches.empty:
         st.info("No matches found.")
