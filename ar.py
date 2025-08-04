@@ -457,7 +457,7 @@ load_matches()
 
 players_df = st.session_state.players_df
 matches = st.session_state.matches_df
-players = players_df["name"].dropna().tolist() if "name" in players_df.columns else []
+players = sorted(players_df["name"].dropna().tolist()) if "name" in players_df.columns else []
 
 if not matches.empty and ("match_id" not in matches.columns or matches["match_id"].isnull().any()):
     matches['date'] = pd.to_datetime(matches['date'], errors='coerce')
@@ -526,7 +526,7 @@ with tabs[1]:
     with st.expander("➕ Post New Match Result"):
         st.subheader("Enter Match Result")
         match_type_new = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key=f"post_match_type_new_{st.session_state.form_key_suffix}")
-        available_players = players.copy() if players else []
+        available_players = sorted(players.copy() if players else [])
         if not available_players:
             st.warning("No players available. Please add players in the Player Profile tab.")
         else:
@@ -739,7 +739,7 @@ with tabs[2]:
                 try:
                     st.image(current_image, width=100, caption="Current Image")
                 except Exception as e:
-                    st.error(f"Error displaying profile image: {str(e)}")
+                        st.error(f"Error displaying profile image: {str(e)}")
             else:
                 st.write("No profile image set.")
             profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
