@@ -13,7 +13,7 @@ st.set_page_config(page_title="AR Tennis")
 st.markdown("""
 <style>
 .stApp {
-  background: linear-gradient(to bottom, #07314f, #031827,#035996); /* New gradient background */
+  background: linear-gradient(to bottom, #07314f, #031827,#031827,#031827,#035996); /* New gradient background */
   background-size: cover;
   background-repeat: repeat;
   background-position: center;
