@@ -20,6 +20,12 @@ st.markdown("""
   background-attachment: fixed;
   background-color: #182704; /* Fallback background color */
 }
+
+/* Apply the same gradient to the header/menu bar */
+[data-testid="stHeader"] {
+  background: linear-gradient(to bottom, #53840d, #182704) !important;
+}
+
 /* ... rest of your custom CSS ... */
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
 html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
