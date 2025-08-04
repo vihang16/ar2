@@ -23,7 +23,7 @@ st.markdown("""
 
 /* Apply the reversed gradient to the header/menu bar */
 [data-testid="stHeader"] {
-  background: linear-gradient(to top, #07314f, #399ce3) !important;
+  background: linear-gradient(to top, #07314f, #035996) !important;
 }
 
 /* ... rest of your custom CSS ... */
