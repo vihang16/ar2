@@ -545,8 +545,8 @@ def generate_whatsapp_link(row):
             winner_str = f"{row['team2_player1']} & {row['team2_player2']}"
             loser_str = f"{row['team1_player1']} & {row['team1_player2']}"
 
-    # Format scores and date
-    scores_list = [s.replace('-', ':') for s in [row['set1'], row['set2'], row['set3']] if s]
+    # Format scores with bolding and date
+    scores_list = [f'*{s.replace("-", ":")}*' for s in [row['set1'], row['set2'], row['set3']] if s]
     scores_str = " ".join(scores_list)
     date_str = row['date'].strftime('%d %b %y')
 
