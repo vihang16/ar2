@@ -470,6 +470,36 @@ def calculate_rankings(matches_to_rank):
         ).reset_index(drop=True)
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
     return rank_df, partner_wins
+    
+def display_match_table(df, title):
+    if df.empty:
+        st.info(f"No {title} match data available.")
+        return
+    
+    table_df = df.copy()
+    
+    # Create a formatted Match column
+    def format_match_info(row):
+        scores = [s for s in [row['set1'], row['set2'], row['set3']] if s]
+        scores_str = ", ".join(scores)
+        
+        if row['match_type'] == 'Doubles':
+            players = f"{row['team1_player1']} & {row['team1_player2']} vs. {row['team2_player1']} & {row['team2_player2']}"
+        else:
+            players = f"{row['team1_player1']} vs. {row['team2_player1']}"
+            
+        return f"{players} ({scores_str})"
+
+    table_df['Match Details'] = table_df.apply(format_match_info, axis=1)
+    
+    # Select and rename columns for display
+    display_df = table_df[['date', 'Match Details', 'match_image_url']].copy()
+    display_df.rename(columns={
+        'date': 'Date',
+        'match_image_url': 'Image URL'
+    }, inplace=True)
+    
+    st.dataframe(display_df, height=300)
 
 # --- Main App Logic ---
 load_players()
@@ -495,7 +525,7 @@ tabs = st.tabs(tab_names)
 
 with tabs[0]:
     st.header("Rankings")
-    ranking_type = st.radio("Select Ranking View", ["Combined", "Doubles", "Singles", "Interesting Stuff"], horizontal=True, key="ranking_type_selector")
+    ranking_type = st.radio("Select Ranking View", ["Combined", "Doubles", "Singles", "Interesting Stuff", "Table View"], horizontal=True, key="ranking_type_selector")
     if ranking_type == "Doubles":
         filtered_matches = matches[matches['match_type'] == 'Doubles'].copy()
         rank_df, partner_wins = calculate_rankings(filtered_matches)
@@ -576,7 +606,7 @@ with tabs[0]:
         else:
             st.info("Player insights will be available once there is match data.")
     elif ranking_type == "Interesting Stuff":
-        st.subheader("Nerdy Data Analysis")
+        st.subheader("Interesting Tennis Stats")
         if matches.empty or players_df.empty:
             st.info("No match data available to generate interesting stats.")
         else:
@@ -699,7 +729,17 @@ with tabs[0]:
                     st.markdown(f"**{highest_win_percent_player['Player']}** has the highest win percentage at **{highest_win_percent_player['Win %']:.2f}%**.")
                 else:
                     st.info("No players have played enough matches to calculate a meaningful win percentage.")
-            
+    elif ranking_type == "Table View":
+        st.subheader("Combined Match History Table")
+        display_match_table(matches, "Combined")
+
+        st.subheader("Doubles Match History Table")
+        doubles_matches = matches[matches['match_type'] == 'Doubles']
+        display_match_table(doubles_matches, "Doubles")
+
+        st.subheader("Singles Match History Table")
+        singles_matches = matches[matches['match_type'] == 'Singles']
+        display_match_table(singles_matches, "Singles")
     else: # Combined view
         filtered_matches = matches.copy()
         rank_df, partner_wins = calculate_rankings(filtered_matches)
