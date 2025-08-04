@@ -504,6 +504,16 @@ def display_match_table(df, title):
     
     st.dataframe(display_df, height=300)
 
+def display_rankings_table(df, title):
+    if df.empty:
+        st.info(f"No {title} ranking data available.")
+        return
+    
+    st.subheader(f"{title} Player Rankings Table")
+    # Drop the 'Profile' and 'Recent Trend' columns as they don't fit well in a simple table
+    display_df = df.drop(columns=['Profile', 'Recent Trend'])
+    st.dataframe(display_df, use_container_width=True)
+
 # --- Main App Logic ---
 load_players()
 load_matches()
@@ -767,16 +777,19 @@ with tabs[0]:
                 else:
                     st.info("No players have played enough matches to calculate a meaningful win percentage.")
     elif ranking_type == "Table View":
-        st.subheader("Combined Match History Table")
-        display_match_table(matches, "Combined")
+        # Calculate combined rankings
+        rank_df_combined, _ = calculate_rankings(matches)
+        display_rankings_table(rank_df_combined, "Combined")
 
-        st.subheader("Doubles Match History Table")
+        # Calculate doubles rankings
         doubles_matches = matches[matches['match_type'] == 'Doubles']
-        display_match_table(doubles_matches, "Doubles")
+        rank_df_doubles, _ = calculate_rankings(doubles_matches)
+        display_rankings_table(rank_df_doubles, "Doubles")
 
-        st.subheader("Singles Match History Table")
+        # Calculate singles rankings
         singles_matches = matches[matches['match_type'] == 'Singles']
-        display_match_table(singles_matches, "Singles")
+        rank_df_singles, _ = calculate_rankings(singles_matches)
+        display_rankings_table(rank_df_singles, "Singles")
     else: # Combined view
         filtered_matches = matches.copy()
         rank_df, partner_wins = calculate_rankings(filtered_matches)
