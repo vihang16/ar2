@@ -5,6 +5,7 @@ from datetime import datetime
 from collections import defaultdict
 from supabase import create_client, Client
 import re
+import urllib.parse
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
@@ -527,6 +528,36 @@ def display_rankings_table(df, title):
     display_df = df.drop(columns=['Profile', 'Recent Trend'])
     st.dataframe(display_df, use_container_width=True, hide_index=True)
 
+def generate_whatsapp_link(row):
+    # Determine the winner and loser(s) based on the match type and winner
+    if row["match_type"] == "Singles":
+        if row["winner"] == "Team 1":
+            winner_str = f"{row['team1_player1']}"
+            loser_str = f"{row['team2_player1']}"
+        else:
+            winner_str = f"{row['team2_player1']}"
+            loser_str = f"{row['team1_player1']}"
+    else: # Doubles
+        if row["winner"] == "Team 1":
+            winner_str = f"{row['team1_player1']} & {row['team1_player2']}"
+            loser_str = f"{row['team2_player1']} & {row['team2_player2']}"
+        else:
+            winner_str = f"{row['team2_player1']} & {row['team2_player2']}"
+            loser_str = f"{row['team1_player1']} & {row['team1_player2']}"
+
+    # Format scores and date
+    scores_list = [s.replace('-', ':') for s in [row['set1'], row['set2'], row['set3']] if s]
+    scores_str = " ".join(scores_list)
+    date_str = row['date'].strftime('%d %b %y')
+
+    # Create the text to be shared
+    share_text = f"*{winner_str} def. {loser_str}*\nSet scores {scores_str} on {date_str}"
+    
+    # URL-encode the text
+    encoded_text = urllib.parse.quote(share_text)
+    
+    return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
+
 # --- Main App Logic ---
 load_players()
 load_matches()
@@ -947,7 +978,7 @@ with tabs[1]:
         st.info("No matches found.")
     else:
         for index, row in filtered_matches.iterrows():
-            cols = st.columns([1, 10])
+            cols = st.columns([1, 8, 1])
             if row["match_image_url"]:
                 with cols[0]:
                     try:
@@ -957,6 +988,9 @@ with tabs[1]:
             with cols[1]:
                 st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
                 st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
+            with cols[2]:
+                share_link = generate_whatsapp_link(row)
+                st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><span>📲</span></a>', unsafe_allow_html=True)
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
 
     st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
@@ -972,7 +1006,7 @@ with tabs[1]:
         if row["match_type"] == "Singles":
             desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
         else:
-            desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team4_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+            desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
     selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit")
     if selected_match_to_edit:
