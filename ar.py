@@ -342,16 +342,23 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}  
                     **Games Won**: {int(player_data["Games Won"])}  
                     **Birthday**: {birthday}  
-                    **Partners Played With**: {dict(partner_wins[selected_player])}  
+                    **Partners Played With**: {', '.join([f'{p} ({w} wins)' for p, w in partner_wins[selected_player].items()])}  
                     **Recent Trend**: {trend}  
                 """)
                 if partner_wins[selected_player]:
-                    best_partner, best_wins = max(partner_wins[selected_player].items(), key=lambda x: x[1])
-                    st.markdown(f"**Most Effective Partner**: {best_partner} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
+                    # Find the most effective partner based on wins, then game difference average
+                    sorted_partners = sorted(
+                        partner_wins[selected_player].items(),
+                        key=lambda item: (item[1]['wins'], item[1]['game_diff_sum'] / item[1]['wins'] if item[1]['wins'] > 0 else 0),
+                        reverse=True
+                    )
+                    best_partner_name = sorted_partners[0][0]
+                    best_wins = sorted_partners[0][1]['wins']
+                    st.markdown(f"**Most Effective Partner**: {best_partner_name} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
             else:
                 st.markdown(f"No match data available for {selected_player}.")  
                 st.markdown(f"**Birthday**: {birthday}")
-                st.markdown(f"**Partners Played With**: {dict(partner_wins[selected_player])}")
+                st.markdown(f"**Partners Played With**: {', '.join([f'{p} ({w} wins)' for p, w in partner_wins[selected_player].items()])}")
                 st.markdown(f"**Recent Trend**: {trend}")
 
 def calculate_rankings(matches_to_rank):
@@ -361,7 +368,7 @@ def calculate_rankings(matches_to_rank):
     matches_played = defaultdict(int)
     games_won = defaultdict(int)
     game_diff = defaultdict(float)
-    partner_wins = defaultdict(lambda: defaultdict(int))
+    partner_wins = defaultdict(lambda: defaultdict(lambda: {'wins': 0, 'game_diff_sum': 0}))
     for _, row in matches_to_rank.iterrows():
         if row['match_type'] == 'Doubles':
             t1 = [row['team1_player1'], row['team1_player2']]
@@ -423,11 +430,15 @@ def calculate_rankings(matches_to_rank):
                     continue
         if row['match_type'] == 'Doubles':
             if row["winner"] == "Team 1":
-                partner_wins[row['team1_player1']][row['team1_player2']] += 1
-                partner_wins[row['team1_player2']][row['team1_player1']] += 1
+                partner_wins[row['team1_player1']][row['team1_player2']]['wins'] += 1
+                partner_wins[row['team1_player1']][row['team1_player2']]['game_diff_sum'] += match_gd_avg
+                partner_wins[row['team1_player2']][row['team1_player1']]['wins'] += 1
+                partner_wins[row['team1_player2']][row['team1_player1']]['game_diff_sum'] += match_gd_avg
             elif row["winner"] == "Team 2":
-                partner_wins[row['team2_player1']][row['team2_player2']] += 1
-                partner_wins[row['team2_player2']][row['team2_player1']] += 1
+                partner_wins[row['team2_player1']][row['team2_player2']]['wins'] += 1
+                partner_wins[row['team2_player1']][row['team2_player2']]['game_diff_sum'] += match_gd_avg
+                partner_wins[row['team2_player2']][row['team2_player1']]['wins'] += 1
+                partner_wins[row['team2_player2']][row['team2_player1']]['game_diff_sum'] += match_gd_avg
     rank_data = []
     players_df = st.session_state.players_df
     for player in scores:
