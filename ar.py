@@ -335,22 +335,19 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                 
                 st.markdown(
                     f"""
-                    **Rank**: {player_data["Rank"]}\n
-                    **Win Percentage**: {player_data["Win %"]:.1f}%\n
-                    **Matches Played**: {int(player_data["Matches"])}\n
-                    **Wins**: {int(player_data["Wins"])}\n
-                    **Losses**: {int(player_data["Losses"])}\n
-                    **Game Diff Avg**: {player_data["Game Diff Avg"]:.2f}\n
-                    **Games Won**: {int(player_data["Games Won"])}\n
-                    **Birthday**: {birthday}\n
-                    **Recent Trend**: {trend}
-                    """
+                    **Rank**: <span style='color:#fff500;'>{player_data["Rank"]}</span>\n
+                    **Win Percentage**: <span style='color:#fff500;'>{player_data["Win %"]:.1f}%</span>\n
+                    **Matches Played**: <span style='color:#fff500;'>{int(player_data["Matches"])}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Wins**: <span style='color:#fff500;'>{int(player_data["Wins"])}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Losses**: <span style='color:#fff500;'>{int(player_data["Losses"])}</span>\n
+                    **Game Diff Avg**: <span style='color:#fff500;'>{player_data["Game Diff Avg"]:.2f}</span>\n
+                    **Games Won**: <span style='color:#fff500;'>{int(player_data["Games Won"])}</span>\n
+                    **Birthday**: <span style='color:#fff500;'>{birthday}</span>\n
+                    """, unsafe_allow_html=True
                 )
 
                 # Display partners played with and most effective partner
                 if selected_player in partner_wins and partner_wins[selected_player]:
                     partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])
-                    st.markdown(f"**Partners Played With**: {partners_list}")
+                    st.markdown(f"**Partners Played With**: <span style='color:#fff500;'>{partners_list}</span>", unsafe_allow_html=True)
                     
                     # Find the most effective partner based on wins, then game difference average
                     sorted_partners = sorted(
@@ -360,15 +357,18 @@ def display_player_insights(selected_player, players_df, matches_df, rank_df, pa
                     )
                     best_partner_name = sorted_partners[0][0]
                     best_wins = sorted_partners[0][1]['wins']
-                    st.markdown(f"**Most Effective Partner**: {best_partner_name} ({best_wins} {'win' if best_wins == 1 else 'wins'})")
+                    st.markdown(f"**Most Effective Partner**: <span style='color:#fff500;'>{best_partner_name} ({best_wins} {'win' if best_wins == 1 else 'wins'})</span>", unsafe_allow_html=True)
+                
+                st.markdown(f"**Recent Trend**: <span style='color:#fff500;'>{trend}</span>", unsafe_allow_html=True)
+
             else:
                 partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins.get(selected_player, {}).items()])
                 st.markdown(f"""
                     No match data available for {selected_player}.\n
-                    **Birthday**: {birthday}\n
-                    **Partners Played With**: {partners_list if partners_list else 'None'}\n
-                    **Recent Trend**: {trend}
-                """)
+                    **Birthday**: <span style='color:#fff500;'>{birthday}</span>\n
+                    **Partners Played With**: <span style='color:#fff500;'>{partners_list if partners_list else 'None'}</span>\n
+                    **Recent Trend**: <span style='color:#fff500;'>{trend}</span>
+                """, unsafe_allow_html=True)
 
 
 def calculate_rankings(matches_to_rank):
