@@ -741,7 +741,9 @@ with tabs[0]:
             if cumulative_game_diff:
                 highest_gd_player, highest_gd_value = max(cumulative_game_diff.items(), key=lambda item: item[1])
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{highest_gd_player}</span>"
-                st.markdown(f"The player with the highest cumulative game difference is {player_styled} with a total of **{highest_gd_value}** games.", unsafe_allow_html=True)
+                
+                # Updated line as per user's request
+                st.markdown(f"{player_styled} has the highest cumulative game difference (<span style='font-weight:bold; color:#fff500;'>{highest_gd_value}</span>) with a total of <span style='font-weight:bold; color:#fff500;'>{highest_gd_value}</span> games.", unsafe_allow_html=True)
             else:
                 st.info("No match data available to calculate game difference.")
 
