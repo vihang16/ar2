@@ -686,14 +686,33 @@ with tabs[0]:
             for index, row in rank_df.iterrows():
                 profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                points_value_styled = f"< Stuart: <span style='font-weight:bold; color:#fff500;'>Player Insights</span>
-                st.markdown("---")
-                st.subheader("Player Insights")
-                selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_singles")
-                if selected_player_rankings:
-                    display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_wins, key_prefix="rankings_singles_")
-                else:
-                    st.info("Player insights will be available once a player is selected.")
+                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+                st.markdown(f"""
+                <div class="ranking-row">
+                    <div class="rank-profile-player-group">
+                        <div class="rank-col">{row["Rank"]}</div>
+                        <div class="profile-col">{profile_html}</div>
+                        <div class="player-col">{player_styled}</div>
+                    </div>
+                    <div class="points-col">{points_value_styled}</div>
+                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                    <div class="matches-col">{int(row["Matches"])}</div>
+                    <div class="wins-col">{int(row["Wins"])}</div>
+                    <div class="losses-col">{int(row["Losses"])}</div>
+                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                    <div class="games-won-col">{int(row["Games Won"])}</div>
+                    <div class="trend-col">{trend_value_styled}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.subheader("Player Insights")
+        selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_singles")
+        if selected_player_rankings:
+            display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_wins, key_prefix="rankings_singles_")
+        else:
+            st.info("Player insights will be available once a player is selected.")
     elif ranking_type == "Nerd Stuff":
         if matches.empty or players_df.empty:
             st.info("No match data available to generate interesting stats.")
@@ -827,8 +846,6 @@ with tabs[0]:
             if cumulative_game_diff:
                 highest_gd_player, highest_gd_value = max(cumulative_game_diff.items(), key=lambda item: item[1])
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{highest_gd_player}</span>"
-                
-                # Updated line as per user's request
                 st.markdown(f"{player_styled} has the highest cumulative game difference : <span style='font-weight:bold; color:#fff500;'>{highest_gd_value}</span>.", unsafe_allow_html=True)
             else:
                 st.info("No match data available to calculate game difference.")
