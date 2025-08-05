@@ -55,7 +55,20 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     margin-right: 10px;
     vertical-align: middle;
 }
-
+.insights-profile-image {
+    width: 60px;
+    height: 40px;
+    object-fit: cover;
+    margin-right: 10px;
+    vertical-align: middle;
+    transition: transform 0.3s ease;
+}
+.insights-profile-image:hover {
+    transform: scale(3);
+    z-index: 1000;
+    position: relative;
+    cursor: pointer;
+}
 .rankings-table-container {
     width: 100%;
     background: #ffffff;
@@ -367,11 +380,11 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         birthday_df = pd.DataFrame(birthday_data)
         birthday_df = birthday_df.sort_values(by="SortDate").reset_index(drop=True)
 
-        # Display birthdays in a card-like format with profile picture
+        # Display birthdays in a card-like format with rectangular profile picture
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
         for _, row in birthday_df.iterrows():
-            profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
+            profile_html = f'<img src="{row["Profile"]}" class="insights-profile-image" alt="Profile">' if row["Profile"] else ''
             player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
             birthday_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Birthday']}</span>"
             st.markdown(f"""
@@ -415,8 +428,8 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             profile_image = player_info.get("profile_image_url", "")
             trend = get_player_trend(selected_player, matches_df)
             
-            # Prepare profile image HTML
-            profile_html = f'<img src="{profile_image}" class="ranking-profile-image" alt="Profile">' if profile_image else ''
+            # Prepare profile image HTML with rectangular thumbnail
+            profile_html = f'<img src="{profile_image}" class="insights-profile-image" alt="Profile">' if profile_image else ''
             
             # Style player name and values
             player_styled = f"<span style='font-weight:bold; color:#fff500;'>{selected_player}</span>"
@@ -1034,7 +1047,7 @@ with tabs[1]:
                         "set1": set1_new,
                         "set2": set2_new,
                         "set3": set3_new,
-                        "winner": winner_New,
+                        "winner": winner_new,
                         "match_image_url": image_url_new
                     }
                     matches_to_save = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match_entry])], ignore_index=True)
