@@ -12,13 +12,17 @@ st.set_page_config(page_title="AR Tennis")
 
 # This function displays a thumbnail that opens a full-size image in a pop-up.
 # It uses custom HTML/CSS and is a workaround for the lack of native pop-ups in Streamlit.
-def show_full_size_image(image_url, unique_id, thumbnail_width=100):
+def show_full_size_image(image_url, unique_id, thumbnail_width=100, is_circle=True):
     """
     Displays a clickable thumbnail that opens a full-size image in a pop-up modal.
     The unique_id is used to ensure each modal is distinct.
+    is_circle determines if the thumbnail is circular or rectangular.
     """
     if not image_url:
         return ""
+    
+    # CSS for a circular or a rectangular thumbnail
+    border_radius = "50%" if is_circle else "8px"
     
     # The HTML and CSS for the pop-up modal
     html_code = f"""
@@ -31,8 +35,8 @@ def show_full_size_image(image_url, unique_id, thumbnail_width=100):
         .image-container-{unique_id} img {{
             display: block;
             width: {thumbnail_width}px;
-            height: auto;
-            border-radius: 50%;
+            height: {thumbnail_width}px;
+            border-radius: {border_radius};
             object-fit: cover;
             vertical-align: middle;
         }}
@@ -78,7 +82,7 @@ def show_full_size_image(image_url, unique_id, thumbnail_width=100):
     </div>
 
     <div id="myModal_{unique_id}" class="modal-{unique_id}" onclick="document.getElementById('myModal_{unique_id}').style.display = 'none'">
-        <span class="close-{unique_id}">&times;</span>
+        <span class="close-{unique_id}">×</span>
         <img class="modal-content-{unique_id}" src="{image_url}">
     </div>
     """
@@ -465,7 +469,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
                     <div class="profile-col">
             """, unsafe_allow_html=True)
             if row["Profile"]:
-                show_full_size_image(row["Profile"], f"insights_{row['Player']}_birthday", thumbnail_width=60)
+                show_full_size_image(row["Profile"], f"insights_{row['Player']}_birthday", thumbnail_width=60, is_circle=True)
             st.markdown(f"""
                     </div>
                     <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{row['Player']}</span></div>
@@ -550,7 +554,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
                     <div class="profile-col">
             """, unsafe_allow_html=True)
             if profile_image:
-                show_full_size_image(profile_image, f"insights_{selected_player}", thumbnail_width=60)
+                show_full_size_image(profile_image, f"insights_{selected_player}", thumbnail_width=60, is_circle=True)
             st.markdown(f"""
                     </div>
                     <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{selected_player}</span></div>
@@ -795,7 +799,7 @@ with tabs[0]:
                         <div class="profile-col">
                 """, unsafe_allow_html=True)
                 if row["Profile"]:
-                    show_full_size_image(row["Profile"], f"rankings_doubles_{index}", thumbnail_width=40)
+                    show_full_size_image(row["Profile"], f"rankings_doubles_{index}", thumbnail_width=40, is_circle=True)
                 st.markdown(f"""
                         </div>
                         <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{row['Player']}</span></div>
@@ -836,7 +840,7 @@ with tabs[0]:
                         <div class="profile-col">
                 """, unsafe_allow_html=True)
                 if row["Profile"]:
-                    show_full_size_image(row["Profile"], f"rankings_singles_{index}", thumbnail_width=40)
+                    show_full_size_image(row["Profile"], f"rankings_singles_{index}", thumbnail_width=40, is_circle=True)
                 st.markdown(f"""
                         </div>
                         <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{row['Player']}</span></div>
@@ -1050,7 +1054,7 @@ with tabs[0]:
                         <div class="profile-col">
                 """, unsafe_allow_html=True)
                 if row["Profile"]:
-                    show_full_size_image(row["Profile"], f"rankings_combined_{index}", thumbnail_width=40)
+                    show_full_size_image(row["Profile"], f"rankings_combined_{index}", thumbnail_width=40, is_circle=True)
                 st.markdown(f"""
                         </div>
                         <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{row['Player']}</span></div>
@@ -1178,7 +1182,7 @@ with tabs[1]:
             with cols[0]:
                 if row["match_image_url"]:
                     try:
-                        show_full_size_image(row["match_image_url"], f"match_image_{index}", thumbnail_width=50)
+                        show_full_size_image(row["match_image_url"], f"match_image_{index}", thumbnail_width=50, is_circle=False)
                     except Exception as e:
                         st.error(f"Error displaying match image: {str(e)}")
             with cols[1]:
@@ -1285,7 +1289,7 @@ with tabs[2]:
             st.markdown(f"**Current Profile for {selected_player_manage}**")
             if current_image:
                 try:
-                    show_full_size_image(current_image, f"edit_profile_{selected_player_manage}", thumbnail_width=100)
+                    show_full_size_image(current_image, f"edit_profile_{selected_player_manage}", thumbnail_width=100, is_circle=True)
                 except Exception as e:
                     st.error(f"Error displaying profile image: {str(e)}")
             else:
