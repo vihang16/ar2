@@ -10,85 +10,6 @@ import urllib.parse
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
 
-# This function displays a thumbnail that opens a full-size image in a pop-up.
-# It uses custom HTML/CSS and is a workaround for the lack of native pop-ups in Streamlit.
-def show_full_size_image(image_url, unique_id, thumbnail_width=100, is_circle=True):
-    """
-    Displays a clickable thumbnail that opens a full-size image in a pop-up modal.
-    The unique_id is used to ensure each modal is distinct.
-    is_circle determines if the thumbnail is circular or rectangular.
-    """
-    if not image_url:
-        return ""
-    
-    # CSS for a circular or a rectangular thumbnail
-    border_radius = "50%" if is_circle else "8px"
-    
-    # The HTML and CSS for the pop-up modal
-    html_code = f"""
-    <style>
-        .image-container-{unique_id} {{
-            position: relative;
-            display: inline-block;
-            cursor: pointer;
-        }}
-        .image-container-{unique_id} img {{
-            display: block;
-            width: {thumbnail_width}px;
-            height: {thumbnail_width}px;
-            border-radius: {border_radius};
-            object-fit: cover;
-            vertical-align: middle;
-        }}
-        .modal-{unique_id} {{
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.9);
-        }}
-        .modal-content-{unique_id} {{
-            margin: auto;
-            display: block;
-            width: 80%;
-            max-width: 700px;
-            position: relative;
-            top: 50%;
-            transform: translateY(-50%);
-        }}
-        .close-{unique_id} {{
-            position: absolute;
-            top: 15px;
-            right: 35px;
-            color: #f1f1f1;
-            font-size: 40px;
-            font-weight: bold;
-            transition: 0.3s;
-        }}
-        .close-{unique_id}:hover,
-        .close-{unique_id}:focus {{
-            color: #bbb;
-            text-decoration: none;
-            cursor: pointer;
-        }}
-    </style>
-
-    <div class="image-container-{unique_id}" onclick="document.getElementById('myModal_{unique_id}').style.display = 'block'">
-        <img src="{image_url}" style="cursor:pointer;">
-    </div>
-
-    <div id="myModal_{unique_id}" class="modal-{unique_id}" onclick="document.getElementById('myModal_{unique_id}').style.display = 'none'">
-        <span class="close-{unique_id}">×</span>
-        <img class="modal-content-{unique_id}" src="{image_url}">
-    </div>
-    """
-    st.markdown(html_code, unsafe_allow_html=True)
-
-
 # Custom CSS for a scenic background
 st.markdown("""
 <style>
@@ -106,48 +27,54 @@ st.markdown("""
   background: linear-gradient(to top, #07314f, #035996) !important;
 }
 
-/* ... rest of your custom CSS ... */
+/* Standardize thumbnail styling across sections */
+.profile-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-right: 10px;
+    vertical-align: middle;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+/* Hover effect for full-size view */
+.profile-image:hover {
+    transform: scale(3);
+    z-index: 1000;
+    position: relative;
+}
+
+/* Update existing classes to use the new .profile-image class */
+.match-thumbnail-container img,
+.profile-thumbnail,
+.ranking-profile-image,
+.insights-profile-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-right: 10px;
+    vertical-align: middle;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+.match-thumbnail-container img:hover,
+.profile-thumbnail:hover,
+.ranking-profile-image:hover,
+.insights-profile-image:hover {
+    transform: scale(3);
+    z-index: 1000;
+    position: relative;
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
 html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     font-family: 'Offside', sans-serif !important;
 }
 /* Other styles */
-.match-thumbnail-container img {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    cursor: pointer;
-    border-radius: 50%;
-}
-.profile-thumbnail {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-right: 10px;
-}
-.ranking-profile-image {
-    width: 40px;
-    height: 40px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-right: 10px;
-    vertical-align: middle;
-}
-.insights-profile-image {
-    max-width: 60px;
-    max-height: 40px;
-    object-fit: contain;
-    margin-right: 10px;
-    vertical-align: middle;
-    transition: transform 0.3s ease;
-}
-.insights-profile-image:hover {
-    transform: scale(3);
-    z-index: 1000;
-    position: relative;
-    cursor: pointer;
-}
 .rankings-table-container {
     width: 100%;
     background: #ffffff;
@@ -463,18 +390,16 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
         for _, row in birthday_df.iterrows():
+            profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
+            player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+            birthday_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Birthday']}</span>"
             st.markdown(f"""
             <div class="ranking-row">
                 <div class="rank-profile-player-group">
-                    <div class="profile-col">
-            """, unsafe_allow_html=True)
-            if row["Profile"]:
-                show_full_size_image(row["Profile"], f"insights_{row['Player']}_birthday", thumbnail_width=60, is_circle=True)
-            st.markdown(f"""
-                    </div>
-                    <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{row['Player']}</span></div>
+                    <div class="profile-col">{profile_html}</div>
+                    <div class="player-col">{player_styled}</div>
                 </div>
-                <div class="birthday-col"><span style='font-weight:bold; color:#fff500;'>{row['Birthday']}</span></div>
+                <div class="birthday-col">{birthday_styled}</div>
             </div>
             """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -508,6 +433,12 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             birthday = player_info.get("birthday", "Not set")
             profile_image = player_info.get("profile_image_url", "")
             trend = get_player_trend(selected_player, matches_df)
+            
+            # Prepare profile image HTML with proportional thumbnail
+            profile_html = f'<img src="{profile_image}" class="profile-image" alt="Profile">' if profile_image else ''
+            
+            # Style player name and values
+            player_styled = f"<span style='font-weight:bold; color:#fff500;'>{selected_player}</span>"
             
             # Populate stats for players with match data
             player_data = rank_df[rank_df["Player"] == selected_player].iloc[0]
@@ -546,18 +477,14 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             partners_styled = f"<span style='font-weight:bold; color:#fff500;'>{partners_list}</span>"
             best_partner_styled = f"<span style='font-weight:bold; color:#fff500;'>{best_partner}</span>"
             trend_styled = f"<span style='font-weight:bold; color:#fff500;'>{trend}</span>"
-
+            
+            # Render the card using the same CSS classes as the rankings tab
             st.markdown(f"""
             <div class="ranking-row">
                 <div class="rank-profile-player-group">
                     <div class="rank-col">{rank}</div>
-                    <div class="profile-col">
-            """, unsafe_allow_html=True)
-            if profile_image:
-                show_full_size_image(profile_image, f"insights_{selected_player}", thumbnail_width=60, is_circle=True)
-            st.markdown(f"""
-                    </div>
-                    <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{selected_player}</span></div>
+                    <div class="profile-col">{profile_html}</div>
+                    <div class="player-col">{player_styled}</div>
                 </div>
                 <div class="points-col">{points_styled}</div>
                 <div class="win-percent-col">{win_percent_styled}</div>
@@ -575,7 +502,6 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
-
 
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
@@ -792,26 +718,25 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
+                profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
                 st.markdown(f"""
                 <div class="ranking-row">
                     <div class="rank-profile-player-group">
                         <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">
-                """, unsafe_allow_html=True)
-                if row["Profile"]:
-                    show_full_size_image(row["Profile"], f"rankings_doubles_{index}", thumbnail_width=40, is_circle=True)
-                st.markdown(f"""
-                        </div>
-                        <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{row['Player']}</span></div>
+                        <div class="profile-col">{profile_html}</div>
+                        <div class="player-col">{player_styled}</div>
                     </div>
-                    <div class="points-col"><span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span></div>
+                    <div class="points-col">{points_value_styled}</div>
                     <div class="win-percent-col">{row["Win %"]:.1f}%</div>
                     <div class="matches-col">{int(row["Matches"])}</div>
                     <div class="wins-col">{int(row["Wins"])}</div>
                     <div class="losses-col">{int(row["Losses"])}</div>
                     <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
                     <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col"><span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span></div>
+                    <div class="trend-col">{trend_value_styled}</div>
                 </div>
                 """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -833,26 +758,25 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
+                profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
                 st.markdown(f"""
                 <div class="ranking-row">
                     <div class="rank-profile-player-group">
                         <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">
-                """, unsafe_allow_html=True)
-                if row["Profile"]:
-                    show_full_size_image(row["Profile"], f"rankings_singles_{index}", thumbnail_width=40, is_circle=True)
-                st.markdown(f"""
-                        </div>
-                        <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{row['Player']}</span></div>
+                        <div class="profile-col">{profile_html}</div>
+                        <div class="player-col">{player_styled}</div>
                     </div>
-                    <div class="points-col"><span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span></div>
+                    <div class="points-col">{points_value_styled}</div>
                     <div class="win-percent-col">{row["Win %"]:.1f}%</div>
                     <div class="matches-col">{int(row["Matches"])}</div>
                     <div class="wins-col">{int(row["Wins"])}</div>
                     <div class="losses-col">{int(row["Losses"])}</div>
                     <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
                     <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col"><span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span></div>
+                    <div class="trend-col">{trend_value_styled}</div>
                 </div>
                 """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -1047,26 +971,25 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
+                profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
                 st.markdown(f"""
                 <div class="ranking-row">
                     <div class="rank-profile-player-group">
                         <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">
-                """, unsafe_allow_html=True)
-                if row["Profile"]:
-                    show_full_size_image(row["Profile"], f"rankings_combined_{index}", thumbnail_width=40, is_circle=True)
-                st.markdown(f"""
-                        </div>
-                        <div class="player-col"><span style='font-weight:bold; color:#fff500;'>{row['Player']}</span></div>
+                        <div class="profile-col">{profile_html}</div>
+                        <div class="player-col">{player_styled}</div>
                     </div>
-                    <div class="points-col"><span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span></div>
+                    <div class="points-col">{points_value_styled}</div>
                     <div class="win-percent-col">{row["Win %"]:.1f}%</div>
                     <div class="matches-col">{int(row["Matches"])}</div>
                     <div class="wins-col">{int(row["Wins"])}</div>
                     <div class="losses-col">{int(row["Losses"])}</div>
                     <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
                     <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col"><span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span></div>
+                    <div class="trend-col">{trend_value_styled}</div>
                 </div>
                 """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -1179,10 +1102,10 @@ with tabs[1]:
     else:
         for index, row in filtered_matches.iterrows():
             cols = st.columns([1, 8, 1])
-            with cols[0]:
-                if row["match_image_url"]:
+            if row["match_image_url"]:
+                with cols[0]:
                     try:
-                        show_full_size_image(row["match_image_url"], f"match_image_{index}", thumbnail_width=50, is_circle=False)
+                        st.image(row["match_image_url"], width=50, caption="")
                     except Exception as e:
                         st.error(f"Error displaying match image: {str(e)}")
             with cols[1]:
@@ -1289,7 +1212,10 @@ with tabs[2]:
             st.markdown(f"**Current Profile for {selected_player_manage}**")
             if current_image:
                 try:
-                    show_full_size_image(current_image, f"edit_profile_{selected_player_manage}", thumbnail_width=100, is_circle=True)
+                    st.markdown(
+                        f'<img src="{current_image}" class="profile-image" alt="Profile">',
+                        unsafe_allow_html=True
+                    )
                 except Exception as e:
                     st.error(f"Error displaying profile image: {str(e)}")
             else:
