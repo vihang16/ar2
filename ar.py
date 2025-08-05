@@ -35,6 +35,10 @@ st.markdown("""
     border-radius: 50%;
     margin-right: 10px;
     vertical-align: middle;
+    transition: transform 0.2s;
+}
+.profile-image:hover {
+    transform: scale(1.1);
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
@@ -353,18 +357,22 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         birthday_df = pd.DataFrame(birthday_data)
         birthday_df = birthday_df.sort_values(by="SortDate").reset_index(drop=True)
 
-        # Display birthdays in a card-like format with proportional profile picture
+        # Display birthdays in a card-like format
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
         for _, row in birthday_df.iterrows():
-            col1, col2 = st.columns([1, 4])
-            with col1:
-                if row["Profile"]:
-                    st.image(row["Profile"], width=50)
-            with col2:
-                st.markdown(f"**{row['Player']}**")
-                st.markdown(f"_{row['Birthday']}_")
-
+            profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
+            player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+            birthday_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Birthday']}</span>"
+            st.markdown(f"""
+            <div class="ranking-row">
+                <div class="rank-profile-player-group">
+                    <div class="profile-col">{profile_html}</div>
+                    <div class="player-col">{player_styled}</div>
+                </div>
+                <div class="birthday-col">{birthday_styled}</div>
+            </div>
+            """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -396,6 +404,9 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             birthday = player_info.get("birthday", "Not set")
             profile_image = player_info.get("profile_image_url", "")
             trend = get_player_trend(selected_player, matches_df)
+
+            # Prepare profile image HTML with link to full image
+            profile_html = f'<a href="{profile_image}" target="_blank"><img src="{profile_image}" class="profile-image" alt="Profile"></a>' if profile_image else ''
 
             # Style player name and values
             player_styled = f"<span style='font-weight:bold; color:#fff500;'>{selected_player}</span>"
@@ -436,35 +447,29 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             birthday_styled = f"<span style='font-weight:bold; color:#fff500;'>{birthday}</span>"
             partners_styled = f"<span style='font-weight:bold; color:#fff500;'>{partners_list}</span>"
             best_partner_styled = f"<span style='font-weight:bold; color:#fff500;'>{best_partner}</span>"
-            trend_styled = f"<span style='font-weight:bold; color:#fff500;'>{trend}</span>"
+            trend_styled = f"<span style'font-weight:bold; color:#fff500;'>{trend}</span>"
 
             # Render the card using the same CSS classes as the rankings tab
             st.markdown(f"""
             <div class="ranking-row">
                 <div class="rank-profile-player-group">
                     <div class="rank-col">{rank}</div>
+                    <div class="profile-col">{profile_html}</div>
+                    <div class="player-col">{player_styled}</div>
                 </div>
+                <div class="points-col">{points_styled}</div>
+                <div class="win-percent-col">{win_percent_styled}</div>
+                <div class="matches-col">{matches_styled}</div>
+                <div class="wins-col">{wins_styled}</div>
+                <div class="losses-col">{losses_styled}</div>
+                <div class="game-diff-avg-col">{game_diff_avg_styled}</div>
+                <div class="games-won-col">{games_won_styled}</div>
+                <div class="birthday-col">{birthday_styled}</div>
+                <div class="partners-col">{partners_styled}</div>
+                <div class="best-partner-col">{best_partner_styled}</div>
+                <div class="trend-col">{trend_styled}</div>
             </div>
             """, unsafe_allow_html=True)
-            col1, col2 = st.columns([1, 4])
-            with col1:
-                if profile_image:
-                    st.image(profile_image, width=50)
-            with col2:
-                st.markdown(f"""
-                    <div class="player-col">{player_styled}</div>
-                    <div class="points-col">{points_styled}</div>
-                    <div class="win-percent-col">{win_percent_styled}</div>
-                    <div class="matches-col">{matches_styled}</div>
-                    <div class="wins-col">{wins_styled}</div>
-                    <div class="losses-col">{losses_styled}</div>
-                    <div class="game-diff-avg-col">{game_diff_avg_styled}</div>
-                    <div class="games-won-col">{games_won_styled}</div>
-                    <div class="birthday-col">{birthday_styled}</div>
-                    <div class="partners-col">{partners_styled}</div>
-                    <div class="best-partner-col">{best_partner_styled}</div>
-                    <div class="trend-col">{trend_styled}</div>
-                """, unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -685,30 +690,27 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                col1, col2 = st.columns([1, 4])
-                with col1:
-                    if row["Profile"]:
-                        st.image(row["Profile"], width=50)
-                with col2:
-                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                    points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                    trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-                    st.markdown(f"""
-                    <div class="ranking-row">
-                        <div class="rank-profile-player-group">
-                            <div class="rank-col">{row["Rank"]}</div>
-                            <div class="player-col">{player_styled}</div>
-                        </div>
-                        <div class="points-col">{points_value_styled}</div>
-                        <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                        <div class="matches-col">{int(row["Matches"])}</div>
-                        <div class="wins-col">{int(row["Wins"])}</div>
-                        <div class="losses-col">{int(row["Losses"])}</div>
-                        <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                        <div class="games-won-col">{int(row["Games Won"])}</div>
-                        <div class="trend-col">{trend_value_styled}</div>
+                profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+                st.markdown(f"""
+                <div class="ranking-row">
+                    <div class="rank-profile-player-group">
+                        <div class="rank-col">{row["Rank"]}</div>
+                        <div class="profile-col">{profile_html}</div>
+                        <div class="player-col">{player_styled}</div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    <div class="points-col">{points_value_styled}</div>
+                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                    <div class="matches-col">{int(row["Matches"])}</div>
+                    <div class="wins-col">{int(row["Wins"])}</div>
+                    <div class="losses-col">{int(row["Losses"])}</div>
+                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                    <div class="games-won-col">{int(row["Games Won"])}</div>
+                    <div class="trend-col">{trend_value_styled}</div>
+                </div>
+                """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.subheader("Player Insights")
@@ -728,30 +730,27 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                col1, col2 = st.columns([1, 4])
-                with col1:
-                    if row["Profile"]:
-                        st.image(row["Profile"], width=50)
-                with col2:
-                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                    points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                    trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-                    st.markdown(f"""
-                    <div class="ranking-row">
-                        <div class="rank-profile-player-group">
-                            <div class="rank-col">{row["Rank"]}</div>
-                            <div class="player-col">{player_styled}</div>
-                        </div>
-                        <div class="points-col">{points_value_styled}</div>
-                        <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                        <div class="matches-col">{int(row["Matches"])}</div>
-                        <div class="wins-col">{int(row["Wins"])}</div>
-                        <div class="losses-col">{int(row["Losses"])}</div>
-                        <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                        <div class="games-won-col">{int(row["Games Won"])}</div>
-                        <div class="trend-col">{trend_value_styled}</div>
+                profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+                st.markdown(f"""
+                <div class="ranking-row">
+                    <div class="rank-profile-player-group">
+                        <div class="rank-col">{row["Rank"]}</div>
+                        <div class="profile-col">{profile_html}</div>
+                        <div class="player-col">{player_styled}</div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    <div class="points-col">{points_value_styled}</div>
+                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                    <div class="matches-col">{int(row["Matches"])}</div>
+                    <div class="wins-col">{int(row["Wins"])}</div>
+                    <div class="losses-col">{int(row["Losses"])}</div>
+                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                    <div class="games-won-col">{int(row["Games Won"])}</div>
+                    <div class="trend-col">{trend_value_styled}</div>
+                </div>
+                """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.subheader("Player Insights")
@@ -944,30 +943,27 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                col1, col2 = st.columns([1, 4])
-                with col1:
-                    if row["Profile"]:
-                        st.image(row["Profile"], width=50)
-                with col2:
-                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                    points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                    trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-                    st.markdown(f"""
-                    <div class="ranking-row">
-                        <div class="rank-profile-player-group">
-                            <div class="rank-col">{row["Rank"]}</div>
-                            <div class="player-col">{player_styled}</div>
-                        </div>
-                        <div class="points-col">{points_value_styled}</div>
-                        <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                        <div class="matches-col">{int(row["Matches"])}</div>
-                        <div class="wins-col">{int(row["Wins"])}</div>
-                        <div class="losses-col">{int(row["Losses"])}</div>
-                        <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                        <div class="games-won-col">{int(row["Games Won"])}</div>
-                        <div class="trend-col">{trend_value_styled}</div>
+                profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+                st.markdown(f"""
+                <div class="ranking-row">
+                    <div class="rank-profile-player-group">
+                        <div class="rank-col">{row["Rank"]}</div>
+                        <div class="profile-col">{profile_html}</div>
+                        <div class="player-col">{player_styled}</div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    <div class="points-col">{points_value_styled}</div>
+                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                    <div class="matches-col">{int(row["Matches"])}</div>
+                    <div class="wins-col">{int(row["Wins"])}</div>
+                    <div class="losses-col">{int(row["Losses"])}</div>
+                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                    <div class="games-won-col">{int(row["Games Won"])}</div>
+                    <div class="trend-col">{trend_value_styled}</div>
+                </div>
+                """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.subheader("Player Insights")
