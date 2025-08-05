@@ -140,9 +140,12 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
 .games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
 .game-diff-avg-col::before { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
 .trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
+.birthday-col::before { content: "Birthday: "; font-weight: bold; color: #bbbbbb; }
+.partners-col::before { content: "Partners Played With: "; font-weight: bold; color: #bbbbbb; }
+.best-partner-col::before { content: "Most Effective Partner: "; font-weight: bold; color: #bbbbbb; }
 
 /* Ensure the actual values are white. Applies to the text content within the div, not the ::before. */
-.points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col {
+.points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
     color: #fff500;
 }
 
@@ -182,7 +185,6 @@ div.st-emotion-cache-1jm692n h3 {
 }
 </style>
 """, unsafe_allow_html=True)
-
 
 # Supabase setup
 supabase_url = st.secrets["supabase"]["supabase_url"]
@@ -321,62 +323,110 @@ def get_player_trend(player, matches, max_matches=5):
             trend.append('L')
     return ' '.join(trend) if trend else 'No recent matches'
 
-def display_player_insights(selected_player, players_df, matches_df, rank_df, partner_wins, key_prefix=""):
-    if selected_player:
-        player_info = players_df[players_df["name"] == selected_player].iloc[0]
+def display_player_insights(selected_players, players_df, matches_df, rank_df, partner_wins, key_prefix=""):
+    # If selected_players is a single string, convert to a list for uniform handling
+    if isinstance(selected_players, str):
+        selected_players = [selected_players] if selected_players else []
+    
+    if not selected_players:
+        st.info("No players selected or available for insights.")
+        return
+
+    # Sort players by name
+    selected_players = sorted(selected_players)
+
+    # Use the same container and scroll styling as rankings
+    st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
+    st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
+    
+    for selected_player in selected_players:
+        # Fetch player information
+        player_info = players_df[players_df["name"] == selected_player].iloc[0] if selected_player in players_df["name"].values else None
+        if player_info is None:
+            continue
         birthday = player_info.get("birthday", "Not set")
         profile_image = player_info.get("profile_image_url", "")
         trend = get_player_trend(selected_player, matches_df)
-        cols = st.columns([1, 5])
-        with cols[0]:
-            if profile_image:
-                try:
-                    st.image(profile_image, width=100, caption="")
-                except Exception as e:
-                    st.error(f"Error displaying image for {selected_player}: {str(e)}")
-            else:
-                st.write("No image")
-        with cols[1]:
-            if selected_player in rank_df["Player"].values:
-                player_data = rank_df[rank_df["Player"] == selected_player].iloc[0]
-                
-                st.markdown(
-                    f"""
-                    **Rank**: <span style='color:#fff500;'>{player_data["Rank"]}</span>\n
-                    **Win Percentage**: <span style='color:#fff500;'>{player_data["Win %"]:.1f}%</span>\n
-                    **Matches Played**: <span style='color:#fff500;'>{int(player_data["Matches"])}</span>     **Wins**: <span style='color:#fff500;'>{int(player_data["Wins"])}</span>     **Losses**: <span style='color:#fff500;'>{int(player_data["Losses"])}</span>\n
-                    **Game Diff Avg**: <span style='color:#fff500;'>{player_data["Game Diff Avg"]:.2f}</span>\n
-                    **Games Won**: <span style='color:#fff500;'>{int(player_data["Games Won"])}</span>\n
-                    **Birthday**: <span style='color:#fff500;'>{birthday}</span>\n
-                    """, unsafe_allow_html=True
+        
+        # Prepare profile image HTML
+        profile_html = f'<img src="{profile_image}" class="ranking-profile-image" alt="Profile">' if profile_image else ''
+        
+        # Style player name and values
+        player_styled = f"<span style='font-weight:bold; color:#fff500;'>{selected_player}</span>"
+        
+        # Initialize default values for players without match data
+        rank = "N/A"
+        points = 0
+        win_percent = 0.0
+        matches = 0
+        wins = 0
+        losses = 0
+        game_diff_avg = 0.0
+        games_won = 0
+        partners_list = "None"
+        best_partner = "None"
+        
+        # If player has ranking data, populate the stats
+        if selected_player in rank_df["Player"].values:
+            player_data = rank_df[rank_df["Player"] == selected_player].iloc[0]
+            rank = player_data["Rank"]
+            points = player_data["Points"]
+            win_percent = player_data["Win %"]
+            matches = int(player_data["Matches"])
+            wins = int(player_data["Wins"])
+            losses = int(player_data["Losses"])
+            game_diff_avg = player_data["Game Diff Avg"]
+            games_won = int(player_data["Games Won"])
+            
+            # Partners and most effective partner
+            if selected_player in partner_wins and partner_wins[selected_player]:
+                partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])
+                sorted_partners = sorted(
+                    partner_wins[selected_player].items(),
+                    key=lambda item: (item[1]['wins'], item[1]['game_diff_sum'] / item[1]['wins'] if item[1]['wins'] > 0 else 0),
+                    reverse=True
                 )
-
-                # Display partners played with and most effective partner
-                if selected_player in partner_wins and partner_wins[selected_player]:
-                    partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])
-                    st.markdown(f"**Partners Played With**: <span style='color:#fff500;'>{partners_list}</span>", unsafe_allow_html=True)
-                    
-                    # Find the most effective partner based on wins, then game difference average
-                    sorted_partners = sorted(
-                        partner_wins[selected_player].items(),
-                        key=lambda item: (item[1]['wins'], item[1]['game_diff_sum'] / item[1]['wins'] if item[1]['wins'] > 0 else 0),
-                        reverse=True
-                    )
-                    best_partner_name = sorted_partners[0][0]
-                    best_wins = sorted_partners[0][1]['wins']
-                    st.markdown(f"**Most Effective Partner**: <span style='color:#fff500;'>{best_partner_name} ({best_wins} {'win' if best_wins == 1 else 'wins'})</span>", unsafe_allow_html=True)
-                
-                st.markdown(f"**Recent Trend**: <span style='color:#fff500;'>{trend}</span>", unsafe_allow_html=True)
-
-            else:
-                partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins.get(selected_player, {}).items()])
-                st.markdown(f"""
-                    No match data available for {selected_player}.\n
-                    **Birthday**: <span style='color:#fff500;'>{birthday}</span>\n
-                    **Partners Played With**: <span style='color:#fff500;'>{partners_list if partners_list else 'None'}</span>\n
-                    **Recent Trend**: <span style='color:#fff500;'>{trend}</span>
-                """, unsafe_allow_html=True)
-
+                best_partner_name = sorted_partners[0][0]
+                best_wins = sorted_partners[0][1]['wins']
+                best_partner = f"{best_partner_name} ({best_wins} {'win' if best_wins == 1 else 'wins'})"
+        
+        # Style the values in yellow
+        points_styled = f"<span style='font-weight:bold; color:#fff500;'>{points:.1f}</span>"
+        win_percent_styled = f"<span style='font-weight:bold; color:#fff500;'>{win_percent:.1f}%</span>"
+        matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{matches}</span>"
+        wins_styled = f"<span style='font-weight:bold; color:#fff500;'>{wins}</span>"
+        losses_styled = f"<span style='font-weight:bold; color:#fff500;'>{losses}</span>"
+        game_diff_avg_styled = f"<span style='font-weight:bold; color:#fff500;'>{game_diff_avg:.2f}</span>"
+        games_won_styled = f"<span style='font-weight:bold; color:#fff500;'>{games_won}</span>"
+        birthday_styled = f"<span style='font-weight:bold; color:#fff500;'>{birthday}</span>"
+        partners_styled = f"<span style='font-weight:bold; color:#fff500;'>{partners_list}</span>"
+        best_partner_styled = f"<span style='font-weight:bold; color:#fff500;'>{best_partner}</span>"
+        trend_styled = f"<span style='font-weight:bold; color:#fff500;'>{trend}</span>"
+        
+        # Render the card using the same CSS classes as the rankings tab
+        st.markdown(f"""
+        <div class="ranking-row">
+            <div class="rank-profile-player-group">
+                <div class="rank-col">{rank}</div>
+                <div class="profile-col">{profile_html}</div>
+                <div class="player-col">{player_styled}</div>
+            </div>
+            <div class="points-col">{points_styled}</div>
+            <div class="win-percent-col">{win_percent_styled}</div>
+            <div class="matches-col">{matches_styled}</div>
+            <div class="wins-col">{wins_styled}</div>
+            <div class="losses-col">{losses_styled}</div>
+            <div class="game-diff-avg-col">{game_diff_avg_styled}</div>
+            <div class="games-won-col">{games_won_styled}</div>
+            <div class="birthday-col">{birthday_styled}</div>
+            <div class="partners-col">{partners_styled}</div>
+            <div class="best-partner-col">{best_partner_styled}</div>
+            <div class="trend-col">{trend_styled}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
@@ -806,8 +856,8 @@ with tabs[0]:
             # Other interesting stats
             if not rank_df.empty:
                 # Player with the most wins
-                most_wins_player = rank_df.sort_values(by="Wins", ascending=False).iloc[0]
                 st.markdown(f"### 👑 Player with the Most Wins")
+                most_wins_player = rank_df.sort_values(by="Wins", ascending=False).iloc[0]
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{most_wins_player['Player']}</span>"
                 st.markdown(f"{player_styled} holds the record for most wins with **{int(most_wins_player['Wins'])}** wins.", unsafe_allow_html=True)
 
@@ -894,284 +944,4 @@ with tabs[1]:
                         p1_new = st.selectbox("Team 1 - Player 1", [""] + available_players, key=f"t1p1_new_post_{st.session_state.form_key_suffix}")
                         p2_new = st.selectbox("Team 1 - Player 2", [""] + available_players, key=f"t1p2_new_post_{st.session_state.form_key_suffix}")
                     with col2:
-                        p3_new = st.selectbox("Team 2 - Player 1", [""] + available_players, key=f"t2p1_new_post_{st.session_state.form_key_suffix}")
-                        p4_new = st.selectbox("Team 2 - Player 2", [""] + available_players, key=f"t2p2_new_post_{st.session_state.form_key_suffix}")
-                else:
-                    p1_new = st.selectbox("Player 1", [""] + available_players, key=f"s1p1_new_post_{st.session_state.form_key_suffix}")
-                    p3_new = st.selectbox("Player 2", [""] + available_players, key=f"s1p2_new_post_{st.session_state.form_key_suffix}")
-                    p2_new = ""
-                    p4_new = ""
-                set1_new = st.selectbox("Set 1", tennis_scores(), index=4, key=f"set1_new_post_{st.session_state.form_key_suffix}")
-                set2_new = st.selectbox("Set 2 (optional)", [""] + tennis_scores(), key=f"set2_new_post_{st.session_state.form_key_suffix}")
-                set3_new = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), key=f"set3_new_post_{st.session_state.form_key_suffix}")
-                winner_new = st.radio("Winner", ["Team 1", "Team 2", "Tie"], key=f"winner_new_post_{st.session_state.form_key_suffix}")
-                match_image_new = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"match_image_new_post_{st.session_state.form_key_suffix}")
-                submit_button = st.form_submit_button("Submit Match")
-            if submit_button:
-                selected_players = [p1_new, p2_new, p3_new, p4_new] if match_type_new == "Doubles" else [p1_new, p3_new]
-                if "" in selected_players:
-                    st.error("Please select all players.")
-                elif len(selected_players) != len(set(selected_players)):
-                    st.error("Please select different players for each position.")
-                else:
-                    new_match_date = datetime.now()
-                    match_id_new = generate_match_id(matches, new_match_date)
-                    image_url_new = ""
-                    if match_image_new:
-                        image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image_type="match")
-                    new_match_entry = {
-                        "match_id": match_id_new,
-                        "date": new_match_date,
-                        "match_type": match_type_new,
-                        "team1_player1": p1_new,
-                        "team1_player2": p2_new,
-                        "team2_player1": p3_new,
-                        "team2_player2": p4_new,
-                        "set1": set1_new,
-                        "set2": set2_new,
-                        "set3": set3_new,
-                        "winner": winner_new,
-                        "match_image_url": image_url_new
-                    }
-                    matches_to_save = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match_entry])], ignore_index=True)
-                    save_matches(matches_to_save)
-                    load_matches()  # Reload data from DB
-                    st.success("Match submitted.")
-                    st.session_state.form_key_suffix += 1
-                    st.rerun()
-
-    st.markdown("---")
-    st.subheader("Match History")
-    match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True, key="match_history_filter")
-    filtered_matches = st.session_state.matches_df.copy()
-    if match_filter != "All":
-        filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
-    filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
-    filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
-    def format_match_players(row):
-        if row["match_type"] == "Singles":
-            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
-            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
-            if row["winner"] == "Team 1":
-                return f"{p1_styled} def. {p2_styled}"
-            else:
-                return f"{p2_styled} def. {p1_styled}"
-        else:
-            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
-            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player2']}</span>"
-            p3_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
-            p4_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player2']}</span>"
-            if row["winner"] == "Team 1":
-                return f"{p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
-            else:
-                return f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
-    def format_match_scores_and_date(row):
-        score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
-        score_text = ", ".join(score_parts_plain)
-        target_width = 30
-        padding_spaces = " " * (target_width - len(score_text))
-        score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
-        score_html = ", ".join(score_parts_html)
-        date_str = row['date'].strftime('%d %b %y')
-        return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
-    if filtered_matches.empty:
-        st.info("No matches found.")
-    else:
-        for index, row in filtered_matches.iterrows():
-            cols = st.columns([1, 8, 1])
-            if row["match_image_url"]:
-                with cols[0]:
-                    try:
-                        st.image(row["match_image_url"], width=50, caption="")
-                    except Exception as e:
-                        st.error(f"Error displaying match image: {str(e)}")
-            with cols[1]:
-                st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
-                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
-            with cols[2]:
-                share_link = generate_whatsapp_link(row)
-                st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
-            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
-
-    st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
-    st.markdown("### ✏️ Manage Existing Match")
-    clean_match_options = []
-    for _, row in filtered_matches.iterrows():
-        score_plain = f"{row['set1']}"
-        if row['set2']:
-            score_plain += f", {row['set2']}"
-        if row['set3']:
-            score_plain += f", {row['set3']}"
-        date_plain = row['date'].strftime('%d %b %y %H:%M')
-        if row["match_type"] == "Singles":
-            desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
-        else:
-            desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
-        clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
-    selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit")
-    if selected_match_to_edit:
-        selected_id = selected_match_to_edit.split(" | ")[-1]
-        row = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].iloc[0]
-        idx = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].index[0]
-        current_date_dt = pd.to_datetime(row["date"])
-        all_scores = [""] + tennis_scores()
-        set1_index = all_scores.index(row["set1"]) if row["set1"] in all_scores else 0
-        set2_index = all_scores.index(row["set2"]) if row["set2"] in all_scores else 0
-        set3_index = all_scores.index(row["set3"]) if row["set3"] in all_scores else 0
-        with st.expander("Edit Match Details"):
-            date_edit = st.date_input("Match Date", value=current_date_dt.date(), key=f"edit_date_{selected_id}")
-            time_edit = st.time_input("Match Time", value=current_date_dt.time(), key=f"edit_time_{selected_id}")
-            match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
-            p1_edit = st.text_input("Team 1 - Player 1", value=row["team1_player1"], key=f"edit_t1p1_{selected_id}")
-            p2_edit = st.text_input("Team 1 - Player 2", value=row["team1_player2"], key=f"edit_t1p2_{selected_id}")
-            p3_edit = st.text_input("Team 2 - Player 1", value=row["team2_player1"], key=f"edit_t2p1_{selected_id}")
-            p4_edit = st.text_input("Team 2 - Player 2", value=row["team2_player2"], key=f"edit_t2p2_{selected_id}")
-            set1_edit = st.selectbox("Set 1", all_scores, index=set1_index, key=f"edit_set1_{selected_id}")
-            set2_edit = st.selectbox("Set 2 (optional)", all_scores, index=set2_index, key=f"edit_set2_{selected_id}")
-            set3_edit = st.selectbox("Set 3 (optional)", all_scores, index=set3_index, key=f"edit_set3_{selected_id}")
-            winner_edit = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
-            match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
-            if st.button("Save Changes", key=f"save_match_changes_{selected_id}"):
-                image_url_edit = row["match_image_url"]
-                if match_image_edit:
-                    image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
-                combined_datetime = datetime.combine(date_edit, time_edit)
-                st.session_state.matches_df.loc[idx] = {
-                    "match_id": selected_id,
-                    "date": combined_datetime,
-                    "match_type": match_type_edit,
-                    "team1_player1": p1_edit,
-                    "team1_player2": p2_edit,
-                    "team2_player1": p3_edit,
-                    "team2_player2": p4_edit,
-                    "set1": set1_edit,
-                    "set2": set2_edit,
-                    "set3": set3_edit,
-                    "winner": winner_edit,
-                    "match_image_url": image_url_edit
-                }
-                save_matches(st.session_state.matches_df)
-                load_matches()
-                st.success("Match updated.")
-                st.rerun()
-        if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
-            delete_match_from_db(selected_id)
-            load_matches()
-            st.success("Match deleted.")
-            st.rerun()
-
-with tabs[2]:
-    st.header("Player Profile")
-    st.subheader("Player Insights")
-    rank_df_combined, partner_wins_combined = calculate_rankings(st.session_state.matches_df)
-    selected_player_profile_insights = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
-    if selected_player_profile_insights:
-        display_player_insights(selected_player_profile_insights, players_df, st.session_state.matches_df, rank_df_combined, partner_wins_combined, key_prefix="profile_")
-    else:
-        st.info("Player insights will be available once a player is selected.")
-        
-    st.subheader("Manage & Edit Player Profiles")
-    with st.expander("Add, Edit or Remove Player"):
-        st.markdown("##### Add New Player")
-        new_player = st.text_input("Player Name", key="new_player_input").strip()
-        if st.button("Add Player", key="add_player_button"):
-            if new_player:
-                if new_player not in players:
-                    new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
-                    st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_data])], ignore_index=True)
-                    save_players(st.session_state.players_df)
-                    load_players()
-                    st.success(f"{new_player} added.")
-                    st.rerun()
-                else:
-                    st.warning(f"{new_player} already exists.")
-            else:
-                st.warning("Please enter a player name to add.")
-        st.markdown("---")
-        st.markdown("##### Edit or Remove Existing Player")
-        selected_player_manage = st.selectbox("Select Player", [""] + players, key="manage_player_select")
-        if selected_player_manage:
-            player_data = players_df[players_df["name"] == selected_player_manage].iloc[0]
-            current_image = player_data.get("profile_image_url", "")
-            current_birthday = player_data.get("birthday", "")
-            st.markdown(f"**Current Profile for {selected_player_manage}**")
-            if current_image:
-                try:
-                    st.image(current_image, width=100, caption="Current Image")
-                except Exception as e:
-                        st.error(f"Error displaying profile image: {str(e)}")
-            else:
-                st.write("No profile image set.")
-            profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
-            default_day = 1
-            default_month = 1
-            if current_birthday and isinstance(current_birthday, str) and re.match(r'^\d{2}-\d{2}$', current_birthday):
-                try:
-                    day_str, month_str = current_birthday.split("-")
-                    default_day = int(day_str)
-                    default_month = int(month_str)
-                except (ValueError, IndexError):
-                    pass
-            birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player_manage}")
-            birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player_manage}")
-            col_save, col_delete = st.columns(2)
-            with col_save:
-                if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player_manage}"):
-                    image_url = current_image
-                    if profile_image:
-                        image_url = upload_image_to_supabase(profile_image, f"profile_{selected_player_manage}_{uuid.uuid4().hex[:6]}", image_type="profile")
-                    st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "profile_image_url"] = image_url
-                    st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
-                    save_players(st.session_state.players_df)
-                    load_players()
-                    st.success("Profile updated.")
-                    st.rerun()
-            with col_delete:
-                if st.button("🗑️ Remove Player", key=f"remove_player_button_{selected_player_manage}"):
-                    st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
-                    save_players(st.session_state.players_df)
-                    load_players()
-                    st.success(f"{selected_player_manage} removed.")
-                    st.rerun()
-
-with tabs[3]:
-    st.header("Court Locations")
-    st.markdown("### Arabian Ranches Tennis Courts")
-    st.markdown("- [Alvorado 1 & 2](https://maps.google.com/?q=25.041792,55.259258)")
-    st.markdown("- [Palmera 2](https://maps.app.goo.gl/CHimjtqQeCfU1d3W6)")
-    st.markdown("- [Palmera 4](https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6)")
-    st.markdown("- [Saheel](https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8)")
-    st.markdown("- [Hattan](https://maps.app.goo.gl/fjGpeNzncyG1o34c7)")
-    st.markdown("- [MLC Mirador La Colleccion](https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6)")
-    st.markdown("- [Al Mahra](https://maps.app.goo.gl/zVivadvUsD6yyL2Y9)")
-    st.markdown("- [Mirador](https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8)")
-    st.markdown("- [Reem 1](https://maps.app.goo.gl/qKswqmb9Lqsni5RD7)")
-    st.markdown("- [Reem 2](https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5)")
-    st.markdown("- [Reem 3](https://maps.app.goo.gl/o8z9pHo8tSqTbEL39)")
-    st.markdown("- [Alma](https://maps.app.goo.gl/BZNfScABbzb3osJ18)")
-    st.markdown("### Mira & Mira Oasis Tennis Courts")
-    st.markdown("- [Mira 2](https://maps.app.goo.gl/JeVmwiuRboCnzhnb9)")
-    st.markdown("- [Mira 4](https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A)")
-    st.markdown("- [Mira 5 A & B](https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6)")
-    st.markdown("- [Mira Oasis 1](https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8)")
-    st.markdown("- [Mira Oasis 2](https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9)")
-    st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
-    st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
-
-st.markdown("---")
-st.subheader("Manual Backup")
-if not st.session_state.matches_df.empty:
-    csv = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="Download All Match Data as CSV",
-        data=csv,
-        file_name=f'ar_tennis_matches_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
-        mime='text/csv',
-        help="Download a complete backup of all match records as a CSV file."
-    )
-st.markdown("""
-<div style='background-color: #0d5384; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
-Built with ❤️ using <a href='https://streamlit.io/' style='color: #ccff00;'>Streamlit</a> — free and open source.
-<a href='https://devs-scripts.streamlit.app/' style='color: #ccff00;'>Other Scripts by dev</a> on Streamlit.
-</div>
-""", unsafe_allow_html=True)
+                        p3_new = st.selectbox("Team
