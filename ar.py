@@ -506,7 +506,7 @@ def calculate_rankings(matches_to_rank):
                 partner_wins[row['team2_player1']][row['team2_player2']]['wins'] += 1
                 partner_wins[row['team2_player1']][row['team2_player2']]['game_diff_sum'] += match_gd_sum
                 partner_wins[row['team2_player2']][row['team2_player1']]['wins'] += 1
-                partner_wins[row['team2_player2']][row['team2_player1']]['game_diff_sum'] += match_gd_sum
+                partner_wins[row['team2_player1']][row['team2_player2']]['game_diff_sum'] += match_gd_sum
     rank_data = []
     players_df = st.session_state.players_df
     for player in scores:
