@@ -28,14 +28,11 @@ st.markdown("""
 }
 
 /* Standardize thumbnail styling across sections */
-.profile-image,
-.match-thumbnail-container img,
-.profile-thumbnail,
-.ranking-profile-image,
-.insights-profile-image {
+.profile-image {
     width: 50px;
     height: 50px;
     object-fit: cover;
+    border-radius: 50%;
     margin-right: 10px;
     vertical-align: middle;
 }
@@ -233,7 +230,7 @@ def save_matches(df):
             df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
             df_to_save = df_to_save.dropna(subset=['date'])
             df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
-            
+
         supabase.table(matches_table_name).upsert(df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
@@ -316,7 +313,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
     # If selected_players is a single string, convert to a list for uniform handling
     if isinstance(selected_players, str):
         selected_players = [selected_players] if selected_players else []
-    
+
     if not selected_players:
         st.info("No players selected or available for insights.")
         return
@@ -360,18 +357,14 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
         for _, row in birthday_df.iterrows():
-            profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
-            player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-            birthday_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Birthday']}</span>"
-            st.markdown(f"""
-            <div class="ranking-row">
-                <div class="rank-profile-player-group">
-                    <div class="profile-col">{profile_html}</div>
-                    <div class="player-col">{player_styled}</div>
-                </div>
-                <div class="birthday-col">{birthday_styled}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                if row["Profile"]:
+                    st.image(row["Profile"], width=50)
+            with col2:
+                st.markdown(f"**{row['Player']}**")
+                st.markdown(f"_{row['Birthday']}_")
+
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -383,7 +376,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
                 player_data = rank_df[rank_df["Player"] == player].iloc[0]
                 if player_data["Matches"] > 0:
                     active_players.append(player)
-        
+
         # Sort active players by name
         active_players = sorted(active_players)
 
@@ -394,7 +387,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         # Use the same container and scroll styling as rankings
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
-        
+
         for selected_player in active_players:
             # Fetch player information
             player_info = players_df[players_df["name"] == selected_player].iloc[0] if selected_player in players_df["name"].values else None
@@ -403,13 +396,10 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             birthday = player_info.get("birthday", "Not set")
             profile_image = player_info.get("profile_image_url", "")
             trend = get_player_trend(selected_player, matches_df)
-            
-            # Prepare profile image HTML with proportional thumbnail
-            profile_html = f'<img src="{profile_image}" class="profile-image" alt="Profile">' if profile_image else ''
-            
+
             # Style player name and values
             player_styled = f"<span style='font-weight:bold; color:#fff500;'>{selected_player}</span>"
-            
+
             # Populate stats for players with match data
             player_data = rank_df[rank_df["Player"] == selected_player].iloc[0]
             rank = player_data["Rank"]
@@ -420,7 +410,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             losses = int(player_data["Losses"])
             game_diff_avg = player_data["Game Diff Avg"]
             games_won = int(player_data["Games Won"])
-            
+
             # Partners and most effective partner
             partners_list = "None"
             best_partner = "None"
@@ -434,7 +424,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
                 best_partner_name = sorted_partners[0][0]
                 best_wins = sorted_partners[0][1]['wins']
                 best_partner = f"{best_partner_name} ({best_wins} {'win' if best_wins == 1 else 'wins'})"
-            
+
             # Style the values in yellow
             points_styled = f"<span style='font-weight:bold; color:#fff500;'>{points:.1f}</span>"
             win_percent_styled = f"<span style='font-weight:bold; color:#fff500;'>{win_percent:.1f}%</span>"
@@ -447,31 +437,38 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             partners_styled = f"<span style='font-weight:bold; color:#fff500;'>{partners_list}</span>"
             best_partner_styled = f"<span style='font-weight:bold; color:#fff500;'>{best_partner}</span>"
             trend_styled = f"<span style='font-weight:bold; color:#fff500;'>{trend}</span>"
-            
+
             # Render the card using the same CSS classes as the rankings tab
             st.markdown(f"""
             <div class="ranking-row">
                 <div class="rank-profile-player-group">
                     <div class="rank-col">{rank}</div>
-                    <div class="profile-col">{profile_html}</div>
-                    <div class="player-col">{player_styled}</div>
                 </div>
-                <div class="points-col">{points_styled}</div>
-                <div class="win-percent-col">{win_percent_styled}</div>
-                <div class="matches-col">{matches_styled}</div>
-                <div class="wins-col">{wins_styled}</div>
-                <div class="losses-col">{losses_styled}</div>
-                <div class="game-diff-avg-col">{game_diff_avg_styled}</div>
-                <div class="games-won-col">{games_won_styled}</div>
-                <div class="birthday-col">{birthday_styled}</div>
-                <div class="partners-col">{partners_styled}</div>
-                <div class="best-partner-col">{best_partner_styled}</div>
-                <div class="trend-col">{trend_styled}</div>
             </div>
             """, unsafe_allow_html=True)
-        
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                if profile_image:
+                    st.image(profile_image, width=50)
+            with col2:
+                st.markdown(f"""
+                    <div class="player-col">{player_styled}</div>
+                    <div class="points-col">{points_styled}</div>
+                    <div class="win-percent-col">{win_percent_styled}</div>
+                    <div class="matches-col">{matches_styled}</div>
+                    <div class="wins-col">{wins_styled}</div>
+                    <div class="losses-col">{losses_styled}</div>
+                    <div class="game-diff-avg-col">{game_diff_avg_styled}</div>
+                    <div class="games-won-col">{games_won_styled}</div>
+                    <div class="birthday-col">{birthday_styled}</div>
+                    <div class="partners-col">{partners_styled}</div>
+                    <div class="best-partner-col">{best_partner_styled}</div>
+                    <div class="trend-col">{trend_styled}</div>
+                """, unsafe_allow_html=True)
+
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
+
 
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
@@ -579,45 +576,45 @@ def calculate_rankings(matches_to_rank):
         ).reset_index(drop=True)
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
     return rank_df, partner_wins
-    
+
 def display_match_table(df, title):
     if df.empty:
         st.info(f"No {title} match data available.")
         return
-    
+
     table_df = df.copy()
-    
+
     # Create a formatted Match column
     def format_match_info(row):
         scores = [s for s in [row['set1'], row['set2'], row['set3']] if s]
         scores_str = ", ".join(scores)
-        
+
         if row['match_type'] == 'Doubles':
             players = f"{row['team1_player1']} & {row['team1_player2']} vs. {row['team2_player1']} & {row['team2_player2']}"
         else:
             players = f"{row['team1_player1']} vs. {row['team2_player1']}"
-            
+
         return f"{players} ({scores_str})"
 
     table_df['Match Details'] = table_df.apply(format_match_info, axis=1)
-    
+
     # Select and rename columns for display
     display_df = table_df[['date', 'Match Details', 'match_image_url']].copy()
     display_df.rename(columns={
         'date': 'Date',
         'match_image_url': 'Image URL'
     }, inplace=True)
-    
+
     # Format the date column as dd MMM yy
     display_df['Date'] = pd.to_datetime(display_df['Date']).dt.strftime('%d %b %y')
-    
+
     st.dataframe(display_df, height=300)
 
 def display_rankings_table(df, title):
     if df.empty:
         st.info(f"No {title} ranking data available.")
         return
-    
+
     st.subheader(f"{title} Player Rankings Table")
     # Drop the 'Profile' and 'Recent Trend' columns as they don't fit well in a simple table
     display_df = df.drop(columns=['Profile', 'Recent Trend'])
@@ -647,10 +644,10 @@ def generate_whatsapp_link(row):
 
     # Create the text to be shared
     share_text = f"*{winner_str} def. {loser_str}*\nSet scores {scores_str} on {date_str}"
-    
+
     # URL-encode the text
     encoded_text = urllib.parse.quote(share_text)
-    
+
     return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
 
 # --- Main App Logic ---
@@ -688,27 +685,30 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
-                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-                st.markdown(f"""
-                <div class="ranking-row">
-                    <div class="rank-profile-player-group">
-                        <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">{profile_html}</div>
-                        <div class="player-col">{player_styled}</div>
+                col1, col2 = st.columns([1, 4])
+                with col1:
+                    if row["Profile"]:
+                        st.image(row["Profile"], width=50)
+                with col2:
+                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                    points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                    trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+                    st.markdown(f"""
+                    <div class="ranking-row">
+                        <div class="rank-profile-player-group">
+                            <div class="rank-col">{row["Rank"]}</div>
+                            <div class="player-col">{player_styled}</div>
+                        </div>
+                        <div class="points-col">{points_value_styled}</div>
+                        <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                        <div class="matches-col">{int(row["Matches"])}</div>
+                        <div class="wins-col">{int(row["Wins"])}</div>
+                        <div class="losses-col">{int(row["Losses"])}</div>
+                        <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                        <div class="games-won-col">{int(row["Games Won"])}</div>
+                        <div class="trend-col">{trend_value_styled}</div>
                     </div>
-                    <div class="points-col">{points_value_styled}</div>
-                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                    <div class="matches-col">{int(row["Matches"])}</div>
-                    <div class="wins-col">{int(row["Wins"])}</div>
-                    <div class="losses-col">{int(row["Losses"])}</div>
-                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                    <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col">{trend_value_styled}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.subheader("Player Insights")
@@ -728,27 +728,30 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
-                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-                st.markdown(f"""
-                <div class="ranking-row">
-                    <div class="rank-profile-player-group">
-                        <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">{profile_html}</div>
-                        <div class="player-col">{player_styled}</div>
+                col1, col2 = st.columns([1, 4])
+                with col1:
+                    if row["Profile"]:
+                        st.image(row["Profile"], width=50)
+                with col2:
+                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                    points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                    trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+                    st.markdown(f"""
+                    <div class="ranking-row">
+                        <div class="rank-profile-player-group">
+                            <div class="rank-col">{row["Rank"]}</div>
+                            <div class="player-col">{player_styled}</div>
+                        </div>
+                        <div class="points-col">{points_value_styled}</div>
+                        <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                        <div class="matches-col">{int(row["Matches"])}</div>
+                        <div class="wins-col">{int(row["Wins"])}</div>
+                        <div class="losses-col">{int(row["Losses"])}</div>
+                        <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                        <div class="games-won-col">{int(row["Games Won"])}</div>
+                        <div class="trend-col">{trend_value_styled}</div>
                     </div>
-                    <div class="points-col">{points_value_styled}</div>
-                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                    <div class="matches-col">{int(row["Matches"])}</div>
-                    <div class="wins-col">{int(row["Wins"])}</div>
-                    <div class="losses-col">{int(row["Losses"])}</div>
-                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                    <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col">{trend_value_styled}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.subheader("Player Insights")
@@ -762,7 +765,7 @@ with tabs[0]:
             st.info("No match data available to generate interesting stats.")
         else:
             rank_df, partner_wins = calculate_rankings(matches)
-            
+
             # Most Effective Partnership
             st.markdown("### 🤝 Most Effective Partnership")
             best_partner = None
@@ -782,9 +785,9 @@ with tabs[0]:
                 st.markdown(f"The most effective partnership is {p1_styled} and {p2_styled} with a combined score of wins and average game difference. They have **{stats['wins']}** wins and a total game difference of **{stats['game_diff_sum']:.2f}**.", unsafe_allow_html=True)
             else:
                 st.info("No doubles matches have been played to determine the most effective partnership.")
-            
+
             st.markdown("---")
-            
+
             # Best Player to Partner With
             st.markdown("### 🥇 Best Player to Partner With")
             player_stats = defaultdict(lambda: {'wins': 0, 'gd_sum': 0, 'partners': set()})
@@ -803,7 +806,7 @@ with tabs[0]:
                                 set_count += 1
                             except ValueError:
                                 continue
-                    
+
                     if set_count > 0:
                         if row["winner"] == "Team 1":
                             for p in t1:
@@ -837,13 +840,13 @@ with tabs[0]:
                     normalized_wins = stats['wins'] / max_wins
                     normalized_gd = stats['gd_sum'] / max_gd
                     normalized_partners = len(stats['partners']) / max_partners
-                    
+
                     composite_score = normalized_wins + normalized_gd + normalized_partners
-                    
+
                     if composite_score > max_score:
                         max_score = composite_score
                         best_partner_candidate = (player, stats)
-                
+
                 if best_partner_candidate:
                     player_name, stats = best_partner_candidate
                     player_styled = f"<span style='font-weight:bold; color:#fff500;'>{player_name}</span>"
@@ -855,9 +858,9 @@ with tabs[0]:
                     st.info("Not enough data to determine the best player to partner with.")
             else:
                 st.info("No doubles matches have been recorded yet.")
-            
+
             st.markdown("---")
-            
+
             # Most Frequent Player
             st.markdown("### 🏟️ Most Frequent Player")
             if not rank_df.empty:
@@ -866,9 +869,9 @@ with tabs[0]:
                 st.markdown(f"{player_styled} has played the most matches, with a total of **{int(most_frequent_player['Matches'])}** matches played.", unsafe_allow_html=True)
             else:
                 st.info("No match data available to determine the most frequent player.")
-            
+
             st.markdown("---")
-            
+
             # Player with highest Game Difference
             st.markdown("### 📈 Player with highest Game Difference")
             cumulative_game_diff = defaultdict(int)
@@ -941,27 +944,30 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
-                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-                st.markdown(f"""
-                <div class="ranking-row">
-                    <div class="rank-profile-player-group">
-                        <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">{profile_html}</div>
-                        <div class="player-col">{player_styled}</div>
+                col1, col2 = st.columns([1, 4])
+                with col1:
+                    if row["Profile"]:
+                        st.image(row["Profile"], width=50)
+                with col2:
+                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                    points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                    trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+                    st.markdown(f"""
+                    <div class="ranking-row">
+                        <div class="rank-profile-player-group">
+                            <div class="rank-col">{row["Rank"]}</div>
+                            <div class="player-col">{player_styled}</div>
+                        </div>
+                        <div class="points-col">{points_value_styled}</div>
+                        <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                        <div class="matches-col">{int(row["Matches"])}</div>
+                        <div class="wins-col">{int(row["Wins"])}</div>
+                        <div class="losses-col">{int(row["Losses"])}</div>
+                        <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                        <div class="games-won-col">{int(row["Games Won"])}</div>
+                        <div class="trend-col">{trend_value_styled}</div>
                     </div>
-                    <div class="points-col">{points_value_styled}</div>
-                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                    <div class="matches-col">{int(row["Matches"])}</div>
-                    <div class="wins-col">{int(row["Wins"])}</div>
-                    <div class="losses-col">{int(row["Losses"])}</div>
-                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                    <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col">{trend_value_styled}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         st.subheader("Player Insights")
@@ -1181,13 +1187,7 @@ with tabs[2]:
             current_birthday = player_data.get("birthday", "")
             st.markdown(f"**Current Profile for {selected_player_manage}**")
             if current_image:
-                try:
-                    st.markdown(
-                        f'<img src="{current_image}" class="profile-image" alt="Profile">',
-                        unsafe_allow_html=True
-                    )
-                except Exception as e:
-                    st.error(f"Error displaying profile image: {str(e)}")
+                st.image(current_image, width=100)
             else:
                 st.write("No profile image set.")
             profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
@@ -1221,7 +1221,7 @@ with tabs[2]:
                     load_players()
                     st.success(f"{selected_player_manage} removed.")
                     st.rerun()
-    
+
     st.markdown("---")
     st.subheader("Player Insights")
     rank_df_combined, partner_wins_combined = calculate_rankings(st.session_state.matches_df)
