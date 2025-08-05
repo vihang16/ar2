@@ -343,13 +343,19 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             if player_info is None:
                 continue
             birthday = player_info.get("birthday", "")
+            profile_image = player_info.get("profile_image_url", "")
             if birthday and re.match(r'^\d{2}-\d{2}$', birthday):
                 try:
                     day, month = map(int, birthday.split("-"))
                     # Create a datetime object for sorting (use a fixed year for consistency)
                     birthday_dt = datetime.strptime(f"{day:02d}-{month:02d}-2000", "%d-%m-%Y")
                     birthday_formatted = birthday_dt.strftime("%d %b")
-                    birthday_data.append({"Player": player, "Birthday": birthday_formatted, "SortDate": birthday_dt})
+                    birthday_data.append({
+                        "Player": player,
+                        "Birthday": birthday_formatted,
+                        "SortDate": birthday_dt,
+                        "Profile": profile_image
+                    })
                 except ValueError:
                     continue
 
@@ -361,15 +367,19 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         birthday_df = pd.DataFrame(birthday_data)
         birthday_df = birthday_df.sort_values(by="SortDate").reset_index(drop=True)
 
-        # Display birthdays in a card-like format
+        # Display birthdays in a card-like format with profile picture
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
         for _, row in birthday_df.iterrows():
+            profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
             player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
             birthday_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Birthday']}</span>"
             st.markdown(f"""
             <div class="ranking-row">
-                <div class="player-col">{player_styled}</div>
+                <div class="rank-profile-player-group">
+                    <div class="profile-col">{profile_html}</div>
+                    <div class="player-col">{player_styled}</div>
+                </div>
                 <div class="birthday-col">{birthday_styled}</div>
             </div>
             """, unsafe_allow_html=True)
@@ -1024,7 +1034,7 @@ with tabs[1]:
                         "set1": set1_new,
                         "set2": set2_new,
                         "set3": set3_new,
-                        "winner": winner_new,
+                        "winner": winner_New,
                         "match_image_url": image_url_new
                     }
                     matches_to_save = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match_entry])], ignore_index=True)
@@ -1088,7 +1098,7 @@ with tabs[1]:
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
 
     st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
-    st.markdown("### ✏️ Manage Existing Match")
+    st.subheader("✏️ Manage Existing Match")
     clean_match_options = []
     for _, row in filtered_matches.iterrows():
         score_plain = f"{row['set1']}"
