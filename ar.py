@@ -10,7 +10,7 @@ import urllib.parse
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
 
-# Custom CSS for a scenic background
+# Custom CSS for a scenic background and consistent square thumbnails
 st.markdown("""
 <style>
 .stApp {
@@ -27,26 +27,24 @@ st.markdown("""
   background: linear-gradient(to top, #07314f, #035996) !important;
 }
 
-/* Standardize thumbnail styling across sections */
+/* Standardize thumbnail styling across sections (square, 50x50 pixels, no hover effect) */
 .profile-image {
     width: 50px;
     height: 50px;
     object-fit: cover;
-    border-radius: 50%;
     margin-right: 10px;
     vertical-align: middle;
-    transition: transform 0.3s ease;
-    cursor: pointer;
 }
 
-/* Hover effect for full-size view */
-.profile-image:hover {
-    transform: scale(3);
-    z-index: 1000;
-    position: relative;
+/* Apply same styling to Streamlit's st.image elements in Matches section */
+[data-testid="stImage"] img {
+    width: 50px !important;
+    height: 50px !important;
+    object-fit: cover;
+    border-radius: 0 !important;
 }
 
-/* Update existing classes to use the new .profile-image class */
+/* Update existing classes to match .profile-image for consistency */
 .match-thumbnail-container img,
 .profile-thumbnail,
 .ranking-profile-image,
@@ -54,20 +52,8 @@ st.markdown("""
     width: 50px;
     height: 50px;
     object-fit: cover;
-    border-radius: 50%;
     margin-right: 10px;
     vertical-align: middle;
-    transition: transform 0.3s ease;
-    cursor: pointer;
-}
-
-.match-thumbnail-container img:hover,
-.profile-thumbnail:hover,
-.ranking-profile-image:hover,
-.insights-profile-image:hover {
-    transform: scale(3);
-    z-index: 1000;
-    position: relative;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
@@ -386,7 +372,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         birthday_df = pd.DataFrame(birthday_data)
         birthday_df = birthday_df.sort_values(by="SortDate").reset_index(drop=True)
 
-        # Display birthdays in a card-like format with proportional profile picture
+        # Display birthdays in a card-like format with square profile picture
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
         for _, row in birthday_df.iterrows():
@@ -434,7 +420,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             profile_image = player_info.get("profile_image_url", "")
             trend = get_player_trend(selected_player, matches_df)
             
-            # Prepare profile image HTML with proportional thumbnail
+            # Prepare profile image HTML with square thumbnail
             profile_html = f'<img src="{profile_image}" class="profile-image" alt="Profile">' if profile_image else ''
             
             # Style player name and values
