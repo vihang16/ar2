@@ -28,25 +28,7 @@ st.markdown("""
 }
 
 /* Standardize thumbnail styling across sections */
-.profile-image {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-right: 10px;
-    vertical-align: middle;
-    transition: transform 0.3s ease;
-    cursor: pointer;
-}
-
-/* Hover effect for full-size view */
-.profile-image:hover {
-    transform: scale(3);
-    z-index: 1000;
-    position: relative;
-}
-
-/* Update existing classes to use the new .profile-image class */
+.profile-image,
 .match-thumbnail-container img,
 .profile-thumbnail,
 .ranking-profile-image,
@@ -54,20 +36,8 @@ st.markdown("""
     width: 50px;
     height: 50px;
     object-fit: cover;
-    border-radius: 50%;
     margin-right: 10px;
     vertical-align: middle;
-    transition: transform 0.3s ease;
-    cursor: pointer;
-}
-
-.match-thumbnail-container img:hover,
-.profile-thumbnail:hover,
-.ranking-profile-image:hover,
-.insights-profile-image:hover {
-    transform: scale(3);
-    z-index: 1000;
-    position: relative;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
@@ -920,7 +890,7 @@ with tabs[0]:
             if cumulative_game_diff:
                 highest_gd_player, highest_gd_value = max(cumulative_game_diff.items(), key=lambda item: item[1])
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{highest_gd_player}</span>"
-                st.markdown(f"{player_styled} has the highest cumulative game difference : <span style='font-weight:bold; color:#fff500;'>{highest_gd_value}</span>.", unsafe_allow_html=True)
+                st.markdown(f"{highest_gd_player} has the highest cumulative game difference : <span style='font-weight:bold; color:#fff500;'>{highest_gd_value}</span>.", unsafe_allow_html=True)
             else:
                 st.info("No match data available to calculate game difference.")
 
