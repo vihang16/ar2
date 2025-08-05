@@ -79,7 +79,7 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     margin-bottom: 10px;
     border: 1px solid #696969;
     border-radius: 8px;
-    box-shadow: 0 1px 854px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 .ranking-row:last-child {
     margin-bottom: 0;
@@ -332,14 +332,26 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         st.info("No players selected or available for insights.")
         return
 
-    # Sort players by name
-    selected_players = sorted(selected_players)
+    # Filter players who have played at least one match
+    active_players = []
+    for player in selected_players:
+        if player in rank_df["Player"].values:
+            player_data = rank_df[rank_df["Player"] == player].iloc[0]
+            if player_data["Matches"] > 0:
+                active_players.append(player)
+    
+    # Sort active players by name
+    active_players = sorted(active_players)
+
+    if not active_players:
+        st.info("No players with matches played are available for insights.")
+        return
 
     # Use the same container and scroll styling as rankings
     st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
     st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
     
-    for selected_player in selected_players:
+    for selected_player in active_players:
         # Fetch player information
         player_info = players_df[players_df["name"] == selected_player].iloc[0] if selected_player in players_df["name"].values else None
         if player_info is None:
@@ -354,41 +366,30 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         # Style player name and values
         player_styled = f"<span style='font-weight:bold; color:#fff500;'>{selected_player}</span>"
         
-        # Initialize default values for players without match data
-        rank = "N/A"
-        points = 0
-        win_percent = 0.0
-        matches = 0
-        wins = 0
-        losses = 0
-        game_diff_avg = 0.0
-        games_won = 0
+        # Populate stats for players with match data
+        player_data = rank_df[rank_df["Player"] == selected_player].iloc[0]
+        rank = player_data["Rank"]
+        points = player_data["Points"]
+        win_percent = player_data["Win %"]
+        matches = int(player_data["Matches"])
+        wins = int(player_data["Wins"])
+        losses = int(player_data["Losses"])
+        game_diff_avg = player_data["Game Diff Avg"]
+        games_won = int(player_data["Games Won"])
+        
+        # Partners and most effective partner
         partners_list = "None"
         best_partner = "None"
-        
-        # If player has ranking data, populate the stats
-        if selected_player in rank_df["Player"].values:
-            player_data = rank_df[rank_df["Player"] == selected_player].iloc[0]
-            rank = player_data["Rank"]
-            points = player_data["Points"]
-            win_percent = player_data["Win %"]
-            matches = int(player_data["Matches"])
-            wins = int(player_data["Wins"])
-            losses = int(player_data["Losses"])
-            game_diff_avg = player_data["Game Diff Avg"]
-            games_won = int(player_data["Games Won"])
-            
-            # Partners and most effective partner
-            if selected_player in partner_wins and partner_wins[selected_player]:
-                partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])
-                sorted_partners = sorted(
-                    partner_wins[selected_player].items(),
-                    key=lambda item: (item[1]['wins'], item[1]['game_diff_sum'] / item[1]['wins'] if item[1]['wins'] > 0 else 0),
-                    reverse=True
-                )
-                best_partner_name = sorted_partners[0][0]
-                best_wins = sorted_partners[0][1]['wins']
-                best_partner = f"{best_partner_name} ({best_wins} {'win' if best_wins == 1 else 'wins'})"
+        if selected_player in partner_wins and partner_wins[selected_player]:
+            partners_list = ', '.join([f'{p} ({item["wins"]} wins, GD Sum: {item["game_diff_sum"]:.2f})' for p, item in partner_wins[selected_player].items()])
+            sorted_partners = sorted(
+                partner_wins[selected_player].items(),
+                key=lambda item: (item[1]['wins'], item[1]['game_diff_sum'] / item[1]['wins'] if item[1]['wins'] > 0 else 0),
+                reverse=True
+            )
+            best_partner_name = sorted_partners[0][0]
+            best_wins = sorted_partners[0][1]['wins']
+            best_partner = f"{best_partner_name} ({best_wins} {'win' if best_wins == 1 else 'wins'})"
         
         # Style the values in yellow
         points_styled = f"<span style='font-weight:bold; color:#fff500;'>{points:.1f}</span>"
@@ -685,33 +686,14 @@ with tabs[0]:
             for index, row in rank_df.iterrows():
                 profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-                st.markdown(f"""
-                <div class="ranking-row">
-                    <div class="rank-profile-player-group">
-                        <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">{profile_html}</div>
-                        <div class="player-col">{player_styled}</div>
-                    </div>
-                    <div class="points-col">{points_value_styled}</div>
-                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                    <div class="matches-col">{int(row["Matches"])}</div>
-                    <div class="wins-col">{int(row["Wins"])}</div>
-                    <div class="losses-col">{int(row["Losses"])}</div>
-                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                    <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col">{trend_value_styled}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.subheader("Player Insights")
-        selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_singles")
-        if selected_player_rankings:
-            display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_wins, key_prefix="rankings_singles_")
-        else:
-            st.info("Player insights will be available once a player is selected.")
+                points_value_styled = f"< Stuart: <span style='font-weight:bold; color:#fff500;'>Player Insights</span>
+                st.markdown("---")
+                st.subheader("Player Insights")
+                selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_singles")
+                if selected_player_rankings:
+                    display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_wins, key_prefix="rankings_singles_")
+                else:
+                    st.info("Player insights will be available once a player is selected.")
     elif ranking_type == "Nerd Stuff":
         if matches.empty or players_df.empty:
             st.info("No match data available to generate interesting stats.")
@@ -1112,13 +1094,6 @@ with tabs[1]:
 
 with tabs[2]:
     st.header("Player Profile")
-    st.subheader("Player Insights")
-    rank_df_combined, partner_wins_combined = calculate_rankings(st.session_state.matches_df)
-    if players:
-        display_player_insights(players, players_df, st.session_state.matches_df, rank_df_combined, partner_wins_combined, key_prefix="profile_")
-    else:
-        st.info("No players available for insights. Please add players below.")
-        
     st.subheader("Manage & Edit Player Profiles")
     with st.expander("Add, Edit or Remove Player"):
         st.markdown("##### Add New Player")
@@ -1148,7 +1123,7 @@ with tabs[2]:
                 try:
                     st.image(current_image, width=100, caption="Current Image")
                 except Exception as e:
-                        st.error(f"Error displaying profile image: {str(e)}")
+                    st.error(f"Error displaying profile image: {str(e)}")
             else:
                 st.write("No profile image set.")
             profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
@@ -1182,6 +1157,14 @@ with tabs[2]:
                     load_players()
                     st.success(f"{selected_player_manage} removed.")
                     st.rerun()
+    
+    st.markdown("---")
+    st.subheader("Player Insights")
+    rank_df_combined, partner_wins_combined = calculate_rankings(st.session_state.matches_df)
+    if players:
+        display_player_insights(players, players_df, st.session_state.matches_df, rank_df_combined, partner_wins_combined, key_prefix="profile_")
+    else:
+        st.info("No players available for insights. Please add players above.")
 
 with tabs[3]:
     st.header("Court Locations")
