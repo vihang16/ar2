@@ -27,48 +27,54 @@ st.markdown("""
   background: linear-gradient(to top, #07314f, #035996) !important;
 }
 
-/* ... rest of your custom CSS ... */
+/* Standardize thumbnail styling across sections */
+.profile-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-right: 10px;
+    vertical-align: middle;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+/* Hover effect for full-size view */
+.profile-image:hover {
+    transform: scale(3);
+    z-index: 1000;
+    position: relative;
+}
+
+/* Update existing classes to use the new .profile-image class */
+.match-thumbnail-container img,
+.profile-thumbnail,
+.ranking-profile-image,
+.insights-profile-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-right: 10px;
+    vertical-align: middle;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+.match-thumbnail-container img:hover,
+.profile-thumbnail:hover,
+.ranking-profile-image:hover,
+.insights-profile-image:hover {
+    transform: scale(3);
+    z-index: 1000;
+    position: relative;
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
 html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     font-family: 'Offside', sans-serif !important;
 }
 /* Other styles */
-.match-thumbnail-container img {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    cursor: pointer;
-    border-radius: 50%;
-}
-.profile-thumbnail {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-right: 10px;
-}
-.ranking-profile-image {
-    width: 40px;
-    height: 40px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-right: 10px;
-    vertical-align: middle;
-}
-.insights-profile-image {
-    max-width: 60px;
-    max-height: 40px;
-    object-fit: contain;
-    margin-right: 10px;
-    vertical-align: middle;
-    transition: transform 0.3s ease;
-}
-.insights-profile-image:hover {
-    transform: scale(3);
-    z-index: 1000;
-    position: relative;
-    cursor: pointer;
-}
 .rankings-table-container {
     width: 100%;
     background: #ffffff;
@@ -384,7 +390,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
         for _, row in birthday_df.iterrows():
-            profile_html = f'<img src="{row["Profile"]}" class="insights-profile-image" alt="Profile">' if row["Profile"] else ''
+            profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
             player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
             birthday_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Birthday']}</span>"
             st.markdown(f"""
@@ -429,7 +435,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             trend = get_player_trend(selected_player, matches_df)
             
             # Prepare profile image HTML with proportional thumbnail
-            profile_html = f'<img src="{profile_image}" class="insights-profile-image" alt="Profile">' if profile_image else ''
+            profile_html = f'<img src="{profile_image}" class="profile-image" alt="Profile">' if profile_image else ''
             
             # Style player name and values
             player_styled = f"<span style='font-weight:bold; color:#fff500;'>{selected_player}</span>"
@@ -712,7 +718,7 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
+                profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
                 points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
                 trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
@@ -752,7 +758,7 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
+                profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
                 points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
                 trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
@@ -965,7 +971,7 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             for index, row in rank_df.iterrows():
-                profile_html = f'<img src="{row["Profile"]}" class="ranking-profile-image" alt="Profile">' if row["Profile"] else ''
+                profile_html = f'<img src="{row["Profile"]}" class="profile-image" alt="Profile">' if row["Profile"] else ''
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
                 points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
                 trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
@@ -1206,7 +1212,10 @@ with tabs[2]:
             st.markdown(f"**Current Profile for {selected_player_manage}**")
             if current_image:
                 try:
-                    st.image(current_image, width=100, caption="Current Image")
+                    st.markdown(
+                        f'<img src="{current_image}" class="profile-image" alt="Profile">',
+                        unsafe_allow_html=True
+                    )
                 except Exception as e:
                     st.error(f"Error displaying profile image: {str(e)}")
             else:
