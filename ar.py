@@ -141,7 +141,7 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
 .game-diff-avg-col::before { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
 .trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
 .birthday-col::before { content: "Birthday: "; font-weight: bold; color: #bbbbbb; }
-.partners-col::before { content: "Partners Played With: "; font-weight: bold; color: #bbbbbb; }
+.partners-col::before { content: " Partners Played With: "; font-weight: bold; color: #bbbbbb; }
 .best-partner-col::before { content: "Most Effective Partner: "; font-weight: bold; color: #bbbbbb; }
 
 /* Ensure the actual values are yellow. Applies to the text content within the div, not the ::before. */
@@ -214,7 +214,7 @@ def load_players():
                 df[col] = ""
         st.session_state.players_df = df
     except Exception as e:
-        st.error(f"Error loading players: {str(e)}")
+        st.error такого рода: {str(e)}")
 
 def save_players(players_df):
     try:
@@ -336,7 +336,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
     view_option = st.radio("Select View", ["Player Insights", "Birthdays"], horizontal=True, key=f"{key_prefix}view_selector")
 
     if view_option == "Birthdays":
-        # Prepare birthday data
+        # Prepare birthday data, only including players with valid birthday entries
         birthday_data = []
         for player in selected_players:
             player_info = players_df[players_df["name"] == player].iloc[0] if player in players_df["name"].values else None
@@ -352,11 +352,9 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
                     birthday_data.append({"Player": player, "Birthday": birthday_formatted, "SortDate": birthday_dt})
                 except ValueError:
                     continue
-            else:
-                birthday_data.append({"Player": player, "Birthday": "Not set", "SortDate": datetime.max})
 
         if not birthday_data:
-            st.info("No birthday data available for selected players.")
+            st.info("No valid birthday data available for selected players.")
             return
 
         # Convert to DataFrame and sort by birthday
