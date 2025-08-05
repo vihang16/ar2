@@ -6,11 +6,6 @@ from collections import defaultdict
 from supabase import create_client, Client
 import re
 import urllib.parse
-import io
-import altair as alt
-import warnings
-
-warnings.filterwarnings("ignore", category=UserWarning)
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
@@ -184,52 +179,6 @@ div.st-emotion-cache-1jm692n h3 {
     font-size: 14px;
     text-align: center;
     margin: 2px;
-}
-
-/* Style for player profile cards */
-.player-profile-card {
-    display: block;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #696969;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-.player-profile-card:last-child {
-    margin-bottom: 0;
-}
-.player-profile-card .player-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-}
-.player-profile-card .player-header .profile-thumbnail {
-    width: 60px;
-    height: 60px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-right: 15px;
-}
-.player-profile-card .player-header .player-name {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: #fff500;
-}
-.player-profile-card .player-stat-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 5px 0;
-    border-top: 1px solid #444;
-}
-.player-profile-card .player-stat-row:first-of-type {
-    border-top: none;
-}
-.player-profile-card .player-stat-label {
-    font-weight: bold;
-    color: #bbbbbb;
-}
-.player-profile-card .player-stat-value {
-    color: #fff500;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -506,7 +455,7 @@ def calculate_rankings(matches_to_rank):
                 partner_wins[row['team2_player1']][row['team2_player2']]['wins'] += 1
                 partner_wins[row['team2_player1']][row['team2_player2']]['game_diff_sum'] += match_gd_sum
                 partner_wins[row['team2_player2']][row['team2_player1']]['wins'] += 1
-                partner_wins[row['team2_player1']][row['team2_player2']]['game_diff_sum'] += match_gd_sum
+                partner_wins[row['team2_player2']][row['team2_player1']]['game_diff_sum'] += match_gd_sum
     rank_data = []
     players_df = st.session_state.players_df
     for player in scores:
@@ -599,7 +548,7 @@ def generate_whatsapp_link(row):
     # Format scores with bolding and date
     scores_list = [f'*{s.replace("-", ":")}*' for s in [row['set1'], row['set2'], row['set3']] if s]
     scores_str = " ".join(scores_list)
-    date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
+    date_str = row['date'].strftime('%d %b %y')
 
     # Create the text to be shared
     share_text = f"*{winner_str} def. {loser_str}*\nSet scores {scores_str} on {date_str}"
@@ -1023,7 +972,7 @@ with tabs[1]:
         padding_spaces = " " * (target_width - len(score_text))
         score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
         score_html = ", ".join(score_parts_html)
-        date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
+        date_str = row['date'].strftime('%d %b %y')
         return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
     if filtered_matches.empty:
         st.info("No matches found.")
@@ -1053,7 +1002,7 @@ with tabs[1]:
             score_plain += f", {row['set2']}"
         if row['set3']:
             score_plain += f", {row['set3']}"
-        date_plain = pd.to_datetime(row['date']).strftime('%d %b %y %H:%M')
+        date_plain = row['date'].strftime('%d %b %y %H:%M')
         if row["match_type"] == "Singles":
             desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
         else:
@@ -1113,8 +1062,14 @@ with tabs[1]:
 
 with tabs[2]:
     st.header("Player Profile")
-
-    # 1. Move "Manage & Edit Player Profiles" to the top
+    st.subheader("Player Insights")
+    rank_df_combined, partner_wins_combined = calculate_rankings(st.session_state.matches_df)
+    selected_player_profile_insights = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
+    if selected_player_profile_insights:
+        display_player_insights(selected_player_profile_insights, players_df, st.session_state.matches_df, rank_df_combined, partner_wins_combined, key_prefix="profile_")
+    else:
+        st.info("Player insights will be available once a player is selected.")
+        
     st.subheader("Manage & Edit Player Profiles")
     with st.expander("Add, Edit or Remove Player"):
         st.markdown("##### Add New Player")
@@ -1178,113 +1133,6 @@ with tabs[2]:
                     load_players()
                     st.success(f"{selected_player_manage} removed.")
                     st.rerun()
-
-    # 2. Show all player profiles sorted alphabetically in card style
-    st.markdown("---")
-    st.subheader("All Player Insights")
-    rank_df_combined, partner_wins_combined = calculate_rankings(st.session_state.matches_df)
-    sorted_players = sorted(players)
-    if not sorted_players:
-        st.info("No players available to display insights.")
-    else:
-        for player_name in sorted_players:
-            player_info = players_df[players_df["name"] == player_name].iloc[0]
-            profile_image = player_info.get("profile_image_url", "")
-            birthday = player_info.get("birthday", "Not set")
-            trend = get_player_trend(player_name, st.session_state.matches_df)
-
-            profile_html = f'<img src="{profile_image}" class="profile-thumbnail" alt="Profile">' if profile_image else ''
-            player_data_html = ""
-            if player_name in rank_df_combined["Player"].values:
-                player_data = rank_df_combined[rank_df_combined["Player"] == player_name].iloc[0]
-                player_data_html = f"""
-                <div class="player-stat-row">
-                    <span class="player-stat-label">Rank:</span>
-                    <span class="player-stat-value">{player_data["Rank"]}</span>
-                </div>
-                <div class="player-stat-row">
-                    <span class="player-stat-label">Win Percentage:</span>
-                    <span class="player-stat-value">{player_data["Win %"]:.1f}%</span>
-                </div>
-                <div class="player-stat-row">
-                    <span class="player-stat-label">Matches Played:</span>
-                    <span class="player-stat-value">{int(player_data["Matches"])}</span>
-                </div>
-                <div class="player-stat-row">
-                    <span class="player-stat-label">Wins:</span>
-                    <span class="player-stat-value">{int(player_data["Wins"])}</span>
-                </div>
-                <div class="player-stat-row">
-                    <span class="player-stat-label">Losses:</span>
-                    <span class="player-stat-value">{int(player_data["Losses"])}</span>
-                </div>
-                <div class="player-stat-row">
-                    <span class="player-stat-label">Games Won:</span>
-                    <span class="player-stat-value">{int(player_data["Games Won"])}</span>
-                </div>
-                <div class="player-stat-row">
-                    <span class="player-stat-label">Game Diff Avg:</span>
-                    <span class="player-stat-value">{player_data["Game Diff Avg"]:.2f}</span>
-                </div>
-                """
-                # Display best partner
-                if player_name in partner_wins_combined and partner_wins_combined[player_name]:
-                    sorted_partners = sorted(
-                        partner_wins_combined[player_name].items(),
-                        key=lambda item: (item[1]['wins'], item[1]['game_diff_sum'] / item[1]['wins'] if item[1]['wins'] > 0 else 0),
-                        reverse=True
-                    )
-                    best_partner_name = sorted_partners[0][0]
-                    best_wins = sorted_partners[0][1]['wins']
-                    player_data_html += f"""
-                    <div class="player-stat-row">
-                        <span class="player-stat-label">Most Effective Partner:</span>
-                        <span class="player-stat-value">{best_partner_name} ({best_wins} wins)</span>
-                    </div>
-                    """
-            else:
-                player_data_html = "<div class='player-stat-row'><span class='player-stat-value'>No match data available.</span></div>"
-
-            # Combine all parts into a single card
-            st.markdown(f"""
-            <div class="player-profile-card">
-                <div class="player-header">
-                    {profile_html}
-                    <div class="player-name">{player_name}</div>
-                </div>
-                {player_data_html}
-                <div class="player-stat-row">
-                    <span class="player-stat-label">Birthday:</span>
-                    <span class="player-stat-value">{birthday}</span>
-                </div>
-                <div class="player-stat-row">
-                    <span class="player-stat-label">Recent Trend:</span>
-                    <span class="player-stat-value">{trend}</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-    st.markdown("---")
-    st.subheader("Birthdays")
-    birthdays_df = players_df.copy()
-    
-    # Ensure birthday column is in the correct format and handle missing data
-    birthdays_df['birthday'] = birthdays_df['birthday'].str.extract(r'(\d{2}-\d{2})').fillna('01-01')
-    
-    # Sort by month and then day
-    birthdays_df[['day', 'month']] = birthdays_df['birthday'].str.split('-', expand=True)
-    birthdays_df['day'] = pd.to_numeric(birthdays_df['day'], errors='coerce')
-    birthdays_df['month'] = pd.to_numeric(birthdays_df['month'], errors='coerce')
-    
-    birthdays_df = birthdays_df.sort_values(by=['month', 'day']).reset_index(drop=True)
-    
-    if not birthdays_df.empty:
-        for _, row in birthdays_df.iterrows():
-            # Format the birthday as 'dd MM'
-            birthday_str = f"{row['day']:02d} {row['month']:02d}"
-            st.markdown(f"**{birthday_str}**: {row['name']}")
-    else:
-        st.info("No player birthday data available.")
 
 with tabs[3]:
     st.header("Court Locations")
