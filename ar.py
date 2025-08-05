@@ -1026,24 +1026,18 @@ with tabs[1]:
                     p3_new = st.selectbox("Player 2", [""] + available_players, key=f"s1p2_new_post_{st.session_state.form_key_suffix}")
                     p2_new = ""
                     p4_new = ""
-                set1_new = st.selectbox("Set 1 *", tennis_scores(), key=f"set1_new_post_{st.session_state.form_key_suffix}")
-                set2_new = st.selectbox("Set 2" + (" *" if match_type_new == "Doubles" else " (optional)"), [""] + tennis_scores(), key=f"set2_new_post_{st.session_state.form_key_suffix}")
+                set1_new = st.selectbox("Set 1", tennis_scores(), index=4, key=f"set1_new_post_{st.session_state.form_key_suffix}")
+                set2_new = st.selectbox("Set 2 (optional)", [""] + tennis_scores(), key=f"set2_new_post_{st.session_state.form_key_suffix}")
                 set3_new = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), key=f"set3_new_post_{st.session_state.form_key_suffix}")
                 winner_new = st.radio("Winner", ["Team 1", "Team 2", "Tie"], key=f"winner_new_post_{st.session_state.form_key_suffix}")
                 match_image_new = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"match_image_new_post_{st.session_state.form_key_suffix}")
-                st.markdown("* indicates required field")
                 submit_button = st.form_submit_button("Submit Match")
             if submit_button:
                 selected_players = [p1_new, p2_new, p3_new, p4_new] if match_type_new == "Doubles" else [p1_new, p3_new]
-                selected_players = [p for p in selected_players if p]  # Remove empty strings
-                if not all(selected_players):
-                    st.error("Please select all required players.")
+                if "" in selected_players:
+                    st.error("Please select all players.")
                 elif len(selected_players) != len(set(selected_players)):
                     st.error("Please select different players for each position.")
-                elif not set1_new:
-                    st.error("Set 1 score is required.")
-                elif match_type_new == "Doubles" and not set2_new:
-                    st.error("Set 2 score is required for doubles matches.")
                 else:
                     new_match_date = datetime.now()
                     match_id_new = generate_match_id(matches, new_match_date)
@@ -1151,165 +1145,116 @@ with tabs[1]:
         set3_index = all_scores.index(row["set3"]) if row["set3"] in all_scores else 0
         with st.expander("Edit Match Details"):
             date_edit = st.date_input("Match Date", value=current_date_dt.date(), key=f"edit_date_{selected_id}")
+            time_edit = st.time_input("Match Time", value=current_date_dt.time(), key=f"edit_time_{selected_id}")
             match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
-            if match_type_edit == "Doubles":
-                col1, col2 = st.columns(2)
-                with col1:
-                    p1_edit = st.selectbox("Team 1 - Player 1", [""] + players, index=players.index(row["team1_player1"]) + 1 if row["team1_player1"] in players else 0, key=f"t1p1_edit_{selected_id}")
-                    p2_edit = st.selectbox("Team 1 - Player 2", [""] + players, index=players.index(row["team1_player2"]) + 1 if row["team1_player2"] in players else 0, key=f"t1p2_edit_{selected_id}")
-                with col2:
-                    p3_edit = st.selectbox("Team 2 - Player 1", [""] + players, index=players.index(row["team2_player1"]) + 1 if row["team2_player1"] in players else 0, key=f"t2p1_edit_{selected_id}")
-                    p4_edit = st.selectbox("Team 2 - Player 2", [""] + players, index=players.index(row["team2_player2"]) + 1 if row["team2_player2"] in players else 0, key=f"t2p2_edit_{selected_id}")
-            else:
-                p1_edit = st.selectbox("Player 1", [""] + players, index=players.index(row["team1_player1"]) + 1 if row["team1_player1"] in players else 0, key=f"s1p1_edit_{selected_id}")
-                p3_edit = st.selectbox("Player 2", [""] + players, index=players.index(row["team2_player1"]) + 1 if row["team2_player1"] in players else 0, key=f"s1p2_edit_{selected_id}")
-                p2_edit = ""
-                p4_edit = ""
-            set1_edit = st.selectbox("Set 1 *", tennis_scores(), index=set1_index, key=f"set1_edit_{selected_id}")
-            set2_edit = st.selectbox("Set 2" + (" *" if match_type_edit == "Doubles" else " (optional)"), [""] + tennis_scores(), index=set2_index, key=f"set2_edit_{selected_id}")
-            set3_edit = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), index=set3_index, key=f"set3_edit_{selected_id}")
-            winner_edit = st.radio("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"winner_edit_{selected_id}")
-            match_image_edit = st.file_uploader("Upload New Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"match_image_edit_{selected_id}")
-            st.markdown("* indicates required field")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Update Match", key=f"update_match_{selected_id}"):
-                    selected_players_edit = [p1_edit, p2_edit, p3_edit, p4_edit] if match_type_edit == "Doubles" else [p1_edit, p3_edit]
-                    selected_players_edit = [p for p in selected_players_edit if p]
-                    if not all(selected_players_edit):
-                        st.error("Please select all required players.")
-                    elif len(selected_players_edit) != len(set(selected_players_edit)):
-                        st.error("Please select different players for each position.")
-                    elif not set1_edit:
-                        st.error("Set 1 score is required.")
-                    elif match_type_edit == "Doubles" and not set2_edit:
-                        st.error("Set 2 score is required for doubles matches.")
-                    else:
-                        image_url_edit = row["match_image_url"]
-                        if match_image_edit:
-                            image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
-                        st.session_state.matches_df.at[idx, "date"] = pd.to_datetime(date_edit)
-                        st.session_state.matches_df.at[idx, "match_type"] = match_type_edit
-                        st.session_state.matches_df.at[idx, "team1_player1"] = p1_edit
-                        st.session_state.matches_df.at[idx, "team1_player2"] = p2_edit
-                        st.session_state.matches_df.at[idx, "team2_player1"] = p3_edit
-                        st.session_state.matches_df.at[idx, "team2_player2"] = p4_edit
-                        st.session_state.matches_df.at[idx, "set1"] = set1_edit
-                        st.session_state.matches_df.at[idx, "set2"] = set2_edit
-                        st.session_state.matches_df.at[idx, "set3"] = set3_edit
-                        st.session_state.matches_df.at[idx, "winner"] = winner_edit
-                        st.session_state.matches_df.at[idx, "match_image_url"] = image_url_edit
-                        save_matches(st.session_state.matches_df)
-                        load_matches()
-                        st.success("Match updated successfully!")
-                        st.session_state.form_key_suffix += 1
-                        st.rerun()
-            with col2:
-                if st.button("Delete Match", key=f"delete_match_{selected_id}"):
-                    delete_match_from_db(selected_id)
-                    st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df["match_id"] != selected_id]
-                    save_matches(st.session_state.matches_df)
-                    load_matches()
-                    st.success("Match deleted successfully!")
-                    st.session_state.form_key_suffix += 1
-                    st.rerun()
+            p1_edit = st.text_input("Team 1 - Player 1", value=row["team1_player1"], key=f"edit_t1p1_{selected_id}")
+            p2_edit = st.text_input("Team 1 - Player 2", value=row["team1_player2"], key=f"edit_t1p2_{selected_id}")
+            p3_edit = st.text_input("Team 2 - Player 1", value=row["team2_player1"], key=f"edit_t2p1_{selected_id}")
+            p4_edit = st.text_input("Team 2 - Player 2", value=row["team2_player2"], key=f"edit_t2p2_{selected_id}")
+            set1_edit = st.selectbox("Set 1", all_scores, index=set1_index, key=f"edit_set1_{selected_id}")
+            set2_edit = st.selectbox("Set 2 (optional)", all_scores, index=set2_index, key=f"edit_set2_{selected_id}")
+            set3_edit = st.selectbox("Set 3 (optional)", all_scores, index=set3_index, key=f"edit_set3_{selected_id}")
+            winner_edit = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
+            match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
+            if st.button("Save Changes", key=f"save_match_changes_{selected_id}"):
+                image_url_edit = row["match_image_url"]
+                if match_image_edit:
+                    image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
+                combined_datetime = datetime.combine(date_edit, time_edit)
+                st.session_state.matches_df.loc[idx] = {
+                    "match_id": selected_id,
+                    "date": combined_datetime,
+                    "match_type": match_type_edit,
+                    "team1_player1": p1_edit,
+                    "team1_player2": p2_edit,
+                    "team2_player1": p3_edit,
+                    "team2_player2": p4_edit,
+                    "set1": set1_edit,
+                    "set2": set2_edit,
+                    "set3": set3_edit,
+                    "winner": winner_edit,
+                    "match_image_url": image_url_edit
+                }
+                save_matches(st.session_state.matches_df)
+                load_matches()
+                st.success("Match updated.")
+                st.rerun()
+        if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
+            delete_match_from_db(selected_id)
+            load_matches()
+            st.success("Match deleted.")
+            st.rerun()
 
 with tabs[2]:
     st.header("Player Profile")
-    with st.expander("➕ Add New Player"):
-        st.subheader("Add New Player")
-        with st.form(key=f"new_player_form_{st.session_state.form_key_suffix}"):
-            new_name = st.text_input("Player Name", key=f"name_new_{st.session_state.form_key_suffix}")
-            new_birthday = st.text_input("Birthday (DD-MM)", placeholder="e.g., 25-12", key=f"birthday_new_{st.session_state.form_key_suffix}")
-            new_image = st.file_uploader("Upload Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"image_new_{st.session_state.form_key_suffix}")
-            submit_player = st.form_submit_button("Add Player")
-            if submit_player:
-                if not new_name:
-                    st.error("Player name is required.")
-                elif new_name in players:
-                    st.error("Player name already exists.")
-                elif new_birthday and not re.match(r'^\d{2}-\d{2}$', new_birthday):
-                    st.error("Birthday must be in DD-MM format.")
-                else:
-                    image_url = ""
-                    if new_image:
-                        image_url = upload_image_to_supabase(new_image, f"{new_name.replace(' ', '_')}_{uuid.uuid4().hex}.png", image_type="profile")
-                    new_player_entry = {
-                        "name": new_name,
-                        "profile_image_url": image_url,
-                        "birthday": new_birthday
-                    }
-                    players_to_save = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_entry])], ignore_index=True)
-                    save_players(players_to_save)
+    st.subheader("Manage & Edit Player Profiles")
+    with st.expander("Add, Edit or Remove Player"):
+        st.markdown("##### Add New Player")
+        new_player = st.text_input("Player Name", key="new_player_input").strip()
+        if st.button("Add Player", key="add_player_button"):
+            if new_player:
+                if new_player not in players:
+                    new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
+                    st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_data])], ignore_index=True)
+                    save_players(st.session_state.players_df)
                     load_players()
-                    st.success("Player added successfully!")
-                    st.session_state.form_key_suffix += 1
+                    st.success(f"{new_player} added.")
+                    st.rerun()
+                else:
+                    st.warning(f"{new_player} already exists.")
+            else:
+                st.warning("Please enter a player name to add.")
+        st.markdown("---")
+        st.markdown("##### Edit or Remove Existing Player")
+        selected_player_manage = st.selectbox("Select Player", [""] + players, key="manage_player_select")
+        if selected_player_manage:
+            player_data = players_df[players_df["name"] == selected_player_manage].iloc[0]
+            current_image = player_data.get("profile_image_url", "")
+            current_birthday = player_data.get("birthday", "")
+            st.markdown(f"**Current Profile for {selected_player_manage}**")
+            if current_image:
+                st.image(current_image, width=100)
+            else:
+                st.write("No profile image set.")
+            profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
+            default_day = 1
+            default_month = 1
+            if current_birthday and isinstance(current_birthday, str) and re.match(r'^\d{2}-\d{2}$', current_birthday):
+                try:
+                    day_str, month_str = current_birthday.split("-")
+                    default_day = int(day_str)
+                    default_month = int(month_str)
+                except (ValueError, IndexError):
+                    pass
+            birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player_manage}")
+            birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player_manage}")
+            col_save, col_delete = st.columns(2)
+            with col_save:
+                if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player_manage}"):
+                    image_url = current_image
+                    if profile_image:
+                        image_url = upload_image_to_supabase(profile_image, f"profile_{selected_player_manage}_{uuid.uuid4().hex[:6]}", image_type="profile")
+                    st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "profile_image_url"] = image_url
+                    st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
+                    save_players(st.session_state.players_df)
+                    load_players()
+                    st.success("Profile updated.")
+                    st.rerun()
+            with col_delete:
+                if st.button("🗑️ Remove Player", key=f"remove_player_button_{selected_player_manage}"):
+                    st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
+                    save_players(st.session_state.players_df)
+                    load_players()
+                    st.success(f"{selected_player_manage} removed.")
                     st.rerun()
 
     st.markdown("---")
-    st.subheader("✏️ Manage Existing Player")
-    selected_player = st.selectbox("Select a player to edit or delete", [""] + players, key="select_player")
-    if selected_player:
-        player_row = players_df[players_df["name"] == selected_player].iloc[0]
-        with st.expander(f"Edit Profile: {selected_player}"):
-            if player_row["profile_image_url"]:
-                try:
-                    st.image(player_row["profile_image_url"], width=100, caption=f"{selected_player}'s Profile Image")
-                except Exception as e:
-                    st.error(f"Error displaying profile image: {str(e)}")
-            current_birthday = player_row["birthday"]
-            edit_name = st.text_input("Player Name", value=selected_player, key=f"edit_name_{selected_player}")
-            edit_birthday = st.text_input("Birthday (DD-MM)", value=current_birthday, placeholder="e.g., 25-12", key=f"edit_birthday_{selected_player}")
-            edit_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_player}")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("Update Player", key=f"update_player_{selected_player}"):
-                    if not edit_name:
-                        st.error("Player name is required.")
-                    elif edit_name != selected_player and edit_name in players:
-                        st.error("Player name already exists.")
-                    elif edit_birthday and not re.match(r'^\d{2}-\d{2}$', edit_birthday):
-                        st.error("Birthday must be in DD-MM format.")
-                    else:
-                        image_url = player_row["profile_image_url"]
-                        if edit_image:
-                            image_url = upload_image_to_supabase(edit_image, f"{edit_name.replace(' ', '_')}_{uuid.uuid4().hex}.png", image_type="profile")
-                        idx = players_df[players_df["name"] == selected_player].index[0]
-                        st.session_state.players_df.at[idx, "name"] = edit_name
-                        st.session_state.players_df.at[idx, "birthday"] = edit_birthday
-                        st.session_state.players_df.at[idx, "profile_image_url"] = image_url
-                        save_players(st.session_state.players_df)
-                        load_players()
-                        st.success("Player updated successfully!")
-                        st.session_state.form_key_suffix += 1
-                        st.rerun()
-            with col2:
-                if st.button("Delete Player", key=f"delete_player_{selected_player}"):
-                    player_matches = matches[
-                        (matches["team1_player1"] == selected_player) |
-                        (matches["team1_player2"] == selected_player) |
-                        (matches["team2_player1"] == selected_player) |
-                        (matches["team2_player2"] == selected_player)
-                    ]
-                    if not player_matches.empty:
-                        st.error("Cannot delete player with associated matches. Delete their matches first.")
-                    else:
-                        st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player]
-                        save_players(st.session_state.players_df)
-                        load_players()
-                        st.success("Player deleted successfully!")
-                        st.session_state.form_key_suffix += 1
-                        st.rerun()
-
-    st.markdown("---")
     st.subheader("Player Insights")
-    selected_player_profile = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_profile")
-    if selected_player_profile:
-        rank_df, partner_stats = calculate_rankings(matches)
-        display_player_insights(selected_player_profile, players_df, matches, rank_df, partner_stats, key_prefix="profile_")
+    rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df)
+    if players:
+        display_player_insights(players, players_df, st.session_state.matches_df, rank_df_combined, partner_stats_combined, key_prefix="profile_")
     else:
-        st.info("Player insights will be available once a player is selected.")
-
+        st.info("No players available for insights. Please add players above.")
 
 with tabs[3]:
     st.header("Court Locations")
