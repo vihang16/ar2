@@ -3,4 +3,3 @@ pandas
 supabase
 python-dateutil
 plotly
-matplotlib
