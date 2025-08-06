@@ -645,16 +645,6 @@ def display_match_table(df, title):
 
     st.dataframe(display_df, height=300)
 
-def display_rankings_table(df, title):
-    if df.empty:
-        st.info(f"No {title} ranking data available.")
-        return
-
-    st.subheader(f"{title} Player Rankings Table")
-    # Drop the 'Profile' and 'Recent Trend' columns as they don't fit well in a simple table
-    display_df = df.drop(columns=['Profile', 'Recent Trend'])
-    st.dataframe(display_df, use_container_width=True, hide_index=True)
-
 def generate_whatsapp_link(row):
     # Determine the winner and loser(s) based on the match type and winner
     if row["match_type"] == "Singles":
@@ -1026,11 +1016,12 @@ with tabs[1]:
                     p3_new = st.selectbox("Player 2", [""] + available_players, key=f"s1p2_new_post_{st.session_state.form_key_suffix}")
                     p2_new = ""
                     p4_new = ""
-                set1_new = st.selectbox("Set 1", tennis_scores(), index=4, key=f"set1_new_post_{st.session_state.form_key_suffix}")
-                set2_new = st.selectbox("Set 2 (optional)", [""] + tennis_scores(), key=f"set2_new_post_{st.session_state.form_key_suffix}")
+                set1_new = st.selectbox("Set 1 *", tennis_scores(), index=4, key=f"set1_new_post_{st.session_state.form_key_suffix}")
+                set2_new = st.selectbox("Set 2 *" if match_type_new == "Doubles" else "Set 2 (optional)", [""] + tennis_scores(), key=f"set2_new_post_{st.session_state.form_key_suffix}")
                 set3_new = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), key=f"set3_new_post_{st.session_state.form_key_suffix}")
                 winner_new = st.radio("Winner", ["Team 1", "Team 2", "Tie"], key=f"winner_new_post_{st.session_state.form_key_suffix}")
                 match_image_new = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"match_image_new_post_{st.session_state.form_key_suffix}")
+                st.markdown("*Required fields", unsafe_allow_html=True)
                 submit_button = st.form_submit_button("Submit Match")
             if submit_button:
                 selected_players = [p1_new, p2_new, p3_new, p4_new] if match_type_new == "Doubles" else [p1_new, p3_new]
@@ -1038,6 +1029,10 @@ with tabs[1]:
                     st.error("Please select all players.")
                 elif len(selected_players) != len(set(selected_players)):
                     st.error("Please select different players for each position.")
+                elif not set1_new:
+                    st.error("Set 1 score is required.")
+                elif match_type_new == "Doubles" and not set2_new:
+                    st.error("Set 2 score is required for doubles matches.")
                 else:
                     new_match_date = datetime.now()
                     match_id_new = generate_match_id(matches, new_match_date)
@@ -1282,32 +1277,15 @@ with tabs[3]:
 
 st.markdown("---")
 st.subheader("Manual Backup")
-col1, col2 = st.columns(2)
-with col1:
-    if not st.session_state.matches_df.empty:
-        matches_csv = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download Matches Data as CSV",
-            data=matches_csv,
-            file_name=f'ar_tennis_matches_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
-            mime='text/csv',
-            help="Download a complete backup of all match records as a CSV file."
-        )
-    else:
-        st.info("No match data available for download.")
-with col2:
-    if not st.session_state.players_df.empty:
-        players_csv = st.session_state.players_df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download Players Data as CSV",
-            data=players_csv,
-            file_name=f'ar_tennis_players_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
-            mime='text/csv',
-            help="Download a complete backup of all player records as a CSV file."
-        )
-    else:
-        st.info("No player data available for download.")
-
+if not st.session_state.matches_df.empty:
+    csv = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Download All Match Data as CSV",
+        data=csv,
+        file_name=f'ar_tennis_matches_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
+        mime='text/csv',
+        help="Download a complete backup of all match records as a CSV file."
+    )
 st.markdown("""
 <div style='background-color: #0d5384; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
 Built with ❤️ using <a href='https://streamlit.io/' style='color: #ccff00;'>Streamlit</a> — free and open source.
