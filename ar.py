@@ -645,15 +645,36 @@ def display_match_table(df, title):
 
     st.dataframe(display_df, height=300)
 
-def display_rankings_table(df, title):
-    if df.empty:
+def display_rankings_table(rank_df, title):
+    if rank_df.empty:
         st.info(f"No {title} ranking data available.")
         return
 
-    st.subheader(f"{title} Player Rankings Table")
-    # Drop the 'Profile' and 'Recent Trend' columns as they don't fit well in a simple table
-    display_df = df.drop(columns=['Profile', 'Recent Trend'])
-    st.dataframe(display_df, use_container_width=True, hide_index=True)
+    # Create a copy of the rankings DataFrame for display
+    display_df = rank_df.copy()
+
+    # Select relevant columns and rename for clarity
+    display_df = display_df[[
+        "Rank", "Player", "Points", "Win %", "Matches", 
+        "Wins", "Losses", "Games Won", "Game Diff Avg", "Recent Trend"
+    ]].rename(columns={
+        "Win %": "Win Percentage",
+        "Game Diff Avg": "Game Diff Avg",
+        "Recent Trend": "Trend"
+    })
+
+    # Format numeric columns
+    display_df["Points"] = display_df["Points"].map("{:.1f}".format)
+    display_df["Win Percentage"] = display_df["Win Percentage"].map("{:.1f}%".format)
+    display_df["Game Diff Avg"] = display_df["Game Diff Avg"].map("{:.2f}".format)
+    display_df["Matches"] = display_df["Matches"].astype(int)
+    display_df["Wins"] = display_df["Wins"].astype(int)
+    display_df["Losses"] = display_df["Losses"].astype(int)
+    display_df["Games Won"] = display_df["Games Won"].astype(int)
+
+    # Display the table with a fixed height
+    st.subheader(f"{title} Rankings")
+    st.dataframe(display_df, height=300)
 
 def generate_whatsapp_link(row):
     # Determine the winner and loser(s) based on the match type and winner
@@ -1287,6 +1308,19 @@ with tabs[3]:
     st.markdown("- [Mira Oasis 2](https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9)")
     st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
     st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
+
+st.markdown("---")
+st.subheader("Manual Backup")
+col_match_backup, col_player_backup = st.columns(2)
+with col_match_backup:
+    if not st.session_state.matches_df.empty:
+        csv_matches = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Download Matches Data as CSV",
+            data=csv_matches,
+            file_name=f'ar_tennis_matches_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
+            mime='text/csv',
+            help="Download a complete backup of all match records as a
 
 st.markdown("---")
 st.subheader("Manual Backup")
