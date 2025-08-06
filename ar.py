@@ -234,6 +234,7 @@ def save_matches(df):
             df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
             df_to_save = df_to_save.dropna(subset=['date'])
             df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+
         supabase.table(matches_table_name).upsert(df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
@@ -645,6 +646,16 @@ def display_match_table(df, title):
 
     st.dataframe(display_df, height=300)
 
+def display_rankings_table(df, title):
+    if df.empty:
+        st.info(f"No {title} ranking data available.")
+        return
+
+    st.subheader(f"{title} Player Rankings Table")
+    # Drop the 'Profile' and 'Recent Trend' columns as they don't fit well in a simple table
+    display_df = df.drop(columns=['Profile', 'Recent Trend'])
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
+
 def generate_whatsapp_link(row):
     # Determine the winner and loser(s) based on the match type and winner
     if row["match_type"] == "Singles":
@@ -938,9 +949,6 @@ with tabs[0]:
                 st.markdown(f"{player_styled} has the highest win percentage at **{highest_win_percent_player['Win %']:.2f}%**.", unsafe_allow_html=True)
             else:
                 st.info("No players have played enough matches to calculate a meaningful win percentage.")
-            
-            st.markdown("---")
-            st.markdown("[Logic used for Rankings](https://github.com/mahadevbk/ar2/blob/main/ar_ranking_%20logic.pdf)")
     elif ranking_type == "Table View":
         # Calculate combined rankings
         rank_df_combined, _ = calculate_rankings(matches)
@@ -1062,7 +1070,7 @@ with tabs[1]:
                     st.success("Match submitted.")
                     st.session_state.form_key_suffix += 1
                     st.rerun()
-
+    
     st.markdown("---")
     st.subheader("Match History")
     match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True, key="match_history_filter")
@@ -1280,31 +1288,15 @@ with tabs[3]:
 
 st.markdown("---")
 st.subheader("Manual Backup")
-col_match_backup, col_player_backup = st.columns(2)
-with col_match_backup:
-    if not st.session_state.matches_df.empty:
-        csv_matches = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download Matches Data as CSV",
-            data=csv_matches,
-            file_name=f'ar_tennis_matches_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
-            mime='text/csv',
-            help="Download a complete backup of all match records as a CSV file."
-        )
-    else:
-        st.info("No match data available to download.")
-with col_player_backup:
-    if not st.session_state.players_df.empty:
-        csv_players = st.session_state.players_df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download Players Data as CSV",
-            data=csv_players,
-            file_name=f'ar_tennis_players_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
-            mime='text/csv',
-            help="Download a complete backup of all player records as a CSV file."
-        )
-    else:
-        st.info("No player data available to download.")
+if not st.session_state.matches_df.empty:
+    csv = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Download All Match Data as CSV",
+        data=csv,
+        file_name=f'ar_tennis_matches_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
+        mime='text/csv',
+        help="Download a complete backup of all match records as a CSV file."
+    )
 st.markdown("""
 <div style='background-color: #0d5384; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
 Built with ❤️ using <a href='https://streamlit.io/' style='color: #ccff00;'>Streamlit</a> — free and open source.
