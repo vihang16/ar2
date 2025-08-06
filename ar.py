@@ -6,6 +6,7 @@ from collections import defaultdict
 from supabase import create_client, Client
 import re
 import urllib.parse
+import matplotlib.pyplot as plt
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
@@ -693,7 +694,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
 
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations"]
+tab_names = ["Rankings", "Matches", "Player Profile", "Visualizations", "Court Locations"]
 
 tabs = st.tabs(tab_names)
 
@@ -1255,6 +1256,64 @@ with tabs[2]:
         st.info("No players available for insights. Please add players above.")
 
 with tabs[3]:
+    st.header("Visualizations")
+
+    if matches.empty:
+        st.info("No match data available to generate visualizations.")
+    else:
+        rank_df_all, _ = calculate_rankings(matches)
+
+        st.subheader("Player Rankings by Points")
+        if not rank_df_all.empty:
+            top_players_points = rank_df_all.sort_values(by="Points", ascending=False).head(10)
+            
+            fig, ax = plt.subplots()
+            ax.barh(top_players_points['Player'], top_players_points['Points'], color='skyblue')
+            ax.set_xlabel("Points")
+            ax.set_ylabel("Player")
+            ax.set_title("Top 10 Player Rankings by Points")
+            ax.invert_yaxis()
+            plt.tight_layout()
+            plt.savefig("rankings_chart.png")
+            st.image("rankings_chart.png")
+        else:
+            st.info("No ranking data to display.")
+
+        st.subheader("Player Win/Loss Record")
+        if not rank_df_all.empty:
+            sorted_by_wins = rank_df_all.sort_values(by="Wins", ascending=True)
+            
+            fig, ax = plt.subplots()
+            ax.barh(sorted_by_wins['Player'], sorted_by_wins['Wins'], color='green', label='Wins')
+            ax.barh(sorted_by_wins['Player'], sorted_by_wins['Losses'], left=sorted_by_wins['Wins'], color='red', label='Losses')
+            ax.set_xlabel("Number of Matches")
+            ax.set_ylabel("Player")
+            ax.set_title("Win/Loss Record")
+            ax.legend()
+            plt.tight_layout()
+            plt.savefig("win_loss_chart.png")
+            st.image("win_loss_chart.png")
+        else:
+            st.info("No data to display.")
+
+        st.subheader("Highest Win Percentage (Min. 5 Matches)")
+        eligible_players_wp = rank_df_all[rank_df_all['Matches'] >= 5]
+        if not eligible_players_wp.empty:
+            sorted_wp = eligible_players_wp.sort_values(by="Win %", ascending=False)
+            
+            fig, ax = plt.subplots()
+            ax.barh(sorted_wp['Player'], sorted_wp['Win %'], color='purple')
+            ax.set_xlabel("Win Percentage (%)")
+            ax.set_ylabel("Player")
+            ax.set_title("Highest Win Percentage (Min. 5 Matches)")
+            ax.invert_yaxis()
+            plt.tight_layout()
+            plt.savefig("win_percentage_chart.png")
+            st.image("win_percentage_chart.png")
+        else:
+            st.info("No players have played enough matches (min. 5) for this chart.")
+
+with tabs[4]:
     st.header("Court Locations")
     st.markdown("### Arabian Ranches Tennis Courts")
     st.markdown("- [Alvorado 1 & 2](https://maps.google.com/?q=25.041792,55.259258)")
