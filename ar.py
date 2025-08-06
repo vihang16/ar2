@@ -330,6 +330,9 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
     if isinstance(selected_players, str):
         selected_players = [selected_players] if selected_players else []
 
+    # Exclude "Visitor" from selected players
+    selected_players = [p for p in selected_players if p != "Visitor"]
+
     if not selected_players:
         st.info("No players selected or available for insights.")
         return
@@ -389,10 +392,10 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         st.markdown('</div>', unsafe_allow_html=True)
 
     else:  # Player Insights view
-        # Filter players who have played at least one match
+        # Filter players who have played at least one match, excluding "Visitor"
         active_players = []
         for player in selected_players:
-            if player in rank_df["Player"].values:
+            if player in rank_df["Player"].values and player != "Visitor":
                 player_data = rank_df[rank_df["Player"] == player].iloc[0]
                 if player_data["Matches"] > 0:
                     active_players.append(player)
@@ -434,16 +437,16 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             game_diff_avg = player_data["Game Diff Avg"]
             games_won = int(player_data["Games Won"])
 
-            # Partners and most effective partner
+            # Partners and most effective partner, excluding "Visitor"
             partners_list = "None"
             best_partner = "None"
             if selected_player in partner_stats and partner_stats[selected_player]:
                 partners_list = ', '.join([
                     f'{p} ({item["wins"]} wins, {item["losses"]} losses, {item["ties"]} ties, GD Sum: {item["game_diff_sum"]:.2f})'
-                    for p, item in partner_stats[selected_player].items()
+                    for p, item in partner_stats[selected_player].items() if p != "Visitor"
                 ])
                 sorted_partners = sorted(
-                    partner_stats[selected_player].items(),
+                    [(p, item) for p, item in partner_stats[selected_player].items() if p != "Visitor"],
                     key=lambda item: (
                         item[1]['wins'] / item[1]['matches'] if item[1]['matches'] > 0 else 0,  # Win percentage
                         item[1]['game_diff_sum'] / item[1]['matches'] if item[1]['matches'] > 0 else 0,  # Average game diff
@@ -528,34 +531,39 @@ def calculate_rankings(matches_to_rank):
                     continue
         match_gd_avg = match_gd_sum / set_count if set_count > 0 else 0
 
-        # Update individual player stats
+        # Update individual player stats for non-Visitor players
         if row["winner"] == "Team 1":
             for p in t1:
-                scores[p] += 3
-                wins[p] += 1
-                matches_played[p] += 1
-                game_diff[p] += match_gd_avg
+                if p != "Visitor":
+                    scores[p] += 3
+                    wins[p] += 1
+                    matches_played[p] += 1
+                    game_diff[p] += match_gd_avg
             for p in t2:
-                scores[p] += 1
-                losses[p] += 1
-                matches_played[p] += 1
-                game_diff[p] -= match_gd_avg
+                if p != "Visitor":
+                    scores[p] += 1
+                    losses[p] += 1
+                    matches_played[p] += 1
+                    game_diff[p] -= match_gd_avg
         elif row["winner"] == "Team 2":
             for p in t2:
-                scores[p] += 3
-                wins[p] += 1
-                matches_played[p] += 1
-                game_diff[p] -= match_gd_avg
+                if p != "Visitor":
+                    scores[p] += 3
+                    wins[p] += 1
+                    matches_played[p] += 1
+                    game_diff[p] -= match_gd_avg
             for p in t1:
-                scores[p] += 1
-                losses[p] += 1
-                matches_played[p] += 1
-                game_diff[p] += match_gd_avg
+                if p != "Visitor":
+                    scores[p] += 1
+                    losses[p] += 1
+                    matches_played[p] += 1
+                    game_diff[p] += match_gd_avg
         else:  # Tie
             for p in t1 + t2:
-                scores[p] += 1.5
-                matches_played[p] += 1
-                game_diff[p] += match_gd_avg if p in t1 else -match_gd_avg
+                if p != "Visitor":
+                    scores[p] += 1.5
+                    matches_played[p] += 1
+                    game_diff[p] += match_gd_avg if p in t1 else -match_gd_avg
 
         # Update games won
         for set_score in [row['set1'], row['set2'], row['set3']]:
@@ -563,9 +571,11 @@ def calculate_rankings(matches_to_rank):
                 try:
                     team1_games, team2_games = map(int, set_score.split('-'))
                     for p in t1:
-                        games_won[p] += team1_games
+                        if p != "Visitor":
+                            games_won[p] += team1_games
                     for p in t2:
-                        games_won[p] += team2_games
+                        if p != "Visitor":
+                            games_won[p] += team2_games
                 except ValueError:
                     continue
 
@@ -573,7 +583,7 @@ def calculate_rankings(matches_to_rank):
         if row['match_type'] == 'Doubles':
             for p1 in t1:
                 for p2 in t1:
-                    if p1 != p2:
+                    if p1 != p2 and p1 != "Visitor" and p2 != "Visitor":
                         partner_stats[p1][p2]['matches'] += 1
                         partner_stats[p1][p2]['game_diff_sum'] += match_gd_sum
                         if row["winner"] == "Team 1":
@@ -584,7 +594,7 @@ def calculate_rankings(matches_to_rank):
                             partner_stats[p1][p2]['ties'] += 1
             for p1 in t2:
                 for p2 in t2:
-                    if p1 != p2:
+                    if p1 != p2 and p1 != "Visitor" and p2 != "Visitor":
                         partner_stats[p1][p2]['matches'] += 1
                         partner_stats[p1][p2]['game_diff_sum'] -= match_gd_sum  # Reverse for losing team
                         if row["winner"] == "Team 2":
@@ -597,6 +607,8 @@ def calculate_rankings(matches_to_rank):
     rank_data = []
     players_df = st.session_state.players_df
     for player in scores:
+        if player == "Visitor":
+            continue  # Skip Visitor in rankings
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         game_diff_avg = (game_diff[player] / matches_played[player]) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
@@ -624,6 +636,21 @@ def calculate_rankings(matches_to_rank):
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     return rank_df, partner_stats
+
+def display_rankings_table(rank_df, title):
+    if rank_df.empty:
+        st.info(f"No {title} ranking data available.")
+        return
+    display_df = rank_df[["Rank", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Games Won", "Game Diff Avg", "Recent Trend"]].copy()
+    display_df["Points"] = display_df["Points"].map("{:.1f}".format)
+    display_df["Win %"] = display_df["Win %"].map("{:.1f}%".format)
+    display_df["Game Diff Avg"] = display_df["Game Diff Avg"].map("{:.2f}".format)
+    display_df["Matches"] = display_df["Matches"].astype(int)
+    display_df["Wins"] = display_df["Wins"].astype(int)
+    display_df["Losses"] = display_df["Losses"].astype(int)
+    display_df["Games Won"] = display_df["Games Won"].astype(int)
+    st.subheader(f"{title} Rankings")
+    st.dataframe(display_df, hide_index=True, height=300)
 
 def display_match_table(df, title):
     if df.empty:
@@ -694,7 +721,7 @@ load_matches()
 
 players_df = st.session_state.players_df
 matches = st.session_state.matches_df
-players = sorted(players_df["name"].dropna().tolist()) if "name" in players_df.columns else []
+players = sorted([p for p in players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in players_df.columns else []
 
 if not matches.empty and ("match_id" not in matches.columns or matches["match_id"].isnull().any()):
     matches['date'] = pd.to_datetime(matches['date'], errors='coerce')
@@ -803,8 +830,10 @@ with tabs[0]:
             best_partner = None
             max_value = -1
             for player, partners in partner_stats.items():
+                if player == "Visitor":
+                    continue
                 for partner, stats in partners.items():
-                    if player < partner: # Avoid double counting
+                    if partner == "Visitor" or player < partner:  # Avoid double counting
                         win_rate = stats['wins'] / stats['matches'] if stats['matches'] > 0 else 0
                         avg_game_diff = stats['game_diff_sum'] / stats['matches'] if stats['matches'] > 0 else 0
                         score = win_rate + (avg_game_diff / 10)  # Adjust weight of game diff
@@ -845,18 +874,20 @@ with tabs[0]:
                     if set_count > 0:
                         if row["winner"] == "Team 1":
                             for p in t1:
-                                player_stats[p]['wins'] += 1
-                                player_stats[p]['gd_sum'] += match_gd_sum
-                                for partner in t1:
-                                    if partner != p:
-                                        player_stats[p]['partners'].add(partner)
+                                if p != "Visitor":
+                                    player_stats[p]['wins'] += 1
+                                    player_stats[p]['gd_sum'] += match_gd_sum
+                                    for partner in t1:
+                                        if partner != p and partner != "Visitor":
+                                            player_stats[p]['partners'].add(partner)
                         elif row["winner"] == "Team 2":
                             for p in t2:
-                                player_stats[p]['wins'] += 1
-                                player_stats[p]['gd_sum'] += match_gd_sum
-                                for partner in t2:
-                                    if partner != p:
-                                        player_stats[p]['partners'].add(partner)
+                                if p != "Visitor":
+                                    player_stats[p]['wins'] += 1
+                                    player_stats[p]['gd_sum'] += match_gd_sum
+                                    for partner in t2:
+                                        if partner != p and partner != "Visitor":
+                                            player_stats[p]['partners'].add(partner)
 
             if player_stats:
                 best_partner_candidate = None
@@ -919,9 +950,11 @@ with tabs[0]:
                             team1_games, team2_games = map(int, set_score.split('-'))
                             set_gd = team1_games - team2_games
                             for p in t1:
-                                if p: cumulative_game_diff[p] += set_gd
+                                if p != "Visitor":
+                                    cumulative_game_diff[p] += set_gd
                             for p in t2:
-                                if p: cumulative_game_diff[p] -= set_gd
+                                if p != "Visitor":
+                                    cumulative_game_diff[p] -= set_gd
                         except ValueError:
                             continue
 
@@ -951,9 +984,19 @@ with tabs[0]:
                 st.markdown(f"{player_styled} has the highest win percentage at **{highest_win_percent_player['Win %']:.2f}%**.", unsafe_allow_html=True)
             else:
                 st.info("No players have played enough matches to calculate a meaningful win percentage.")
-            
+
             st.markdown("---")
-            st.markdown("[Logic used for Rankings](https://github.com/mahadevbk/ar2/blob/main/ar_ranking_%20logic.pdf)")
+            with st.expander("Process being used for Rankings"):
+                st.markdown("""
+                ### Ranking System Overview
+                - **Points**: Players earn 3 points for a win, 1 point for a loss, and 1.5 points for a tie.
+                - **Win Percentage**: Calculated as (Wins / Matches Played) * 100.
+                - **Game Difference Average**: The average difference in games won vs. lost per match.
+                - **Games Won**: Total games won across all sets.
+                - **Ranking Criteria**: Players are ranked by Points (highest first), then by Win Percentage, Game Difference Average, Games Won, and finally alphabetically by name.
+                - **Matches Included**: All matches, including those with a 'Visitor', contribute to AR players' stats, but 'Visitor' is excluded from rankings and insights.
+                """)
+
     elif ranking_type == "Table View":
         # Calculate combined rankings
         rank_df_combined, _ = calculate_rankings(matches)
@@ -1014,7 +1057,7 @@ with tabs[1]:
     with st.expander("➕ Post New Match Result"):
         st.subheader("Enter Match Result")
         match_type_new = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key=f"post_match_type_new_{st.session_state.form_key_suffix}")
-        available_players = sorted(players.copy() if players else [])
+        available_players = sorted(players.copy() + ["Visitor"] if players else ["Visitor"])
         if not available_players:
             st.warning("No players available. Please add players in the Player Profile tab.")
         else:
@@ -1158,10 +1201,10 @@ with tabs[1]:
             date_edit = st.date_input("Match Date", value=current_date_dt.date(), key=f"edit_date_{selected_id}")
             time_edit = st.time_input("Match Time", value=current_date_dt.time(), key=f"edit_time_{selected_id}")
             match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
-            p1_edit = st.text_input("Team 1 - Player 1", value=row["team1_player1"], key=f"edit_t1p1_{selected_id}")
-            p2_edit = st.text_input("Team 1 - Player 2", value=row["team1_player2"], key=f"edit_t1p2_{selected_id}")
-            p3_edit = st.text_input("Team 2 - Player 1", value=row["team2_player1"], key=f"edit_t2p1_{selected_id}")
-            p4_edit = st.text_input("Team 2 - Player 2", value=row["team2_player2"], key=f"edit_t2p2_{selected_id}")
+            p1_edit = st.selectbox("Team 1 - Player 1", [""] + available_players, index=available_players.index(row["team1_player1"]) + 1 if row["team1_player1"] in available_players else 0, key=f"edit_t1p1_{selected_id}")
+            p2_edit = st.selectbox("Team 1 - Player 2", [""] + available_players, index=available_players.index(row["team1_player2"]) + 1 if row["team1_player2"] in available_players else 0, key=f"edit_t1p2_{selected_id}")
+            p3_edit = st.selectbox("Team 2 - Player 1", [""] + available_players, index=available_players.index(row["team2_player1"]) + 1 if row["team2_player1"] in available_players else 0, key=f"edit_t2p1_{selected_id}")
+            p4_edit = st.selectbox("Team 2 - Player 2", [""] + available_players, index=available_players.index(row["team2_player2"]) + 1 if row["team2_player2"] in available_players else 0, key=f"edit_t2p2_{selected_id}")
             set1_edit = st.selectbox("Set 1", all_scores, index=set1_index, key=f"edit_set1_{selected_id}")
             set2_edit = st.selectbox("Set 2 (optional)", all_scores, index=set2_index, key=f"edit_set2_{selected_id}")
             set3_edit = st.selectbox("Set 3 (optional)", all_scores, index=set3_index, key=f"edit_set3_{selected_id}")
@@ -1204,15 +1247,17 @@ with tabs[2]:
         new_player = st.text_input("Player Name", key="new_player_input").strip()
         if st.button("Add Player", key="add_player_button"):
             if new_player:
-                if new_player not in players:
+                if new_player.lower() == "visitor":
+                    st.warning("The name 'Visitor' is reserved and cannot be added.")
+                elif new_player in players:
+                    st.warning(f"{new_player} already exists.")
+                else:
                     new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
                     st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_data])], ignore_index=True)
                     save_players(st.session_state.players_df)
                     load_players()
                     st.success(f"{new_player} added.")
                     st.rerun()
-                else:
-                    st.warning(f"{new_player} already exists.")
             else:
                 st.warning("Please enter a player name to add.")
         st.markdown("---")
@@ -1250,7 +1295,7 @@ with tabs[2]:
                     save_players(st.session_state.players_df)
                     load_players()
                     st.success("Profile updated.")
-                    st.rerun()
+                    st.rerun
             with col_delete:
                 if st.button("🗑️ Remove Player", key=f"remove_player_button_{selected_player_manage}"):
                     st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
