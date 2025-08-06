@@ -1320,19 +1320,6 @@ with col_match_backup:
             data=csv_matches,
             file_name=f'ar_tennis_matches_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
             mime='text/csv',
-            help="Download a complete backup of all match records as a
-
-st.markdown("---")
-st.subheader("Manual Backup")
-col_match_backup, col_player_backup = st.columns(2)
-with col_match_backup:
-    if not st.session_state.matches_df.empty:
-        csv_matches = st.session_state.matches_df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download Matches Data as CSV",
-            data=csv_matches,
-            file_name=f'ar_tennis_matches_backup_{datetime.now().strftime("%Y-%m-%d")}.csv',
-            mime='text/csv',
             help="Download a complete backup of all match records as a CSV file."
         )
     else:
