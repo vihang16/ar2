@@ -645,6 +645,16 @@ def display_match_table(df, title):
 
     st.dataframe(display_df, height=300)
 
+def display_rankings_table(df, title):
+    if df.empty:
+        st.info(f"No {title} ranking data available.")
+        return
+
+    st.subheader(f"{title} Player Rankings Table")
+    # Drop the 'Profile' and 'Recent Trend' columns as they don't fit well in a simple table
+    display_df = df.drop(columns=['Profile', 'Recent Trend'])
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
+
 def generate_whatsapp_link(row):
     # Determine the winner and loser(s) based on the match type and winner
     if row["match_type"] == "Singles":
