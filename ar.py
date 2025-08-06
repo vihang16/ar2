@@ -938,6 +938,9 @@ with tabs[0]:
                 st.markdown(f"{player_styled} has the highest win percentage at **{highest_win_percent_player['Win %']:.2f}%**.", unsafe_allow_html=True)
             else:
                 st.info("No players have played enough matches to calculate a meaningful win percentage.")
+            
+            st.markdown("---")
+            st.markdown("[Logic used for Rankings](https://github.com/mahadevbk/ar2/blob/main/ar_ranking_%20logic.pdf)")
     elif ranking_type == "Table View":
         # Calculate combined rankings
         rank_df_combined, _ = calculate_rankings(matches)
