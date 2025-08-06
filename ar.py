@@ -230,10 +230,14 @@ def save_matches(df):
     try:
         df_to_save = df.copy()
         if 'date' in df_to_save.columns:
-            # Ensure the 'date' column is in a consistent string format for Supabase
             df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
             df_to_save = df_to_save.dropna(subset=['date'])
             df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        # Check for duplicate match_id values
+        duplicates = df_to_save[df_to_save.duplicated(subset=['match_id'], keep=False)]
+        if not duplicates.empty:
+            st.warning(f"Found duplicate match_id values: {duplicates['match_id'].tolist()}")
+            df_to_save = df_to_save.drop_duplicates(subset=['match_id'], keep='last')
         supabase.table(matches_table_name).upsert(df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
@@ -241,6 +245,9 @@ def save_matches(df):
 def delete_match_from_db(match_id):
     try:
         supabase.table(matches_table_name).delete().eq("match_id", match_id).execute()
+        # Remove the match from session state
+        st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df["match_id"] != match_id].reset_index(drop=True)
+        save_matches(st.session_state.matches_df)  # Save to ensure consistency
     except Exception as e:
         st.error(f"Error deleting match from database: {str(e)}")
 
@@ -283,9 +290,15 @@ def generate_match_id(matches_df, match_datetime):
             (matches_df['date'].apply(lambda d: get_quarter(d.month) == quarter))
         ]
         serial_number = len(filtered_matches) + 1
+        new_id = f"AR{quarter}{year}-{serial_number:02d}"
+        # Ensure the ID is unique
+        while new_id in matches_df['match_id'].values:
+            serial_number += 1
+            new_id = f"AR{quarter}{year}-{serial_number:02d}"
     else:
         serial_number = 1
-    return f"AR{quarter}{year}-{serial_number:02d}"
+        new_id = f"AR{quarter}{year}-{serial_number:02d}"
+    return new_id
 
 def get_player_trend(player, matches, max_matches=5):
     player_matches = matches[
@@ -1038,7 +1051,7 @@ with tabs[1]:
                     st.error("Set 2 score is required for doubles matches.")
                 else:
                     new_match_date = datetime.now()
-                    match_id_new = generate_match_id(matches, new_match_date)
+                    match_id_new = generate_match_id(st.session_state.matches_df, new_match_date)
                     image_url_new = ""
                     if match_image_new:
                         image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image_type="match")
@@ -1277,7 +1290,7 @@ with tabs[3]:
     st.markdown("- [Mira Oasis 2](https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9)")
     st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
     st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
-
+  
 st.markdown("---")
 st.subheader("Manual Backup")
 col_match_backup, col_player_backup = st.columns(2)
