@@ -659,6 +659,13 @@ def display_match_table(df, title):
 
     table_df = df.copy()
 
+    # Ensure 'date' is in datetime format and sort by date ascending
+    table_df['date'] = pd.to_datetime(table_df['date'], errors='coerce')
+    table_df = table_df.sort_values(by='date', ascending=True).reset_index(drop=True)
+
+    # Add Serial Number column (starting from 1 for the oldest match)
+    table_df['Serial Number'] = range(1, len(table_df) + 1)
+
     # Create a formatted Match column
     def format_match_info(row):
         scores = [s for s in [row['set1'], row['set2'], row['set3']] if s]
@@ -674,7 +681,7 @@ def display_match_table(df, title):
     table_df['Match Details'] = table_df.apply(format_match_info, axis=1)
 
     # Select and rename columns for display
-    display_df = table_df[['date', 'Match Details', 'match_image_url']].copy()
+    display_df = table_df[['Serial Number', 'date', 'Match Details', 'match_image_url']].copy()
     display_df.rename(columns={
         'date': 'Date',
         'match_image_url': 'Image URL'
@@ -683,7 +690,8 @@ def display_match_table(df, title):
     # Format the date column as dd MMM yy
     display_df['Date'] = pd.to_datetime(display_df['Date']).dt.strftime('%d %b %y')
 
-    st.dataframe(display_df, height=300)
+    # Display the DataFrame
+    st.dataframe(display_df[['Serial Number', 'Date', 'Match Details', 'Image URL']], height=300)
 
 def generate_whatsapp_link(row):
     # Determine the winner and loser(s) based on the match type and winner
