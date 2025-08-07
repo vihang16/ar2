@@ -6,6 +6,9 @@ from collections import defaultdict
 from supabase import create_client, Client
 import re
 import urllib.parse
+import os
+import tempfile
+from subprocess import Popen, PIPE
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
