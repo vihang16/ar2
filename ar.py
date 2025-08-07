@@ -1678,6 +1678,16 @@ with tabs[4]:
                     p3_booking = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"s1p2_booking_{st.session_state.form_key_suffix}")
                     p2_booking = ""
                     p4_booking = ""
+                # Display suggested pairing for doubles if all players are selected
+                if match_type_booking == "Doubles" and all([p1_booking, p2_booking, p3_booking, p4_booking]):
+                    try:
+                        rank_df, _ = calculate_rankings(st.session_state.matches_df)
+                        suggested_pairing = suggest_balanced_pairing([p1_booking, p2_booking, p3_booking, p4_booking], rank_df)
+                        st.markdown("---")
+                        st.markdown(f"<div style='font-weight:bold; color:#fff500;'>APP Suggested Pairing: {suggested_pairing}</div>", unsafe_allow_html=True)
+                        st.markdown("---")
+                    except Exception as e:
+                        st.warning(f"Unable to suggest pairing: {str(e)}")
                 court_name = st.selectbox("Court Name *", [""] + court_names, key=f"court_booking_{st.session_state.form_key_suffix}")
                 booking_date = st.date_input("Booking Date *", value=datetime.now().date(), key=f"date_booking_{st.session_state.form_key_suffix}")
                 hours = [f"{h:02d}:00" for h in range(6, 22)]  # 6 AM to 9 PM
@@ -1717,14 +1727,6 @@ with tabs[4]:
                             st.success("Booking submitted.")
                             st.session_state.form_key_suffix += 1
                             st.rerun()
-            # Suggest balanced pairing for doubles if all players are selected
-            if match_type_booking == "Doubles" and all([p1_booking, p2_booking, p3_booking, p4_booking]):
-                try:
-                    rank_df, _ = calculate_rankings(st.session_state.matches_df)
-                    suggested_pairing = suggest_balanced_pairing([p1_booking, p2_booking, p3_booking, p4_booking], rank_df)
-                    st.markdown(f"**APP Suggested Pairing**: {suggested_pairing}", unsafe_allow_html=True)
-                except Exception as e:
-                    st.warning(f"Unable to suggest pairing: {str(e)}")
 
     st.markdown("---")
     st.subheader("Upcoming Bookings")
