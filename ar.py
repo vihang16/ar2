@@ -213,6 +213,12 @@ def save_players(players_df):
         supabase.table(players_table_name).upsert(players_df.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving players: {str(e)}")
+      
+def delete_player_from_db(player_name):
+    try:
+        supabase.table(players_table_name).delete().eq("name", player_name).execute()
+    except Exception as e:
+        st.error(f"Error deleting player from database: {str(e)}")
 
 def load_matches():
     try:
@@ -1245,7 +1251,7 @@ with tabs[1]:
 with tabs[2]:
     st.header("Player Profile")
     st.subheader("Manage & Edit Player Profiles")
-    with st.expander("Add, Edit or Remove Player" , expanded=False, icon="➡️"):
+    with st.expander("Add, Edit or Remove Player", expanded=False, icon="➡️"):
         st.markdown("##### Add New Player")
         new_player = st.text_input("Player Name", key="new_player_input").strip()
         if st.button("Add Player", key="add_player_button"):
@@ -1297,23 +1303,21 @@ with tabs[2]:
                     st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
                     save_players(st.session_state.players_df)
                     load_players()
-                    st.success("Profile updated.")
-                    st.rerun
-            with col_delete:
-                if st.button("🗑️ Remove Player", key=f"remove_player_button_{selected_player_manage}"):
-                    st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
-                    save_players(st.session_state.players_df)
-                    load_players()
-                    st.success(f"{selected_player_manage} removed.")
+                    st.success(f"Profile for {selected_player_manage} updated.")
                     st.rerun()
-
-    st.markdown("---")
-    st.subheader("Player Insights")
-    rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df)
-    if players:
-        display_player_insights(players, players_df, st.session_state.matches_df, rank_df_combined, partner_stats_combined, key_prefix="profile_")
-    else:
-        st.info("No players available for insights. Please add players above.")
+            with col_delete:
+                if st.button("Remove Player", key=f"remove_player_{selected_player_manage}"):
+                    if selected_player_manage.lower() == "visitor":
+                        st.warning("The 'Visitor' player cannot be removed.")
+                    else:
+                        # Delete from database first
+                        delete_player_from_db(selected_player_manage)
+                        # Remove from DataFrame
+                        st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
+                        save_players(st.session_state.players_df)
+                        load_players()
+                        st.success(f"{selected_player_manage} removed.")
+                        st.rerun()
 
 with tabs[3]:
     st.header("Court Locations")
