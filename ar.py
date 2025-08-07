@@ -127,6 +127,19 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
      margin-right: 10px;
 }
 
+/* Styling for bookings */
+.booking-row {
+    display: block;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #696969;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.booking-row:last-child {
+    margin-bottom: 0;
+}
+
 /* Add labels for stats and apply new color to labels only */
 .points-col::before { content: "Points: "; font-weight: bold; color: #bbbbbb; }
 .win-percent-col::before { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
@@ -190,6 +203,7 @@ supabase: Client = create_client(supabase_url, supabase_key)
 # Table names
 players_table_name = "players"
 matches_table_name = "matches"
+bookings_table_name = "bookings"
 
 # --- Session state initialization ---
 if 'players_df' not in st.session_state:
@@ -198,6 +212,9 @@ if 'matches_df' not in st.session_state:
     st.session_state.matches_df = pd.DataFrame(columns=["match_id", "date", "match_type", "team1_player1", "team1_player2", "team2_player1", "team2_player2", "set1", "set2", "set3", "winner", "match_image_url"])
 if 'form_key_suffix' not in st.session_state:
     st.session_state.form_key_suffix = 0
+
+if 'bookings_df' not in st.session_state:
+    st.session_state.bookings_df = pd.DataFrame(columns=["booking_id", "date", "time", "match_type", "court_name", "player1", "player2", "player3", "player4", "screenshot_url"])
 
 # --- Functions ---
 def load_players():
@@ -355,7 +372,12 @@ def delete_match_from_db(match_id):
 def upload_image_to_supabase(file, file_name, image_type="match"):
     try:
         bucket = "profile" if image_type == "profile" else "ar"
-        file_path = f"2ep_1/{file_name}" if image_type == "match" else file_name
+        if image_type == "match":
+            file_path = f"2ep_1/{file_name}"
+        elif image_type == "booking":
+            file_path = f"bookings/{file_name}"
+        else:
+            file_path = file_name
         response = supabase.storage.from_(bucket).upload(file_path, file.read(), {"content-type": file.type})
         if response is None or (isinstance(response, dict) and "error" in response):
             error_message = response.get("error", "Unknown error") if isinstance(response, dict) else "Upload failed"
@@ -367,7 +389,7 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
     except Exception as e:
         st.error(f"Error uploading image to bucket '{bucket}/{file_path}': {str(e)}")
         return ""
-
+        
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
@@ -738,6 +760,83 @@ def calculate_rankings(matches_to_rank):
 
     return rank_df, partner_stats
 
+def load_bookings():
+    try:
+        response = supabase.table(bookings_table_name).select("*").execute()
+        df = pd.DataFrame(response.data)
+        expected_columns = ["booking_id", "date", "time", "match_type", "court_name", "player1", "player2", "player3", "player4", "screenshot_url"]
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""
+        # Convert date and time to datetime for comparison
+        df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['time'], errors='coerce')
+        # Filter out past bookings
+        current_datetime = datetime.now()
+        df = df[df['datetime'] >= current_datetime].copy()
+        df = df.drop(columns=['datetime'])
+        st.session_state.bookings_df = df
+        # Delete past bookings from Supabase
+        supabase.table(bookings_table_name).delete().lt("date", current_datetime.strftime('%Y-%m-%d')).execute()
+    except Exception as e:
+        st.error(f"Error loading bookings: {str(e)}")
+
+def save_bookings(df):
+    try:
+        df_to_save = df.copy()
+        if 'date' in df_to_save.columns:
+            df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce').dt.strftime('%Y-%m-%d')
+        supabase.table(bookings_table_name).upsert(df_to_save.to_dict("records")).execute()
+    except Exception as e:
+        st.error(f"Error saving bookings: {str(e)}")
+
+def generate_booking_id(bookings_df, booking_date):
+    year = booking_date.year
+    quarter = get_quarter(booking_date.month)
+    if not bookings_df.empty and 'date' in bookings_df.columns:
+        bookings_df['date'] = pd.to_datetime(bookings_df['date'], errors='coerce')
+        filtered_bookings = bookings_df[
+            (bookings_df['date'].dt.year == year) &
+            (bookings_df['date'].apply(lambda d: get_quarter(d.month) == quarter))
+        ]
+        serial_number = len(filtered_bookings) + 1
+        new_id = f"BK{quarter}{year}-{serial_number:02d}"
+        while new_id in bookings_df['booking_id'].values:
+            serial_number += 1
+            new_id = f"BK{quarter}{year}-{serial_number:02d}"
+    else:
+        serial_number = 1
+        new_id = f"BK{quarter}{year}-{serial_number:02d}"
+    return new_id
+
+def suggest_balanced_pairing(players, rank_df):
+    if len(players) != 4 or "" in players:
+        return "Please select all four players for a doubles match."
+    player_points = {}
+    for player in players:
+        if player == "Visitor" or player == "":
+            player_points[player] = 0
+        else:
+            player_data = rank_df[rank_df["Player"] == player]
+            player_points[player] = player_data["Points"].iloc[0] if not player_data.empty else 0
+    # Generate possible team combinations
+    from itertools import combinations
+    pairs = list(combinations(players, 2))
+    min_diff = float('inf')
+    best_pairing = None
+    for team1 in pairs:
+        team2 = tuple(p for p in players if p not in team1)
+        team1_points = sum(player_points[p] for p in team1)
+        team2_points = sum(player_points[p] for p in team2)
+        diff = abs(team1_points - team2_points)
+        if diff < min_diff:
+            min_diff = diff
+            best_pairing = (team1, team2)
+    if best_pairing:
+        team1, team2 = best_pairing
+        return f"Team 1: {team1[0]} & {team1[1]} vs Team 2: {team2[0]} & {team2[1]}"
+    return "Unable to suggest a balanced pairing."
+
+
 def display_rankings_table(rank_df, title):
     if rank_df.empty:
         st.info(f"No {title} ranking data available.")
@@ -816,9 +915,93 @@ def generate_whatsapp_link(row):
 
     return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
 
+def load_bookings():
+    try:
+        response = supabase.table(bookings_table_name).select("*").execute()
+        df = pd.DataFrame(response.data)
+        expected_columns = ["booking_id", "date", "time", "match_type", "court_name", "player1", "player2", "player3", "player4", "screenshot_url"]
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""
+        # Convert date and time to datetime for comparison
+        df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['time'], errors='coerce')
+        # Filter out past bookings
+        current_datetime = datetime.now()
+        df = df[df['datetime'] >= current_datetime].copy()
+        df = df.drop(columns=['datetime'])
+        st.session_state.bookings_df = df
+        # Delete past bookings from Supabase
+        supabase.table(bookings_table_name).delete().lt("date", current_datetime.strftime('%Y-%m-%d')).execute()
+    except Exception as e:
+        st.error(f"Error loading bookings: {str(e)}")
+
+def save_bookings(df):
+    try:
+        df_to_save = df.copy()
+        if 'date' in df_to_save.columns:
+            df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce').dt.strftime('%Y-%m-%d')
+        supabase.table(bookings_table_name).upsert(df_to_save.to_dict("records")).execute()
+    except Exception as e:
+        st.error(f"Error saving bookings: {str(e)}")
+
+def generate_booking_id(bookings_df, booking_date):
+    year = booking_date.year
+    quarter = get_quarter(booking_date.month)
+    if not bookings_df.empty and 'date' in bookings_df.columns:
+        bookings_df['date'] = pd.to_datetime(bookings_df['date'], errors='coerce')
+        filtered_bookings = bookings_df[
+            (bookings_df['date'].dt.year == year) &
+            (bookings_df['date'].apply(lambda d: get_quarter(d.month) == quarter))
+        ]
+        serial_number = len(filtered_bookings) + 1
+        new_id = f"BK{quarter}{year}-{serial_number:02d}"
+        while new_id in bookings_df['booking_id'].values:
+            serial_number += 1
+            new_id = f"BK{quarter}{year}-{serial_number:02d}"
+    else:
+        serial_number = 1
+        new_id = f"BK{quarter}{year}-{serial_number:02d}"
+    return new_id
+
+def suggest_balanced_pairing(players, rank_df):
+    if len(players) != 4 or "" in players:
+        return "Please select all four players for a doubles match."
+    player_points = {}
+    for player in players:
+        if player == "Visitor" or player == "":
+            player_points[player] = 0
+        else:
+            player_data = rank_df[rank_df["Player"] == player]
+            player_points[player] = player_data["Points"].iloc[0] if not player_data.empty else 0
+    # Generate possible team combinations
+    from itertools import combinations
+    pairs = list(combinations(players, 2))
+    min_diff = float('inf')
+    best_pairing = None
+    for team1 in pairs:
+        team2 = tuple(p for p in players if p not in team1)
+        team1_points = sum(player_points[p] for p in team1)
+        team2_points = sum(player_points[p] for p in team2)
+        diff = abs(team1_points - team2_points)
+        if diff < min_diff:
+            min_diff = diff
+            best_pairing = (team1, team2)
+    if best_pairing:
+        team1, team2 = best_pairing
+        return f"Team 1: {team1[0]} & {team1[1]} vs Team 2: {team2[0]} & {team2[1]}"
+    return "Unable to suggest a balanced pairing."
+    
+
 # --- Main App Logic ---
 load_players()
 load_matches()
+load_bookings()
+court_names = [
+    "Alvorado 1","Alvorado 2", "Palmera 2", "Palmera 4", "Saheel", "Hattan",
+    "MLC Mirador La Colleccion", "Al Mahra", "Mirador", "Reem 1", "Reem 2",
+    "Reem 3", "Alma", "Mira 2", "Mira 4", "Mira 5 A", "Mira 5 B", "Mira Oasis 1",
+    "Mira Oasis 2", "Mira Oasis 3 A","Mira Oasis 3 B", "Mira Oasis 3 C"
+]
 
 players_df = st.session_state.players_df
 matches = st.session_state.matches_df
@@ -834,7 +1017,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
 
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations"]
+tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations", "Bookings"]
 
 tabs = st.tabs(tab_names)
 
@@ -1471,6 +1654,98 @@ with tabs[3]:
     st.markdown("- [Mira Oasis 2](https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9)")
     st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
     st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
+
+with tabs[4]:
+    st.header("Bookings")
+    with st.expander("➕ Book a Court", expanded=False, icon="➡️"):
+        st.subheader("Court Booking Form")
+        match_type_booking = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key=f"booking_match_type_{st.session_state.form_key_suffix}")
+        available_players = sorted([p for p in players_df["name"].dropna().tolist() if p != "Visitor"] + ["Visitor"]) if "name" in players_df.columns else ["Visitor"]
+        if not available_players:
+            st.warning("No players available. Please add players in the Player Profile tab.")
+        else:
+            with st.form(key=f"booking_form_{st.session_state.form_key_suffix}"):
+                if match_type_booking == "Doubles":
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        p1_booking = st.selectbox("Team 1 - Player 1 (optional)", [""] + available_players, key=f"t1p1_booking_{st.session_state.form_key_suffix}")
+                        p2_booking = st.selectbox("Team 1 - Player 2 (optional)", [""] + available_players, key=f"t1p2_booking_{st.session_state.form_key_suffix}")
+                    with col2:
+                        p3_booking = st.selectbox("Team 2 - Player 1 (optional)", [""] + available_players, key=f"t2p1_booking_{st.session_state.form_key_suffix}")
+                        p4_booking = st.selectbox("Team 2 - Player 2 (optional)", [""] + available_players, key=f"t2p2_booking_{st.session_state.form_key_suffix}")
+                else:
+                    p1_booking = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"s1p1_booking_{st.session_state.form_key_suffix}")
+                    p3_booking = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"s1p2_booking_{st.session_state.form_key_suffix}")
+                    p2_booking = ""
+                    p4_booking = ""
+                court_name = st.selectbox("Court Name *", [""] + court_names, key=f"court_booking_{st.session_state.form_key_suffix}")
+                booking_date = st.date_input("Booking Date *", value=datetime.now().date(), key=f"date_booking_{st.session_state.form_key_suffix}")
+                hours = [f"{h:02d}:00" for h in range(6, 22)]  # 6 AM to 9 PM
+                booking_time = st.selectbox("Booking Time *", hours, key=f"time_booking_{st.session_state.form_key_suffix}")
+                screenshot = st.file_uploader("Upload Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"screenshot_booking_{st.session_state.form_key_suffix}")
+                st.markdown("*Required fields", unsafe_allow_html=True)
+                submit_booking = st.form_submit_button("Submit Booking")
+                if submit_booking:
+                    if not court_name:
+                        st.error("Court name is required.")
+                    elif not booking_date or not booking_time:
+                        st.error("Booking date and time are required.")
+                    else:
+                        selected_players = [p for p in [p1_booking, p2_booking, p3_booking, p4_booking] if p]
+                        if match_type_booking == "Doubles" and len(set(selected_players)) != len(selected_players):
+                            st.error("Please select different players for each position.")
+                        else:
+                            booking_id = generate_booking_id(st.session_state.bookings_df, booking_date)
+                            screenshot_url = ""
+                            if screenshot:
+                                screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking")
+                            new_booking = {
+                                "booking_id": booking_id,
+                                "date": booking_date,
+                                "time": booking_time,
+                                "match_type": match_type_booking,
+                                "court_name": court_name,
+                                "player1": p1_booking,
+                                "player2": p2_booking,
+                                "player3": p3_booking,
+                                "player4": p4_booking,
+                                "screenshot_url": screenshot_url
+                            }
+                            bookings_to_save = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
+                            save_bookings(bookings_to_save)
+                            load_bookings()
+                            st.success("Booking submitted.")
+                            st.session_state.form_key_suffix += 1
+                            st.rerun()
+                # Suggest balanced pairing for doubles if all players are selected
+                if match_type_booking == "Doubles" and all([p1_booking, p2_booking, p3_booking, p4_booking]):
+                    rank_df, _ = calculate_rankings(st.session_state.matches_df)
+                    suggested_pairing = suggest_balanced_pairing([p1_booking, p2_booking, p3_booking, p4_booking], rank_df)
+                    st.markdown(f"**APP Suggested Pairing**: {suggested_pairing}", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.subheader("Upcoming Bookings")
+    bookings_df = st.session_state.bookings_df.copy()
+    if bookings_df.empty:
+        st.info("No upcoming bookings found.")
+    else:
+        bookings_df['datetime'] = pd.to_datetime(bookings_df['date'] + ' ' + bookings_df['time'], errors='coerce')
+        bookings_df = bookings_df.sort_values(by='datetime', ascending=True).reset_index(drop=True)
+        for _, row in bookings_df.iterrows():
+            players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
+            players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
+            date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
+            st.markdown(f"""
+            <div style='background-color: #ffffff; padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+                <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
+                <div><strong>Date:</strong> {date_str}</div>
+                <div><strong>Time:</strong> {row['time']}</div>
+                <div><strong>Match Type:</strong> {row['match_type']}</div>
+                <div><strong>Players:</strong> {players_str}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if row["screenshot_url"]:
+                st.image(row["screenshot_url"], width=100, caption="Booking Screenshot")
   
 st.markdown("---")
 st.subheader("Manual Backup")
