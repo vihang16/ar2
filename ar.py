@@ -1248,6 +1248,7 @@ with tabs[1]:
             st.success("Match deleted.")
             st.rerun()
 
+# Player Profile tab
 with tabs[2]:
     st.header("Player Profile")
     st.subheader("Manage & Edit Player Profiles")
@@ -1271,7 +1272,6 @@ with tabs[2]:
                 st.warning("Please enter a player name to add.")
         st.markdown("---")
         st.markdown("##### Edit or Remove Existing Player")
-        # Ensure players list is populated
         players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in st.session_state.players_df.columns else []
         if not players:
             st.info("No players available. Add a new player to begin.")
@@ -1330,6 +1330,13 @@ with tabs[2]:
                                 load_players()
                                 st.success(f"{selected_player_manage} removed.")
                                 st.rerun()
+    st.markdown("---")
+    st.subheader("Player Insights")
+    rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df)
+    if players:
+        display_player_insights(players, st.session_state.players_df, st.session_state.matches_df, rank_df_combined, partner_stats_combined, key_prefix="profile_")
+    else:
+        st.info("No players available for insights. Please add players above.")
 
 with tabs[3]:
     st.header("Court Locations")
