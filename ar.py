@@ -1760,12 +1760,14 @@ with tabs[4]:
             pairing_suggestion = ""
             if row['match_type'] == "Doubles" and len(players) == 4:
                 try:
-                    if rankings_available:
-                        suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
+                    result = suggest_balanced_pairing(players, rank_df)
+                    if len(result) != 3:
+                        st.write(f"Debug: suggest_balanced_pairing returned incorrect number of values: {result}")
+                        pairing_suggestion = "<div><strong style='color:#fff500;'>Suggested Pairing:</strong> Error in pairing calculation.</div>"
+                    else:
+                        suggested_pairing, team1_odds, team2_odds = result
                         odds_text = f" | Odds: Team 1: <span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span> | Team 2: <span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>" if team1_odds is not None and team2_odds is not None else ""
                         pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {suggested_pairing}{odds_text}</div>"
-                    else:
-                        pairing_suggestion = "<div><strong style='color:#fff500;'>Suggested Pairing:</strong> No ranking data available.</div>"
                 except Exception as e:
                     pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> Unable to suggest pairing: {str(e)}</div>"
                     st.write(f"Debug: Failed to generate pairing for booking {row['booking_id']}: {str(e)}")
