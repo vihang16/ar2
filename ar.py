@@ -761,6 +761,8 @@ def calculate_rankings(matches_to_rank):
 
     return rank_df, partner_stats
 
+from itertools import combinations  # Required for suggest_balanced_pairing
+
 def load_bookings():
     try:
         response = supabase.table(bookings_table_name).select("*").execute()
@@ -819,8 +821,6 @@ def suggest_balanced_pairing(players, rank_df):
         else:
             player_data = rank_df[rank_df["Player"] == player]
             player_points[player] = player_data["Points"].iloc[0] if not player_data.empty else 0
-    # Generate possible team combinations
-    from itertools import combinations
     pairs = list(combinations(players, 2))
     min_diff = float('inf')
     best_pairing = None
@@ -837,6 +837,13 @@ def suggest_balanced_pairing(players, rank_df):
         return f"Team 1: {team1[0]} & {team1[1]} vs Team 2: {team2[0]} & {team2[1]}"
     return "Unable to suggest a balanced pairing."
 
+def delete_booking_from_db(booking_id):
+    try:
+        supabase.table(bookings_table_name).delete().eq("booking_id", booking_id).execute()
+        st.session_state.bookings_df = st.session_state.bookings_df[st.session_state.bookings_df["booking_id"] != booking_id].reset_index(drop=True)
+        save_bookings(st.session_state.bookings_df)
+    except Exception as e:
+        st.error(f"Error deleting booking from database: {str(e)}")
 
 def display_rankings_table(rank_df, title):
     if rank_df.empty:
