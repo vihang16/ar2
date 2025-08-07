@@ -115,7 +115,6 @@ def display_rankings_table(rank_df, title):
     if rank_df.empty:
         st.info("No ranking data available for this view.")
     else:
-        # Create HTML table
         table_html = '<table><thead><tr>'
         headers = ["Rank", "Profile", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Game Diff Avg", "Games Won", "Recent Trend"]
         for header in headers:
@@ -295,10 +294,102 @@ def display_match_history(df, supabase):
                 st.success("Match deleted.")
                 st.rerun()
 
+def calculate_head_to_head(matches_df):
+    """Calculates head-to-head records between players."""
+    head_to_head = defaultdict(lambda: defaultdict(lambda: {'wins': 0, 'losses': 0, 'ties': 0, 'matches': 0}))
+    for _, row in matches_df.iterrows():
+        team1 = [p for p in [row['team1_player1'], row.get('team1_player2')] if p and p != "Visitor"]
+        team2 = [p for p in [row['team2_player1'], row.get('team2_player2')] if p and p != "Visitor"]
+        
+        for p1 in team1:
+            for p2 in team2:
+                head_to_head[p1][p2]['matches'] += 1
+                head_to_head[p2][p1]['matches'] += 1
+                if row['winner'] == "Team 1":
+                    head_to_head[p1][p2]['wins'] += 1
+                    head_to_head[p2][p1]['losses'] += 1
+                elif row['winner'] == "Team 2":
+                    head_to_head[p1][p2]['losses'] += 1
+                    head_to_head[p2][p1]['wins'] += 1
+                else:
+                    head_to_head[p1][p2]['ties'] += 1
+                    head_to_head[p2][p1]['ties'] += 1
+    return head_to_head
+
+def calculate_set_win_percentage(matches_df):
+    """Calculates the percentage of sets won by each player."""
+    set_wins = defaultdict(int)
+    total_sets = defaultdict(int)
+    for _, row in matches_df.iterrows():
+        team1 = [p for p in [row['team1_player1'], row.get('team1_player2')] if p and p != "Visitor"]
+        team2 = [p for p in [row['team2_player1'], row.get('team2_player2')] if p and p != "Visitor"]
+        for set_score in [row['set1'], row['set2'], row['set3']]:
+            if isinstance(set_score, str) and '-' in set_score:
+                try:
+                    g1, g2 = map(int, set_score.split('-'))
+                    total_sets_played = 1
+                    for p in team1:
+                        total_sets[p] += total_sets_played
+                        if g1 > g2:
+                            set_wins[p] += 1
+                    for p in team2:
+                        total_sets[p] += total_sets_played
+                        if g2 > g1:
+                            set_wins[p] += 1
+                except ValueError:
+                    continue
+    set_win_pct = {p: (set_wins[p] / total_sets[p] * 100) if total_sets[p] > 0 else 0 for p in set_wins}
+    return set_win_pct
+
+def calculate_win_streak(matches_df):
+    """Calculates the longest current win streak for each player."""
+    win_streaks = defaultdict(int)
+    current_streak = defaultdict(int)
+    matches_df = matches_df.sort_values(by='date', ascending=False)
+    for _, row in matches_df.iterrows():
+        team1 = [p for p in [row['team1_player1'], row.get('team1_player2')] if p and p != "Visitor"]
+        team2 = [p for p in [row['team2_player1'], row.get('team2_player2')] if p and p != "Visitor"]
+        for p in team1 + team2:
+            if p not in current_streak:  # Only count streaks that haven't been broken
+                if row['winner'] == "Team 1" and p in team1:
+                    current_streak[p] += 1
+                elif row['winner'] == "Team 2" and p in team2:
+                    current_streak[p] += 1
+                elif row['winner'] == "Tie":
+                    continue
+                else:
+                    current_streak[p] = 0
+                win_streaks[p] = max(win_streaks[p], current_streak[p])
+    return win_streaks
+
+def calculate_opponent_adjusted_points(matches_df, rank_df):
+    """Calculates points adjusted for opponent strength."""
+    adjusted_points = defaultdict(float)
+    rank_dict = rank_df.set_index('Player')['Points'].to_dict()
+    for _, row in matches_df.iterrows():
+        team1 = [p for p in [row['team1_player1'], row.get('team1_player2')] if p and p != "Visitor"]
+        team2 = [p for p in [row['team2_player1'], row.get('team2_player2')] if p and p != "Visitor"]
+        team1_points = sum(rank_dict.get(p, 0) for p in team1) / len(team1) if team1 else 0
+        team2_points = sum(rank_dict.get(p, 0) for p in team2) / len(team2) if team2 else 0
+        for p in team1:
+            if row['winner'] == "Team 1":
+                adjusted_points[p] += 3 * (team2_points / 10)  # Scale by opponent strength
+            elif row['winner'] == "Team 2":
+                adjusted_points[p] += 1 * (team2_points / 10)
+            else:
+                adjusted_points[p] += 1.5 * (team2_points / 10)
+        for p in team2:
+            if row['winner'] == "Team 2":
+                adjusted_points[p] += 3 * (team1_points / 10)
+            elif row['winner'] == "Team 1":
+                adjusted_points[p] += 1 * (team1_points / 10)
+            else:
+                adjusted_points[p] += 1.5 * (team1_points / 10)
+    return adjusted_points
+
 def display_nerd_stuff(rank_df, partner_stats, matches):
     """Displays various interesting statistics and insights."""
     st.markdown("### 🤝 Most Effective Partnership")
-    # Placeholder for partnership logic
     best_partnership = None
     max_win_rate = 0
     for player1 in partner_stats:
@@ -330,6 +421,98 @@ def display_nerd_stuff(rank_df, partner_stats, matches):
         st.markdown(f"**{best_partner}**: Average Win %: {max_avg_win_rate*100:.1f}%")
     else:
         st.info("No partner data available.")
+
+    st.markdown("---")
+    st.markdown("### 🤼 Head-to-Head Records")
+    head_to_head = calculate_head_to_head(matches)
+    h2h_data = []
+    for p1 in head_to_head:
+        for p2, stats in head_to_head[p1].items():
+            if stats['matches'] > 0 and p1 < p2:  # Avoid duplicates
+                h2h_data.append({
+                    "Players": f"{p1} vs {p2}",
+                    "Matches": stats['matches'],
+                    "Wins1": stats['wins'],
+                    "Wins2": head_to_head[p2][p1]['wins'],
+                    "Ties": stats['ties']
+                })
+    if h2h_data:
+        st.markdown('<div class="rankings-table-container"><div class="rankings-table-scroll">', unsafe_allow_html=True)
+        for record in sorted(h2h_data, key=lambda x: x['Matches'], reverse=True)[:5]:  # Top 5 rivalries
+            st.markdown(f"""
+            <div class="ranking-row">
+                <div class="player-col">{record['Players']}</div>
+                <div class="matches-col">{record['Matches']} matches</div>
+                <div class="wins-col">{record['Wins1']} - {record['Wins2']}</div>
+                <div class="ties-col">Ties: {record['Ties']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
+    else:
+        st.info("No head-to-head data available.")
+
+    st.markdown("---")
+    st.markdown("### 🎾 Set Win Percentage")
+    set_win_pct = calculate_set_win_percentage(matches)
+    if set_win_pct:
+        set_win_data = [
+            {"Player": p, "Set Win %": pct} for p, pct in set_win_pct.items()
+        ]
+        set_win_df = pd.DataFrame(set_win_data).sort_values(by="Set Win %", ascending=False)
+        st.markdown('<div class="rankings-table-container"><div class="rankings-table-scroll">', unsafe_allow_html=True)
+        for _, row in set_win_df.head(5).iterrows():  # Top 5
+            st.markdown(f"""
+            <div class="ranking-row">
+                <div class="player-col">{row['Player']}</div>
+                <div class="win-percent-col">{row['Set Win %']:.1f}%</div>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
+    else:
+        st.info("No set win data available.")
+
+    st.markdown("---")
+    st.markdown("### 🔥 Longest Win Streak")
+    win_streaks = calculate_win_streak(matches)
+    if win_streaks:
+        streak_data = [
+            {"Player": p, "Win Streak": streak} for p, streak in win_streaks.items() if streak > 0
+        ]
+        streak_df = pd.DataFrame(streak_data).sort_values(by="Win Streak", ascending=False)
+        if not streak_df.empty:
+            st.markdown('<div class="rankings-table-container"><div class="rankings-table-scroll">', unsafe_allow_html=True)
+            for _, row in streak_df.head(5).iterrows():  # Top 5
+                st.markdown(f"""
+                <div class="ranking-row">
+                    <div class="player-col">{row['Player']}</div>
+                    <div class="wins-col">{row['Win Streak']} matches</div>
+                </div>
+                """, unsafe_allow_html=True)
+            st.markdown('</div></div>', unsafe_allow_html=True)
+        else:
+            st.info("No current win streaks.")
+    else:
+        st.info("No win streak data available.")
+
+    st.markdown("---")
+    st.markdown("### 🏅 Opponent-Adjusted Points")
+    adjusted_points = calculate_opponent_adjusted_points(matches, rank_df)
+    if adjusted_points:
+        adj_points_data = [
+            {"Player": p, "Adjusted Points": points} for p, points in adjusted_points.items()
+        ]
+        adj_points_df = pd.DataFrame(adj_points_data).sort_values(by="Adjusted Points", ascending=False)
+        st.markdown('<div class="rankings-table-container"><div class="rankings-table-scroll">', unsafe_allow_html=True)
+        for _, row in adj_points_df.head(5).iterrows():  # Top 5
+            st.markdown(f"""
+            <div class="ranking-row">
+                <div class="player-col">{row['Player']}</div>
+                <div class="points-col">{row['Adjusted Points']:.1f}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
+    else:
+        st.info("No opponent-adjusted points data available.")
 
 def display_court_locations():
     """Displays a list of tennis court locations with Google Maps links."""
