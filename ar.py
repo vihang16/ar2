@@ -1122,39 +1122,14 @@ with tabs[0]:
         st.subheader("Download Rankings as PDF")
         if st.button("Download All Rankings", key="download_rankings_pdf"):
             try:
-                latex_content = generate_pdf_latex(rank_df_combined, rank_df_doubles, rank_df_singles)
-                # Compile LaTeX to PDF
-                from subprocess import Popen, PIPE
-                import os
-                import tempfile
-                
-                with tempfile.NamedTemporaryFile(suffix=".tex", delete=False) as tex_file:
-                    tex_file.write(latex_content.encode('utf-8'))
-                    tex_file_path = tex_file.name
-                
-                pdf_file_path = tex_file_path.replace(".tex", ".pdf")
-                process = Popen(['pdflatex', '-interaction=nonstopmode', tex_file_path], stdout=PIPE, stderr=PIPE)
-                stdout, stderr = process.communicate()
-                
-                if process.returncode == 0 and os.path.exists(pdf_file_path):
-                    with open(pdf_file_path, "rb") as pdf_file:
-                        pdf_data = pdf_file.read()
-                    st.download_button(
-                        label="Download PDF",
-                        data=pdf_data,
-                        file_name="AR_Tennis_League_Rankings.pdf",
-                        mime="application/pdf",
-                        key="download_pdf_button"
-                    )
-                    # Clean up temporary files
-                    for ext in ['.tex', '.aux', '.log', '.pdf']:
-                        try:
-                            os.remove(tex_file_path.replace('.tex', ext))
-                        except:
-                            pass
-                else:
-                    st.error("Failed to generate PDF. Please try again.")
-                    st.write(f"LaTeX Error: {stderr.decode('utf-8')}")
+                pdf_data = generate_pdf_reportlab(rank_df_combined, rank_df_doubles, rank_df_singles)
+                st.download_button(
+                    label="Download PDF",
+                    data=pdf_data,
+                    file_name="AR_Tennis_League_Rankings.pdf",
+                    mime="application/pdf",
+                    key="download_pdf_button"
+                )
             except Exception as e:
                 st.error(f"Error generating PDF: {str(e)}")
     else:  # Combined view
