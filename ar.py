@@ -6,14 +6,12 @@ from collections import defaultdict
 from supabase import create_client, Client
 import re
 import urllib.parse
-import os
-import tempfile
-from subprocess import Popen, PIPE
 from reportlab.lib.pagesizes import A4, landscape
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
+import io  # Added to fix 'name io is not defined' error
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
