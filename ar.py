@@ -233,8 +233,12 @@ def load_players():
 def save_players(players_df):
     try:
         expected_columns = ["name", "profile_image_url", "birthday"]
-        players_df = players_df[expected_columns].copy()
-        supabase.table(players_table_name).upsert(players_df.to_dict("records")).execute()
+        players_df_to_save = players_df[expected_columns].copy()
+        
+        # Replace NaN with None for JSON compliance before saving
+        players_df_to_save = players_df_to_save.where(pd.notna(players_df_to_save), None)
+
+        supabase.table(players_table_name).upsert(players_df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving players: {str(e)}")
       
@@ -352,11 +356,15 @@ def save_matches(df):
             df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
             df_to_save = df_to_save.dropna(subset=['date'])
             df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        # Check for duplicate match_id values
+        
         duplicates = df_to_save[df_to_save.duplicated(subset=['match_id'], keep=False)]
         if not duplicates.empty:
             st.warning(f"Found duplicate match_id values: {duplicates['match_id'].tolist()}")
             df_to_save = df_to_save.drop_duplicates(subset=['match_id'], keep='last')
+
+        # Replace NaN with None for JSON compliance before saving
+        df_to_save = df_to_save.where(pd.notna(df_to_save), None)
+            
         supabase.table(matches_table_name).upsert(df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving matches: {str(e)}")
@@ -788,6 +796,10 @@ def save_bookings(df):
         df_to_save = df.copy()
         if 'date' in df_to_save.columns:
             df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce').dt.strftime('%Y-%m-%d')
+        
+        # Replace NaN with None for JSON compliance before saving
+        df_to_save = df_to_save.where(pd.notna(df_to_save), None)
+
         supabase.table(bookings_table_name).upsert(df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving bookings: {str(e)}")
