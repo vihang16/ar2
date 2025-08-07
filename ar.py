@@ -1054,7 +1054,7 @@ with tabs[0]:
 
 with tabs[1]:
     st.header("Matches")
-    with st.expander("➕ Post New Match Result"):
+    with st.expander("➕ Post New Match Result", expanded=False, icon="➡️"):
         st.subheader("Enter Match Result")
         match_type_new = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key=f"post_match_type_new_{st.session_state.form_key_suffix}")
         available_players = sorted(players.copy() + ["Visitor"] if players else ["Visitor"])
@@ -1242,7 +1242,7 @@ with tabs[1]:
 with tabs[2]:
     st.header("Player Profile")
     st.subheader("Manage & Edit Player Profiles")
-    with st.expander("Add, Edit or Remove Player"):
+    with st.expander("Add, Edit or Remove Player" , expanded=False, icon="➡️"):
         st.markdown("##### Add New Player")
         new_player = st.text_input("Player Name", key="new_player_input").strip()
         if st.button("Add Player", key="add_player_button"):
