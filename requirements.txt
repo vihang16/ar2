@@ -3,3 +3,4 @@ pandas
 supabase
 python-dateutil
 plotly
+reportlab==4.0.8
