@@ -1675,7 +1675,7 @@ with tabs[3]:
 
 with tabs[4]:
     st.header("Bookings")
-    with st.expander("➕ Enter a Booking", expanded=False, icon="➡️"):
+    with st.expander("➕ Book a Court", expanded=False, icon="➡️"):
         st.subheader("Court Booking Form")
         match_type_booking = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key=f"booking_match_type_{st.session_state.form_key_suffix}")
         available_players = sorted([p for p in players_df["name"].dropna().tolist() if p != "Visitor"] + ["Visitor"]) if "name" in players_df.columns else ["Visitor"]
@@ -1761,8 +1761,9 @@ with tabs[4]:
             if row['match_type'] == "Doubles" and len(players) == 4:
                 try:
                     if rankings_available:
-                        suggested_pairing = suggest_balanced_pairing(players, rank_df)
-                        pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
+                        suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
+                        odds_text = f" | Odds: Team 1: <span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span> | Team 2: <span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>" if team1_odds is not None and team2_odds is not None else ""
+                        pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {suggested_pairing}{odds_text}</div>"
                     else:
                         pairing_suggestion = "<div><strong style='color:#fff500;'>Suggested Pairing:</strong> No ranking data available.</div>"
                 except Exception as e:
@@ -1856,7 +1857,7 @@ with tabs[4]:
                         load_bookings()
                         st.success("Booking deleted.")
                         st.rerun()
-
+```
 
 st.markdown("---")
 st.subheader("Manual Backup")
