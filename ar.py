@@ -1752,7 +1752,12 @@ with tabs[4]:
                 try:
                     if rankings_available:
                         suggested_pairing = suggest_balanced_pairing(players, rank_df)
-                        pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
+                        # Split the pairing string to style player names
+                        parts = suggested_pairing.split(": ")[1].split(" vs ")
+                        team1 = parts[0].split(" & ")
+                        team2 = parts[1].split(" & ")
+                        styled_pairing = f"Team 1: <span style='font-weight:bold; color:#fff500;'>{team1[0]}</span> & <span style='font-weight:bold; color:#fff500;'>{team1[1]}</span> vs Team 2: <span style='font-weight:bold; color:#fff500;'>{team2[0]}</span> & <span style='font-weight:bold; color:#fff500;'>{team2[1]}</span>"
+                        pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {styled_pairing}</div>"
                     else:
                         pairing_suggestion = "<div><strong style='color:#fff500;'>Suggested Pairing:</strong> No ranking data available.</div>"
                 except Exception as e:
@@ -1846,7 +1851,6 @@ with tabs[4]:
                         load_bookings()
                         st.success("Booking deleted.")
                         st.rerun()
-
 
 
 st.markdown("---")
