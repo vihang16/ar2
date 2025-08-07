@@ -1258,7 +1258,7 @@ with tabs[2]:
             if new_player:
                 if new_player.lower() == "visitor":
                     st.warning("The name 'Visitor' is reserved and cannot be added.")
-                elif new_player in players:
+                elif new_player in st.session_state.players_df["name"].tolist():
                     st.warning(f"{new_player} already exists.")
                 else:
                     new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
@@ -1271,53 +1271,65 @@ with tabs[2]:
                 st.warning("Please enter a player name to add.")
         st.markdown("---")
         st.markdown("##### Edit or Remove Existing Player")
-        selected_player_manage = st.selectbox("Select Player", [""] + players, key="manage_player_select")
-        if selected_player_manage:
-            player_data = players_df[players_df["name"] == selected_player_manage].iloc[0]
-            current_image = player_data.get("profile_image_url", "")
-            current_birthday = player_data.get("birthday", "")
-            st.markdown(f"**Current Profile for {selected_player_manage}**")
-            if current_image:
-                st.image(current_image, width=100)
-            else:
-                st.write("No profile image set.")
-            profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
-            default_day = 1
-            default_month = 1
-            if current_birthday and isinstance(current_birthday, str) and re.match(r'^\d{2}-\d{2}$', current_birthday):
-                try:
-                    day_str, month_str = current_birthday.split("-")
-                    default_day = int(day_str)
-                    default_month = int(month_str)
-                except (ValueError, IndexError):
-                    pass
-            birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player_manage}")
-            birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player_manage}")
-            col_save, col_delete = st.columns(2)
-            with col_save:
-                if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player_manage}"):
-                    image_url = current_image
-                    if profile_image:
-                        image_url = upload_image_to_supabase(profile_image, f"profile_{selected_player_manage}_{uuid.uuid4().hex[:6]}", image_type="profile")
-                    st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "profile_image_url"] = image_url
-                    st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
-                    save_players(st.session_state.players_df)
-                    load_players()
-                    st.success(f"Profile for {selected_player_manage} updated.")
-                    st.rerun()
-            with col_delete:
-                if st.button("Remove Player", key=f"remove_player_{selected_player_manage}"):
-                    if selected_player_manage.lower() == "visitor":
-                        st.warning("The 'Visitor' player cannot be removed.")
-                    else:
-                        # Delete from database first
-                        delete_player_from_db(selected_player_manage)
-                        # Remove from DataFrame
-                        st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
+        # Ensure players list is populated
+        players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in st.session_state.players_df.columns else []
+        if not players:
+            st.info("No players available. Add a new player to begin.")
+        else:
+            selected_player_manage = st.selectbox("Select Player", [""] + players, key="manage_player_select")
+            if selected_player_manage:
+                player_data = st.session_state.players_df[st.session_state.players_df["name"] == selected_player_manage].iloc[0]
+                current_image = player_data.get("profile_image_url", "")
+                current_birthday = player_data.get("birthday", "")
+                st.markdown(f"**Current Profile for {selected_player_manage}**")
+                if current_image:
+                    st.image(current_image, width=100)
+                else:
+                    st.write("No profile image set.")
+                profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
+                default_day = 1
+                default_month = 1
+                if current_birthday and isinstance(current_birthday, str) and re.match(r'^\d{2}-\d{2}$', current_birthday):
+                    try:
+                        day_str, month_str = current_birthday.split("-")
+                        default_day = int(day_str)
+                        default_month = int(month_str)
+                    except (ValueError, IndexError):
+                        pass
+                birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player_manage}")
+                birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player_manage}")
+                col_save, col_delete = st.columns(2)
+                with col_save:
+                    if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player_manage}"):
+                        image_url = current_image
+                        if profile_image:
+                            image_url = upload_image_to_supabase(profile_image, f"profile_{selected_player_manage}_{uuid.uuid4().hex[:6]}", image_type="profile")
+                        st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "profile_image_url"] = image_url
+                        st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
                         save_players(st.session_state.players_df)
                         load_players()
-                        st.success(f"{selected_player_manage} removed.")
+                        st.success(f"Profile for {selected_player_manage} updated.")
                         st.rerun()
+                with col_delete:
+                    if st.button("Remove Player", key=f"remove_player_{selected_player_manage}"):
+                        if selected_player_manage.lower() == "visitor":
+                            st.warning("The 'Visitor' player cannot be removed.")
+                        else:
+                            # Check for associated matches
+                            if st.session_state.matches_df[
+                                (st.session_state.matches_df["team1_player1"] == selected_player_manage) |
+                                (st.session_state.matches_df["team1_player2"] == selected_player_manage) |
+                                (st.session_state.matches_df["team2_player1"] == selected_player_manage) |
+                                (st.session_state.matches_df["team2_player2"] == selected_player_manage)
+                            ].shape[0] > 0:
+                                st.warning(f"Cannot delete {selected_player_manage} because they have associated matches. Delete their matches first.")
+                            else:
+                                delete_player_from_db(selected_player_manage)
+                                st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
+                                save_players(st.session_state.players_df)
+                                load_players()
+                                st.success(f"{selected_player_manage} removed.")
+                                st.rerun()
 
 with tabs[3]:
     st.header("Court Locations")
