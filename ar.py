@@ -1663,6 +1663,7 @@ with tabs[3]:
     st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
     st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
 
+
 with tabs[4]:
     st.header("Bookings")
     with st.expander("➕ Book a Court", expanded=False, icon="➡️"):
@@ -1686,16 +1687,25 @@ with tabs[4]:
                     p3_booking = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"s1p2_booking_{st.session_state.form_key_suffix}")
                     p2_booking = ""
                     p4_booking = ""
+                # Debug: Log selected players
+                if match_type_booking == "Doubles":
+                    st.write(f"Debug: Selected players - P1: {p1_booking}, P2: {p2_booking}, P3: {p3_booking}, P4: {p4_booking}")
                 # Display suggested pairing for doubles if all players are selected
                 if match_type_booking == "Doubles" and all([p1_booking, p2_booking, p3_booking, p4_booking]):
-                    try:
-                        rank_df, _ = calculate_rankings(st.session_state.matches_df)
-                        suggested_pairing = suggest_balanced_pairing([p1_booking, p2_booking, p3_booking, p4_booking], rank_df)
-                        st.markdown("---")
-                        st.markdown(f"<div style='font-weight:bold; color:#fff500;'>APP Suggested Pairing: {suggested_pairing}</div>", unsafe_allow_html=True)
-                        st.markdown("---")
-                    except Exception as e:
-                        st.warning(f"Unable to suggest pairing: {str(e)}")
+                    with st.container():
+                        try:
+                            rank_df, _ = calculate_rankings(st.session_state.matches_df)
+                            if rank_df.empty:
+                                st.warning("Unable to suggest pairing: No ranking data available. Add matches to enable pairing suggestions.")
+                            else:
+                                suggested_pairing = suggest_balanced_pairing([p1_booking, p2_booking, p3_booking, p4_booking], rank_df)
+                                st.markdown(f"""
+                                <div style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-top: 10px;'>
+                                    <strong style='color:#fff500;'>APP Suggested Pairing:</strong> {suggested_pairing}
+                                </div>
+                                """, unsafe_allow_html=True)
+                        except Exception as e:
+                            st.warning(f"Unable to suggest pairing: {str(e)}. Check if matches data is available.")
                 court_name = st.selectbox("Court Name *", [""] + court_names, key=f"court_booking_{st.session_state.form_key_suffix}")
                 booking_date = st.date_input("Booking Date *", value=datetime.now().date(), key=f"date_booking_{st.session_state.form_key_suffix}")
                 hours = [f"{h:02d}:00" for h in range(6, 22)]  # 6 AM to 9 PM
@@ -1835,7 +1845,7 @@ with tabs[4]:
                         load_bookings()
                         st.success("Booking deleted.")
                         st.rerun()
-  
+
 st.markdown("---")
 st.subheader("Manual Backup")
 col_match_backup, col_player_backup = st.columns(2)
