@@ -812,13 +812,10 @@ def generate_booking_id(bookings_df, booking_date):
     return new_id
 
 def suggest_balanced_pairing(players, rank_df):
-    # Debug: Log input data
-    #st.write(f"Debug: suggest_balanced_pairing called with players={players}, rank_df_columns={rank_df.columns.tolist() if not rank_df.empty else 'empty'}")
-    
+    """Suggests balanced doubles teams and calculates odds, with styled player names."""
+    # This check is important to avoid errors
     if len(players) != 4 or "" in players:
-        result = ("Please select all four players for a doubles match.", None, None)
-        #st.write(f"Debug: Returning early due to invalid players: {result}")
-        return result
+        return ("Please select all four players for a doubles match.", None, None)
     
     player_points = {}
     for player in players:
@@ -836,9 +833,10 @@ def suggest_balanced_pairing(players, rank_df):
     
     for team1 in pairs:
         team2 = tuple(p for p in players if p not in team1)
-        team1_points = sum(player_points[p] for p in team1)
-        team2_points = sum(player_points[p] for p in team2)
+        team1_points = sum(player_points.get(p, 0) for p in team1)
+        team2_points = sum(player_points.get(p, 0) for p in team2)
         diff = abs(team1_points - team2_points)
+        
         if diff < min_diff:
             min_diff = diff
             best_pairing = (team1, team2)
@@ -852,14 +850,44 @@ def suggest_balanced_pairing(players, rank_df):
     
     if best_pairing:
         team1, team2 = best_pairing
-        pairing_text = f"Team 1: {team1[0]} & {team1[1]} vs Team 2: {team2[0]} & {team2[1]}"
-        result = (pairing_text, team1_odds, team2_odds)
-        #st.write(f"Debug: Returning valid pairing: {result}")
-        return result
+        
+        # Style the player names with optic yellow color
+        t1p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{team1[0]}</span>"
+        t1p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{team1[1]}</span>"
+        t2p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{team2[0]}</span>"
+        t2p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{team2[1]}</span>"
+        
+        pairing_text = f"Team 1: {t1p1_styled} & {t1p2_styled} vs Team 2: {t2p1_styled} & {t2p2_styled}"
+        return (pairing_text, team1_odds, team2_odds)
     
-    result = ("Unable to suggest a balanced pairing.", None, None)
-    #st.write(f"Debug: Returning default error: {result}")
-    return result
+    return ("Unable to suggest a balanced pairing.", None, None)
+
+def suggest_singles_odds(players, rank_df):
+    """Calculates winning odds for a singles match based on player points."""
+    if len(players) != 2 or "" in players:
+        return (None, None)
+
+    player_points = {}
+    for player in players:
+        if player == "Visitor" or player == "":
+            player_points[player] = 0  # Visitors or empty slots have 0 points
+        else:
+            player_data = rank_df[rank_df["Player"] == player]
+            player_points[player] = player_data["Points"].iloc[0] if not player_data.empty else 0
+
+    p1_points = player_points.get(players[0], 0)
+    p2_points = player_points.get(players[1], 0)
+    total_points = p1_points + p2_points
+
+    if total_points > 0:
+        p1_odds = (p1_points / total_points) * 100
+        p2_odds = (p2_points / total_points) * 100
+    else:
+        # If both players have 0 points, it's a 50/50 chance
+        p1_odds = 50.0
+        p2_odds = 50.0
+
+    return (p1_odds, p2_odds)
 
 def delete_booking_from_db(booking_id):
     try:
@@ -1687,31 +1715,40 @@ with tabs[4]:
         # Compute rankings once for efficiency
         try:
             rank_df, _ = calculate_rankings(st.session_state.matches_df)
-            rankings_available = not rank_df.empty
         except Exception as e:
             rank_df = pd.DataFrame()
-            rankings_available = False
             st.warning(f"Unable to load rankings for pairing suggestions: {str(e)}")
+
         for _, row in bookings_df.iterrows():
             players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
             players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
             date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
-            # Initialize pairing suggestion
-            pairing_suggestion = ""
-            if row['match_type'] == "Doubles" and len(players) == 4:
-                try:
-                    result = suggest_balanced_pairing(players, rank_df)
-                    #st.write(f"Debug: suggest_balanced_pairing result: {result}")
-                    if len(result) != 3:
-                        st.write(f"Debug: suggest_balanced_pairing returned incorrect number of values: {result}")
-                        pairing_suggestion = "<div><strong style='color:#fff500;'>Suggested Pairing:</strong> Error in pairing calculation.</div>"
-                    else:
-                        suggested_pairing, team1_odds, team2_odds = result
-                        odds_text = f" | Odds: Team 1: <span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span> | Team 2: <span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>" if team1_odds is not None and team2_odds is not None else ""
+            
+            pairing_suggestion = "" # Initialize empty suggestion
+
+            try:
+                # Handle doubles matches
+                if row['match_type'] == "Doubles" and len(players) == 4:
+                    suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
+                    if team1_odds is not None:
+                        odds_text = f" | Odds: Team 1: <span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span> | Team 2: <span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>"
                         pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {suggested_pairing}{odds_text}</div>"
-                except Exception as e:
-                    pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> Unable to suggest pairing: {str(e)}</div>"
-                    st.write(f"Debug: Failed to generate pairing for booking {row['booking_id']}: {str(e)}")
+                    else:
+                        pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
+
+                # Handle singles matches
+                elif row['match_type'] == "Singles" and len(players) == 2:
+                    p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
+                    if p1_odds is not None:
+                        p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
+                        p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
+                        pairing_suggestion = f"<div><strong style='color:#fff500;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
+
+            except Exception as e:
+                # This will catch any unexpected errors during calculation
+                pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggestion:</strong> Error calculating: {e}</div>"
+
+            # Display the booking card
             st.markdown(f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
                 <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
@@ -1722,6 +1759,7 @@ with tabs[4]:
                 {pairing_suggestion}
             </div>
             """, unsafe_allow_html=True)
+            
             if row["screenshot_url"]:
                 st.image(row["screenshot_url"], width=100, caption="Booking Screenshot")
 
