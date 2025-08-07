@@ -1859,7 +1859,6 @@ with tabs[4]:
                         load_bookings()
                         st.success("Booking deleted.")
                         st.rerun()
-
 st.markdown("---")
 st.subheader("Manual Backup")
 col_match_backup, col_player_backup = st.columns(2)
