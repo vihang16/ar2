@@ -812,8 +812,14 @@ def generate_booking_id(bookings_df, booking_date):
     return new_id
 
 def suggest_balanced_pairing(players, rank_df):
+    # Debug: Log input data
+    st.write(f"Debug: suggest_balanced_pairing called with players={players}, rank_df_columns={rank_df.columns.tolist() if not rank_df.empty else 'empty'}")
+    
     if len(players) != 4 or "" in players:
-        return "Please select all four players for a doubles match.", None, None
+        result = ("Please select all four players for a doubles match.", None, None)
+        st.write(f"Debug: Returning early due to invalid players: {result}")
+        return result
+    
     player_points = {}
     for player in players:
         if player == "Visitor" or player == "":
@@ -821,11 +827,13 @@ def suggest_balanced_pairing(players, rank_df):
         else:
             player_data = rank_df[rank_df["Player"] == player]
             player_points[player] = player_data["Points"].iloc[0] if not player_data.empty else 0
+    
     pairs = list(combinations(players, 2))
     min_diff = float('inf')
     best_pairing = None
     team1_odds = None
     team2_odds = None
+    
     for team1 in pairs:
         team2 = tuple(p for p in players if p not in team1)
         team1_points = sum(player_points[p] for p in team1)
@@ -841,11 +849,17 @@ def suggest_balanced_pairing(players, rank_df):
             else:
                 team1_odds = 50.0
                 team2_odds = 50.0
+    
     if best_pairing:
         team1, team2 = best_pairing
         pairing_text = f"Team 1: {team1[0]} & {team1[1]} vs Team 2: {team2[0]} & {team2[1]}"
-        return pairing_text, team1_odds, team2_odds
-    return "Unable to suggest a balanced pairing.", None, None
+        result = (pairing_text, team1_odds, team2_odds)
+        st.write(f"Debug: Returning valid pairing: {result}")
+        return result
+    
+    result = ("Unable to suggest a balanced pairing.", None, None)
+    st.write(f"Debug: Returning default error: {result}")
+    return result
 
 def delete_booking_from_db(booking_id):
     try:
