@@ -9,6 +9,11 @@ import urllib.parse
 import os
 import tempfile
 from subprocess import Popen, PIPE
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
@@ -222,64 +227,94 @@ def delete_player_from_db(player_name):
         supabase.table(players_table_name).delete().eq("name", player_name).execute()
     except Exception as e:
         st.error(f"Error deleting player from database: {str(e)}")
-def generate_pdf_latex(rank_df_combined, rank_df_doubles, rank_df_singles):
+
+def generate_pdf_reportlab(rank_df_combined, rank_df_doubles, rank_df_singles):
     # Format the current date
     current_date = datetime.now().strftime("%d/%m/%Y")
     
-    # Function to format DataFrame for LaTeX
-    def df_to_latex(df, ranking_type):
+    # Buffer to store PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), leftMargin=0.5*inch, rightMargin=0.5*inch, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        name='Title',
+        fontName='Helvetica-Bold',
+        fontSize=24,
+        alignment=1,  # Center
+        spaceAfter=12
+    )
+    subtitle_style = ParagraphStyle(
+        name='Subtitle',
+        fontName='Helvetica-Bold',
+        fontSize=14,
+        alignment=1,  # Center
+        spaceAfter=12
+    )
+    table_style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.yellow),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ])
+    
+    # Function to format DataFrame for table
+    def df_to_table(df, ranking_type):
         if df.empty:
-            return f"\\textbf{{{ranking_type} Rankings as of {current_date}}}\n\nNo data available for {ranking_type.lower()} rankings."
+            return [Paragraph(f"{ranking_type} Rankings as of {current_date}", subtitle_style), Paragraph(f"No data available for {ranking_type.lower()} rankings.", styles['Normal'])]
         
         # Format the DataFrame
         display_df = df[["Rank", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Games Won", "Game Diff Avg", "Recent Trend"]].copy()
         display_df["Points"] = display_df["Points"].map("{:.1f}".format)
-        display_df["Win %"] = display_df["Win %"].map("{:.1f}\%".format)
+        display_df["Win %"] = display_df["Win %"].map("{:.1f}%".format)
         display_df["Game Diff Avg"] = display_df["Game Diff Avg"].map("{:.2f}".format)
         display_df["Matches"] = display_df["Matches"].astype(int)
         display_df["Wins"] = display_df["Wins"].astype(int)
         display_df["Losses"] = display_df["Losses"].astype(int)
         display_df["Games Won"] = display_df["Games Won"].astype(int)
         
-        # Start LaTeX table
-        latex_table = f"\\textbf{{{ranking_type} Rankings as of {current_date}}}\n\n"
-        latex_table += "\\begin{tabular}{|l|l|c|c|c|c|c|c|c|}\n\\hline\n"
-        latex_table += "\\textbf{Rank} & \\textbf{Player} & \\textbf{Points} & \\textbf{Win \\%} & \\textbf{Matches} & \\textbf{Wins} & \\textbf{Losses} & \\textbf{Games Won} & \\textbf{Game Diff Avg} & \\textbf{Recent Trend} \\\\\n\\hline\n"
+        # Table data
+        headers = ["Rank", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Games Won", "Game Diff Avg", "Recent Trend"]
+        data = [headers] + display_df.values.tolist()
         
-        # Add rows
-        for _, row in display_df.iterrows():
-            # Escape special characters in player names and recent trend
-            player = row["Player"].replace("_", "\\_").replace("&", "\\&")
-            trend = row["Recent Trend"].replace("_", "\\_").replace("&", "\\&")
-            latex_table += f"{row['Rank']} & {player} & {row['Points']} & {row['Win %']} & {row['Matches']} & {row['Wins']} & {row['Losses']} & {row['Games Won']} & {row['Game Diff Avg']} & {trend} \\\\\n\\hline\n"
+        # Create table
+        col_widths = [0.6*inch, 1.5*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.8*inch, 0.8*inch, 1*inch, 1.2*inch]
+        table = Table(data, colWidths=col_widths, repeatRows=1)
+        table.setStyle(table_style)
         
-        latex_table += "\\end{tabular}"
-        return latex_table
-
-    # LaTeX document
-    latex_content = r"""
-\documentclass[a4paper,10pt]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{helvet}
-\renewcommand{\familydefault}{\sfdefault}
-\usepackage[landscape,margin=1in]{geometry}
-\usepackage{booktabs}
-\usepackage{array}
-\usepackage{graphicx}
-\usepackage{xcolor}
-\definecolor{yellow}{RGB}{255,245,0}
-\begin{document}
-\begin{center}
-    \Huge \textbf{AR Tennis League} \vspace{0.5cm}
-\end{center}
-
-""" + df_to_latex(rank_df_combined, "Combined") + r"\newpage" + \
-    df_to_latex(rank_df_doubles, "Doubles") + r"\newpage" + \
-    df_to_latex(rank_df_singles, "Singles") + r"""
-\end{document}
-"""
-    return latex_content
+        return [Paragraph(f"{ranking_type} Rankings as of {current_date}", subtitle_style), table]
+    
+    # Add main heading
+    elements.append(Paragraph("AR Tennis League", title_style))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    # Add tables
+    elements.extend(df_to_table(rank_df_combined, "Combined"))
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(PageBreak())
+    
+    elements.extend(df_to_table(rank_df_doubles, "Doubles"))
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(PageBreak())
+    
+    elements.extend(df_to_table(rank_df_singles, "Singles"))
+    
+    # Build PDF
+    doc.build(elements)
+    pdf_data = buffer.getvalue()
+    buffer.close()
+    return pdf_data
   
 
 def load_matches():
