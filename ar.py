@@ -12,6 +12,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 import io  # Added to fix 'name io is not defined' error
+from itertools import combinations
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
