@@ -29,6 +29,25 @@ def apply_custom_css():
     html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
         font-family: 'Offside', sans-serif !important;
     }
+    /* Style for tabs to spread them out */
+    div[data-testid="stTabs"] > div {
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
+    }
+    div[data-testid="stTabs"] button {
+        flex: 1;
+        text-align: center;
+        padding: 10px;
+        margin: 0 5px;
+        font-size: 1.1em;
+        color: #fff500;
+        border-bottom: 2px solid transparent;
+    }
+    div[data-testid="stTabs"] button[aria-selected="true"] {
+        border-bottom: 2px solid #fff500;
+        font-weight: bold;
+    }
     .rankings-table-container {
         width: 100%; background: rgba(255, 255, 255, 0.05); border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 0px !important; padding: 10px;
@@ -43,9 +62,9 @@ def apply_custom_css():
         width: 100%; text-align: left; padding: 2px 0; font-size: 1em; margin-bottom: 5px; word-break: break-word;
     }
     .rank-col { display: inline-block; font-size: 1.3em; font-weight: bold; margin-right: 5px; color: #fff500; }
-    .profile-col { text-align: left; margin-bottom: 10px; display: inline-block; vertical-align: middle; }
-    .player-col { font-size: 1.3em; font-weight: bold; display: inline-block; flex-grow: 1; vertical-align: middle; }
-    .rank-profile-player-group { display: flex; align-items: center; margin-bottom: 10px; }
+    .profile-col { text-align: left; margin: 0 5px 0 0; display: inline-block; vertical-align: middle; }
+    .player-col { font-size: 1.3em; font-weight: bold; display: inline-block; vertical-align: middle; margin-right: 5px; }
+    .rank-profile-player-group { display: flex; align-items: center; justify-content: flex-start; margin-bottom: 10px; }
     .points-col::before, .win-percent-col::before, .matches-col::before, .wins-col::before, .losses-col::before, .games-won-col::before, .game-diff-avg-col::before, .trend-col::before, .birthday-col::before, .partners-col::before, .best-partner-col::before {
         font-weight: bold; color: #bbbbbb;
     }
@@ -219,80 +238,6 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             </div>
             """, unsafe_allow_html=True)
     st.markdown('</div></div>', unsafe_allow_html=True)
-
-def display_match_history(df, supabase):
-    """Displays match history with options to edit or delete."""
-    match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True, key="match_history_filter")
-    filtered_matches = df.copy()
-    if match_filter != "All":
-        filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
-    
-    if 'date' in filtered_matches.columns:
-        filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
-        filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
-
-    if filtered_matches.empty:
-        st.info("No matches found.")
-        return
-        
-    for index, row in filtered_matches.iterrows():
-        def format_match_players(row):
-            t1 = [p for p in [row['team1_player1'], row.get('team1_player2')] if p]
-            t2 = [p for p in [row['team2_player1'], row.get('team2_player2')] if p]
-            t1_str = " & ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in t1])
-            t2_str = " & ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in t2])
-            return f"{t1_str} vs {t2_str}" if row['winner'] == 'Tie' else (f"{t1_str} def. {t2_str}" if row['winner'] == 'Team 1' else f"{t2_str} def. {t1_str}")
-
-        def format_scores(row):
-            scores = [s for s in [row['set1'], row['set2'], row['set3']] if s]
-            return ", ".join(scores)
-
-        cols = st.columns([1, 8, 1])
-        if row.get("match_image_url"):
-            with cols[0]:
-                st.image(row["match_image_url"], width=50)
-        with cols[1]:
-            st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
-            st.markdown(f"<span style='color: #bbbbbb;'>{format_scores(row)} on {pd.to_datetime(row['date']).strftime('%d %b %y')}</span>", unsafe_allow_html=True)
-        with cols[2]:
-            share_link = generate_whatsapp_link(row)
-            st.markdown(f'<a href="{share_link}" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="Share" style="width:30px;"/></a>', unsafe_allow_html=True)
-        st.markdown("<hr style='border-top: 1px solid #333;'>", unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("✏️ Manage Existing Match")
-    match_options = {f"{row['match_id']} | {pd.to_datetime(row['date']).strftime('%d %b %y')} - {row['team1_player1']} vs {row['team2_player1']}": row['match_id'] for _, row in filtered_matches.iterrows()}
-    selected_match_label = st.selectbox("Select a match to edit or delete", [""] + list(match_options.keys()), key="select_match_to_edit")
-
-    if selected_match_label:
-        match_id = match_options[selected_match_label]
-        row = df[df['match_id'] == match_id].iloc[0]
-        idx = df[df['match_id'] == match_id].index[0]
-        
-        with st.expander("Edit Match Details", expanded=True):
-            available_players = sorted(st.session_state.players_df["name"].dropna().tolist() + ["Visitor"])
-            all_scores = [""] + tennis_scores()
-            
-            date_edit = st.date_input("Date", value=pd.to_datetime(row['date']).date(), key=f"date_edit_{match_id}")
-            winner_edit = st.radio("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row['winner']), key=f"winner_edit_{match_id}", horizontal=True)
-            set1_edit = st.selectbox("Set 1", all_scores, index=all_scores.index(row['set1']) if row['set1'] in all_scores else 0, key=f"s1_edit_{match_id}")
-            set2_edit = st.selectbox("Set 2", all_scores, index=all_scores.index(row['set2']) if row['set2'] in all_scores else 0, key=f"s2_edit_{match_id}")
-            set3_edit = st.selectbox("Set 3", all_scores, index=all_scores.index(row['set3']) if row['set3'] in all_scores else 0, key=f"s3_edit_{match_id}")
-
-            if st.button("Save Changes", key=f"save_edit_{match_id}"):
-                st.session_state.matches_df.loc[idx, 'date'] = pd.to_datetime(date_edit)
-                st.session_state.matches_df.loc[idx, 'winner'] = winner_edit
-                st.session_state.matches_df.loc[idx, 'set1'] = set1_edit
-                st.session_state.matches_df.loc[idx, 'set2'] = set2_edit
-                st.session_state.matches_df.loc[idx, 'set3'] = set3_edit
-                save_matches(supabase, st.session_state.matches_df)
-                st.success("Match updated.")
-                st.rerun()
-
-            if st.button("🗑️ Delete This Match", key=f"delete_edit_{match_id}"):
-                delete_match_from_db(supabase, match_id)
-                st.success("Match deleted.")
-                st.rerun()
 
 def calculate_head_to_head(matches_df):
     """Calculates head-to-head records between players."""
