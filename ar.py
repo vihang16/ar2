@@ -986,7 +986,7 @@ with tabs[0]:
                 st.info("No players have played enough matches to calculate a meaningful win percentage.")
 
             st.markdown("---")
-            with st.expander("Process being used for Rankings, , expanded=False, icon="➡️""):
+            with st.expander("Process being used for Rankings, , expanded=False, icon="➡️"):
                 st.markdown("""
                 ### Ranking System Overview
                 - **Points**: Players earn 3 points for a win, 1 point for a loss, and 1.5 points for a tie.
