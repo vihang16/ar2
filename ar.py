@@ -1775,6 +1775,7 @@ with tabs[4]:
             if row['match_type'] == "Doubles" and len(players) == 4:
                 try:
                     result = suggest_balanced_pairing(players, rank_df)
+                    st.write(f"Debug: suggest_balanced_pairing result: {result}")
                     if len(result) != 3:
                         st.write(f"Debug: suggest_balanced_pairing returned incorrect number of values: {result}")
                         pairing_suggestion = "<div><strong style='color:#fff500;'>Suggested Pairing:</strong> Error in pairing calculation.</div>"
@@ -1873,6 +1874,7 @@ with tabs[4]:
                         load_bookings()
                         st.success("Booking deleted.")
                         st.rerun()
+
 st.markdown("---")
 st.subheader("Manual Backup")
 col_match_backup, col_player_backup = st.columns(2)
