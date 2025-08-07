@@ -1655,7 +1655,7 @@ with tabs[3]:
 
 with tabs[4]:
     st.header("Bookings")
-    with st.expander("➕ Book a Court", expanded=False, icon="➡️"):
+    with st.expander("➕ Enter a Bookings", expanded=False, icon="➡️"):
         st.subheader("Court Booking Form")
         match_type_booking = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key=f"booking_match_type_{st.session_state.form_key_suffix}")
         available_players = sorted([p for p in players_df["name"].dropna().tolist() if p != "Visitor"] + ["Visitor"]) if "name" in players_df.columns else ["Visitor"]
