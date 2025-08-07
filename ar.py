@@ -219,6 +219,65 @@ def delete_player_from_db(player_name):
         supabase.table(players_table_name).delete().eq("name", player_name).execute()
     except Exception as e:
         st.error(f"Error deleting player from database: {str(e)}")
+def generate_pdf_latex(rank_df_combined, rank_df_doubles, rank_df_singles):
+    # Format the current date
+    current_date = datetime.now().strftime("%d/%m/%Y")
+    
+    # Function to format DataFrame for LaTeX
+    def df_to_latex(df, ranking_type):
+        if df.empty:
+            return f"\\textbf{{{ranking_type} Rankings as of {current_date}}}\n\nNo data available for {ranking_type.lower()} rankings."
+        
+        # Format the DataFrame
+        display_df = df[["Rank", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Games Won", "Game Diff Avg", "Recent Trend"]].copy()
+        display_df["Points"] = display_df["Points"].map("{:.1f}".format)
+        display_df["Win %"] = display_df["Win %"].map("{:.1f}\%".format)
+        display_df["Game Diff Avg"] = display_df["Game Diff Avg"].map("{:.2f}".format)
+        display_df["Matches"] = display_df["Matches"].astype(int)
+        display_df["Wins"] = display_df["Wins"].astype(int)
+        display_df["Losses"] = display_df["Losses"].astype(int)
+        display_df["Games Won"] = display_df["Games Won"].astype(int)
+        
+        # Start LaTeX table
+        latex_table = f"\\textbf{{{ranking_type} Rankings as of {current_date}}}\n\n"
+        latex_table += "\\begin{tabular}{|l|l|c|c|c|c|c|c|c|}\n\\hline\n"
+        latex_table += "\\textbf{Rank} & \\textbf{Player} & \\textbf{Points} & \\textbf{Win \\%} & \\textbf{Matches} & \\textbf{Wins} & \\textbf{Losses} & \\textbf{Games Won} & \\textbf{Game Diff Avg} & \\textbf{Recent Trend} \\\\\n\\hline\n"
+        
+        # Add rows
+        for _, row in display_df.iterrows():
+            # Escape special characters in player names and recent trend
+            player = row["Player"].replace("_", "\\_").replace("&", "\\&")
+            trend = row["Recent Trend"].replace("_", "\\_").replace("&", "\\&")
+            latex_table += f"{row['Rank']} & {player} & {row['Points']} & {row['Win %']} & {row['Matches']} & {row['Wins']} & {row['Losses']} & {row['Games Won']} & {row['Game Diff Avg']} & {trend} \\\\\n\\hline\n"
+        
+        latex_table += "\\end{tabular}"
+        return latex_table
+
+    # LaTeX document
+    latex_content = r"""
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[landscape,margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\definecolor{yellow}{RGB}{255,245,0}
+\begin{document}
+\begin{center}
+    \Huge \textbf{AR Tennis League} \vspace{0.5cm}
+\end{center}
+
+""" + df_to_latex(rank_df_combined, "Combined") + r"\newpage" + \
+    df_to_latex(rank_df_doubles, "Doubles") + r"\newpage" + \
+    df_to_latex(rank_df_singles, "Singles") + r"""
+\end{document}
+"""
+    return latex_content
+  
 
 def load_matches():
     try:
