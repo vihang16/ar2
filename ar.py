@@ -813,7 +813,7 @@ def generate_booking_id(bookings_df, booking_date):
 
 def suggest_balanced_pairing(players, rank_df):
     if len(players) != 4 or "" in players:
-        return "Please select all four players for a doubles match."
+        return "Please select all four players for a doubles match.", None, None
     player_points = {}
     for player in players:
         if player == "Visitor" or player == "":
@@ -824,6 +824,8 @@ def suggest_balanced_pairing(players, rank_df):
     pairs = list(combinations(players, 2))
     min_diff = float('inf')
     best_pairing = None
+    team1_odds = None
+    team2_odds = None
     for team1 in pairs:
         team2 = tuple(p for p in players if p not in team1)
         team1_points = sum(player_points[p] for p in team1)
@@ -832,10 +834,18 @@ def suggest_balanced_pairing(players, rank_df):
         if diff < min_diff:
             min_diff = diff
             best_pairing = (team1, team2)
+            total_points = team1_points + team2_points
+            if total_points > 0:
+                team1_odds = (team1_points / total_points) * 100
+                team2_odds = (team2_points / total_points) * 100
+            else:
+                team1_odds = 50.0
+                team2_odds = 50.0
     if best_pairing:
         team1, team2 = best_pairing
-        return f"Team 1: {team1[0]} & {team1[1]} vs Team 2: {team2[0]} & {team2[1]}"
-    return "Unable to suggest a balanced pairing."
+        pairing_text = f"Team 1: {team1[0]} & {team1[1]} vs Team 2: {team2[0]} & {team2[1]}"
+        return pairing_text, team1_odds, team2_odds
+    return "Unable to suggest a balanced pairing.", None, None
 
 def delete_booking_from_db(booking_id):
     try:
