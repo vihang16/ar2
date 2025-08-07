@@ -1752,12 +1752,23 @@ with tabs[4]:
                 try:
                     if rankings_available:
                         suggested_pairing = suggest_balanced_pairing(players, rank_df)
-                        # Split the pairing string to style player names
-                        parts = suggested_pairing.split(": ")[1].split(" vs ")
-                        team1 = parts[0].split(" & ")
-                        team2 = parts[1].split(" & ")
-                        styled_pairing = f"Team 1: <span style='font-weight:bold; color:#fff500;'>{team1[0]}</span> & <span style='font-weight:bold; color:#fff500;'>{team1[1]}</span> vs Team 2: <span style='font-weight:bold; color:#fff500;'>{team2[0]}</span> & <span style='font-weight:bold; color:#fff500;'>{team2[1]}</span>"
-                        pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {styled_pairing}</div>"
+                        # Debug: Log players and pairing
+                        st.write(f"Debug: Booking {row['booking_id']} - Players: {players}, Suggested Pairing: {suggested_pairing}")
+                        # Check if the pairing is in the expected format
+                        if suggested_pairing.startswith("Team 1:") and " vs " in suggested_pairing:
+                            parts = suggested_pairing.split(": ")[1].split(" vs ")
+                            team1 = parts[0].split(" & ")
+                            team2 = parts[1].split(" & ")
+                            styled_pairing = (
+                                f"Team 1: <span style='font-weight:bold; color:#fff500;'>{team1[0]}</span> & "
+                                f"<span style='font-weight:bold; color:#fff500;'>{team1[1]}</span> vs "
+                                f"Team 2: <span style='font-weight:bold; color:#fff500;'>{team2[0]}</span> & "
+                                f"<span style='font-weight:bold; color:#fff500;'>{team2[1]}</span>"
+                            )
+                            pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {styled_pairing}</div>"
+                        else:
+                            # Display error message as is
+                            pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
                     else:
                         pairing_suggestion = "<div><strong style='color:#fff500;'>Suggested Pairing:</strong> No ranking data available.</div>"
                 except Exception as e:
