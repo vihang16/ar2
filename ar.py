@@ -52,7 +52,7 @@ st.markdown("""
 /* Birthday Banner Styling */
 .birthday-banner {
     background: linear-gradient(45deg, #d4fc79, #96e6a1);
-    color: white;
+    color: #950606;
     padding: 15px;
     border-radius: 10px;
     text-align: center;
