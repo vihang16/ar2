@@ -1060,7 +1060,7 @@ def check_birthdays(players_df):
 def display_birthday_message(birthday_players):
     """Displays a prominent birthday banner for each player in the list."""
     for player_name, birthday_str in birthday_players:
-        message = f"Happy Birthday {player_name}! ({birthday_str})"
+        message = f"Happy Birthday {player_name}! "
         whatsapp_message = f"*{message}* 🎂🎈"
         encoded_message = urllib.parse.quote(whatsapp_message)
         whatsapp_link = f"https://wa.me/?text={encoded_message}"
@@ -1069,7 +1069,7 @@ def display_birthday_message(birthday_players):
         <div class="birthday-banner">
             <span>🎂🎈 {message} 🎈🎂</span>
             <a href="{whatsapp_link}" target="_blank" class="whatsapp-share">
-                <img src="https://img.icons8.com/color/48/000000/whatsapp.png" alt="WhatsApp Share"> Share
+                <img src="https://img.icons8.com/color/48/000000/whatsapp.png" alt="WhatsApp Icon">
             </a>
         </div>
         """, unsafe_allow_html=True)
