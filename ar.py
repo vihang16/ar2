@@ -48,6 +48,45 @@ st.markdown("""
     transform: scale(1.1);
 }
 
+/* Birthday Banner Styling */
+.birthday-banner {
+    background: linear-gradient(45deg, #ff8a00, #e52e71);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.whatsapp-share img {
+    width: 24px;
+    vertical-align: middle;
+    margin-right: 5px;
+}
+.whatsapp-share {
+    background-color: #25D366;
+    color: white !important; /* Ensure text is white */
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    margin-left: 15px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.8em;
+    border: none;
+}
+.whatsapp-share:hover {
+    opacity: 0.9;
+}
+
+/* End of Birthday Banner Styling */
+
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
 html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     font-family: 'Offside', sans-serif !important;
@@ -988,12 +1027,61 @@ def generate_whatsapp_link(row):
     return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
 
 
+# Birthday Functions added
+
+def check_birthdays(players_df):
+    """Checks the players dataframe for any players whose birthday is today."""
+    today = datetime.now()
+    birthday_players = []
+    if 'birthday' in players_df.columns and not players_df.empty:
+        # Drop rows where birthday is NaT, None, or empty to avoid errors
+        valid_birthdays_df = players_df.dropna(subset=['birthday']).copy()
+        
+        # Filter for rows that match the expected 'DD-MM' format
+        valid_birthdays_df = valid_birthdays_df[valid_birthdays_df['birthday'].str.match(r'^\d{2}-\d{2}$', na=False)]
+
+        if not valid_birthdays_df.empty:
+            # Directly compare month and day from the string
+            for index, row in valid_birthdays_df.iterrows():
+                try:
+                    day, month = map(int, row['birthday'].split('-'))
+                    if month == today.month and day == today.day:
+                        birthday_players.append(row['name'])
+                except (ValueError, TypeError):
+                    # This will skip any rows with incorrectly formatted strings that slipped through
+                    continue
+            
+    return birthday_players
+
+def display_birthday_message(birthday_players):
+    """Displays a prominent birthday banner for each player in the list."""
+    for player_name in birthday_players:
+        message = f"Happy Birthday {player_name}!"
+        # Use WhatsApp's bold formatting (*text*) for the message
+        whatsapp_message = f"*{message}* 🎂🎈"
+        encoded_message = urllib.parse.quote(whatsapp_message)
+        whatsapp_link = f"https://wa.me/?text={encoded_message}"
+
+        st.markdown(f"""
+        <div class="birthday-banner">
+            <span>🎂🎈 {message} 🎈🎂</span>
+            <a href="{whatsapp_link}" target="_blank" class="whatsapp-share">
+                <img src="https://img.icons8.com/color/48/000000/whatsapp.png" alt="WhatsApp Share"> Share
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
     
 
 # --- Main App Logic ---
 load_players()
 load_matches()
 load_bookings()
+
+# Check for and display birthday messages
+todays_birthdays = check_birthdays(st.session_state.players_df)
+if todays_birthdays:
+    display_birthday_message(todays_birthdays)
+
 court_names = [
     "Alvorado 1","Alvorado 2", "Palmera 2", "Palmera 4", "Saheel", "Hattan",
     "MLC Mirador La Colleccion", "Al Mahra", "Mirador", "Reem 1", "Reem 2",
