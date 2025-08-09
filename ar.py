@@ -1030,34 +1030,39 @@ def generate_whatsapp_link(row):
 # Birthday Functions added
 
 def check_birthdays(players_df):
-    """Checks the players dataframe for any players whose birthday is today."""
+    """Checks for players whose birthday is today, supporting dd-mm, d-m, and dd-mm-yyyy formats.
+    Returns a list of (name, formatted_birthday) tuples for display."""
     today = datetime.now()
     birthday_players = []
-    if 'birthday' in players_df.columns and not players_df.empty:
-        # Drop rows where birthday is NaT, None, or empty to avoid errors
-        valid_birthdays_df = players_df.dropna(subset=['birthday']).copy()
-        
-        # Filter for rows that match the expected 'DD-MM' format
-        valid_birthdays_df = valid_birthdays_df[valid_birthdays_df['birthday'].str.match(r'^\d{2}-\d{2}$', na=False)]
 
-        if not valid_birthdays_df.empty:
-            # Directly compare month and day from the string
-            for index, row in valid_birthdays_df.iterrows():
+    if 'birthday' in players_df.columns and not players_df.empty:
+        valid_birthdays_df = players_df.dropna(subset=['birthday']).copy()
+
+        for _, row in valid_birthdays_df.iterrows():
+            raw_bday = str(row['birthday']).strip()
+            if not raw_bday:
+                continue
+
+            parts = raw_bday.split('-')
+            if len(parts) >= 2:
                 try:
-                    day, month = map(int, row['birthday'].split('-'))
-                    if month == today.month and day == today.day:
-                        birthday_players.append(row['name'])
-                except (ValueError, TypeError):
-                    # This will skip any rows with incorrectly formatted strings that slipped through
+                    day = int(parts[0])
+                    month = int(parts[1])
+                    if day == today.day and month == today.month:
+                        # Format birthday as "DD Mon"
+                        birthday_dt = datetime(2000, month, day)
+                        birthday_str = birthday_dt.strftime("%d %b")
+                        birthday_players.append((row['name'], birthday_str))
+                except ValueError:
                     continue
-            
+
     return birthday_players
+
 
 def display_birthday_message(birthday_players):
     """Displays a prominent birthday banner for each player in the list."""
-    for player_name in birthday_players:
-        message = f"Happy Birthday {player_name}!"
-        # Use WhatsApp's bold formatting (*text*) for the message
+    for player_name, birthday_str in birthday_players:
+        message = f"Happy Birthday {player_name}! ({birthday_str})"
         whatsapp_message = f"*{message}* 🎂🎈"
         encoded_message = urllib.parse.quote(whatsapp_message)
         whatsapp_link = f"https://wa.me/?text={encoded_message}"
@@ -1070,6 +1075,7 @@ def display_birthday_message(birthday_players):
             </a>
         </div>
         """, unsafe_allow_html=True)
+
     
 
 # --- Main App Logic ---
@@ -1081,6 +1087,7 @@ load_bookings()
 todays_birthdays = check_birthdays(st.session_state.players_df)
 if todays_birthdays:
     display_birthday_message(todays_birthdays)
+
 
 court_names = [
     "Alvorado 1","Alvorado 2", "Palmera 2", "Palmera 4", "Saheel", "Hattan",
