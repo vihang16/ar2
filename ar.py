@@ -1031,11 +1031,12 @@ def generate_whatsapp_link(row):
 # Birthday Functions added
 
 def check_birthdays(players_df):
-    """Checks for players whose birthday is today in various formats like dd-mm, d-m, dd MMM, dd MMM yyyy, etc."""
+    """Checks for players whose birthday is today in flexible formats."""
     today = datetime.now()
     birthday_players = []
 
     if 'birthday' in players_df.columns and not players_df.empty:
+        # Drop nulls
         valid_birthdays_df = players_df.dropna(subset=['birthday']).copy()
 
         for _, row in valid_birthdays_df.iterrows():
@@ -1044,15 +1045,22 @@ def check_birthdays(players_df):
                 continue
 
             try:
-                # Parse with dateutil to support both numeric and text month formats
-                bday_parsed = parser.parse(raw_bday, dayfirst=True)
-                if bday_parsed.day == today.day and bday_parsed.month == today.month:
-                    birthday_str = bday_parsed.strftime("%d %b")
-                    birthday_players.append((row['name'], birthday_str))
-            except (ValueError, TypeError):
-                continue
+                # Try parsing using day-first to handle '09 Aug', '9-8', etc.
+                bday_parsed = datetime.strptime(raw_bday, "%d %b")
+            except ValueError:
+                try:
+                    bday_parsed = datetime.strptime(raw_bday, "%d-%m")
+                except ValueError:
+                    try:
+                        bday_parsed = datetime.strptime(raw_bday, "%d-%m-%Y")
+                    except ValueError:
+                        continue  # skip if can't parse
+
+            if bday_parsed.day == today.day and bday_parsed.month == today.month:
+                birthday_players.append(row['name'])
 
     return birthday_players
+
 
 
 def display_birthday_message(birthday_players):
