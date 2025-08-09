@@ -51,7 +51,7 @@ st.markdown("""
 
 /* Birthday Banner Styling */
 .birthday-banner {
-    background: linear-gradient(45deg, #d4fc79, #96e6a1);
+    background: linear-gradient(45deg, #FFFF00, #EEE8AA);
     color: #950606;
     padding: 15px;
     border-radius: 10px;
