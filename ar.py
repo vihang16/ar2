@@ -13,6 +13,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 import io  # Added to fix 'name io is not defined' error
 from itertools import combinations
+from dateutil import parser
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
@@ -1030,8 +1031,7 @@ def generate_whatsapp_link(row):
 # Birthday Functions added
 
 def check_birthdays(players_df):
-    """Checks for players whose birthday is today, supporting dd-mm, d-m, and dd-mm-yyyy formats.
-    Returns a list of (name, formatted_birthday) tuples for display."""
+    """Checks for players whose birthday is today in various formats like dd-mm, d-m, dd MMM, dd MMM yyyy, etc."""
     today = datetime.now()
     birthday_players = []
 
@@ -1043,18 +1043,14 @@ def check_birthdays(players_df):
             if not raw_bday:
                 continue
 
-            parts = raw_bday.split('-')
-            if len(parts) >= 2:
-                try:
-                    day = int(parts[0])
-                    month = int(parts[1])
-                    if day == today.day and month == today.month:
-                        # Format birthday as "DD Mon"
-                        birthday_dt = datetime(2000, month, day)
-                        birthday_str = birthday_dt.strftime("%d %b")
-                        birthday_players.append((row['name'], birthday_str))
-                except ValueError:
-                    continue
+            try:
+                # Parse with dateutil to support both numeric and text month formats
+                bday_parsed = parser.parse(raw_bday, dayfirst=True)
+                if bday_parsed.day == today.day and bday_parsed.month == today.month:
+                    birthday_str = bday_parsed.strftime("%d %b")
+                    birthday_players.append((row['name'], birthday_str))
+            except (ValueError, TypeError):
+                continue
 
     return birthday_players
 
