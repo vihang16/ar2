@@ -1031,34 +1031,44 @@ def generate_whatsapp_link(row):
 # Birthday Functions added
 
 def check_birthdays(players_df):
-    """Checks for players whose birthday is today in flexible formats."""
+    """Checks for players whose birthday is today in dd-mm format."""
     today = datetime.now()
     birthday_players = []
 
     if 'birthday' in players_df.columns and not players_df.empty:
-        # Drop nulls
         valid_birthdays_df = players_df.dropna(subset=['birthday']).copy()
 
         for _, row in valid_birthdays_df.iterrows():
             raw_bday = str(row['birthday']).strip()
+            player_name = row['name']
             if not raw_bday:
+                st.warning(f"No birthday data for player {player_name}")
                 continue
 
             try:
-                # Try parsing using day-first to handle '09 Aug', '9-8', etc.
-                bday_parsed = datetime.strptime(raw_bday, "%d %b")
-            except ValueError:
-                try:
-                    bday_parsed = datetime.strptime(raw_bday, "%d-%m")
-                except ValueError:
-                    try:
-                        bday_parsed = datetime.strptime(raw_bday, "%d-%m-%Y")
-                    except ValueError:
-                        continue  # skip if can't parse
+                # Explicitly parse dd-mm format
+                if re.match(r'^\d{2}-\d{2}$', raw_bday):
+                    day, month = map(int, raw_bday.split('-'))
+                    # Validate day and month
+                    if 1 <= day <= 31 and 1 <= month <= 12:
+                        # Create a datetime object with a dummy year for comparison
+                        bday_dt = datetime(2000, month, day)
+                        if bday_dt.day == today.day and bday_dt.month == today.month:
+                            birthday_str = bday_dt.strftime("%d %b")
+                            birthday_players.append((player_name, birthday_str))
+                            st.info(f"Birthday match found: {player_name} on {birthday_str}")
+                        else:
+                            st.info(f"No match for {player_name}: {raw_bday} (Parsed: {bday_dt.day:02d}-{bday_dt.month:02d}, Today: {today.day:02d}-{today.month:02d})")
+                    else:
+                        st.warning(f"Invalid day or month for {player_name}: {raw_bday}")
+                else:
+                    st.warning(f"Invalid birthday format for {player_name}: {raw_bday}")
+            except (ValueError, TypeError) as e:
+                st.warning(f"Error parsing birthday for {player_name}: {raw_bday}, Error: {str(e)}")
+                continue
 
-            if bday_parsed.day == today.day and bday_parsed.month == today.month:
-                birthday_players.append(row['name'])
-
+    if not birthday_players:
+        st.info("No birthdays match today's date.")
     return birthday_players
 
 
