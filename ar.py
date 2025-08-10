@@ -1430,6 +1430,9 @@ with tabs[0]:
             else:
                 st.info("No players have played enough matches to calculate a meaningful win percentage.")
 
+            if 'matches_df' in st.session_state and not st.session_state.matches_df.empty:
+                display_community_stats(st.session_state.matches_df)
+
             st.markdown("---")
             with st.expander("Process being used for Rankings" , expanded=False, icon="➡️"):
                 st.markdown("""
