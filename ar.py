@@ -1500,6 +1500,15 @@ with tabs[0]:
                 display_community_stats(st.session_state.matches_df)
 
             st.markdown("---")
+            st.markdown("### 📊 Player Performance Overview")
+            nerd_chart = create_nerd_stats_chart(rank_df)
+            if nerd_chart:
+                st.plotly_chart(nerd_chart, use_container_width=True)
+            else:
+                st.info("Not enough data to generate the performance chart.")
+            # --- End of Inserted Chart Section ---
+
+            st.markdown("---")
             with st.expander("Process being used for Rankings" , expanded=False, icon="➡️"):
                 st.markdown("""
                 ### Ranking System Overview
