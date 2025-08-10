@@ -2085,7 +2085,7 @@ with tabs[4]:
             players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
             date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
             
-            # UPDATED: Display time in AM/PM format
+            # Display time in AM/PM format
             time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
 
             pairing_suggestion = "" 
@@ -2110,9 +2110,9 @@ with tabs[4]:
             st.markdown(f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
                 <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
-                <div><strong>Date:</strong> {date_str}</div>
-                <div><strong>Time:</strong> {time_ampm}</div>
-                <div><strong>Match Type:</strong> {row['match_type']}</div>
+                <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
+                <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
+                <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
                 <div><strong>Players:</strong> {players_str}</div>
                 {pairing_suggestion}
             </div>
