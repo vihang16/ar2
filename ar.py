@@ -1612,11 +1612,6 @@ with tabs[0]:
             # --- End of new chart integration ---
 
             st.markdown("---")
-
-
-            
-
-            st.markdown("---")
             with st.expander("Process being used for Rankings" , expanded=False, icon="➡️"):
                 st.markdown("""
                 ### Ranking System Overview
