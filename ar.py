@@ -861,6 +861,7 @@ def display_community_stats(matches_df):
         st.info("No wins recorded in the last 7 days.")
 
 # Chart --------------
+
 def create_nerd_stats_chart(rank_df):
     """Creates a styled, stacked bar chart for player performance."""
     if rank_df is None or rank_df.empty:
@@ -872,7 +873,8 @@ def create_nerd_stats_chart(rank_df):
     # Define colors
     optic_yellow = '#fff500'
     bright_orange = '#FFA500'
-    bar_colors = ['#7FFFD4', '#40E0D0', '#20B2AA']  # Aquamarine -> Turquoise -> LightSeaGreen
+    # Updated color palette for higher contrast
+    bar_colors = ['#1E90FF', '#FFD700', '#9A5BE2']  # Dodger Blue, Gold, and a vibrant Purple
 
     fig = go.Figure()
 
@@ -936,6 +938,9 @@ def create_nerd_stats_chart(rank_df):
     )
 
     return fig
+
+
+
 # --------------------------------------
 
 
