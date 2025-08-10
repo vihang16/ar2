@@ -2090,40 +2090,34 @@ with tabs[4]:
 
             pairing_suggestion = "" 
 
-            try:
+           try:
                 if row['match_type'] == "Doubles" and len(players) == 4:
                     suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
                     
-                    # Check if odds were successfully calculated. 
-                    # If not, `suggested_pairing` will contain an error message.
                     if team1_odds is not None and team2_odds is not None:
-                        # The original string is "Team 1: P1 & P2 vs Team 2: P3 & P4"
-                        
-                        # Split the string into two teams. This assumes ' vs ' is a unique separator.
                         teams = suggested_pairing.split(' vs ')
-                        
-                        # Isolate team player strings by removing the "Team X: " prefixes
                         team1_players = teams[0].replace('Team 1: ', '')
                         team2_players = teams[1].replace('Team 2: ', '')
 
-                        # Construct the new format as requested
+                        # The "Suggested Pairing:" label is now set to white
                         pairing_suggestion = (
-                            f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> "
+                            f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
                             f"{team1_players} (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
                             f"{team2_players} (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
                         )
                     else:
-                        # If odds are None, display the error message from `suggested_pairing`
-                        pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
+                        # Also updated here for the fallback case
+                        pairing_suggestion = f"<div><strong style='color:white;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
 
                 elif row['match_type'] == "Singles" and len(players) == 2:
                     p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
                     if p1_odds is not None:
                         p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
                         p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
-                        pairing_suggestion = f"<div><strong style='color:#fff500;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
+                        # The "Odds:" label is also set to white for consistency
+                        pairing_suggestion = f"<div><strong style='color:white;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
             except Exception as e:
-                pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggestion:</strong> Error calculating: {e}</div>"
+                pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
 
 
 
