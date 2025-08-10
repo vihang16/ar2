@@ -942,7 +942,74 @@ def create_nerd_stats_chart(rank_df):
 
 
 # --------------------------------------
+def create_partnership_chart(player_name, partner_stats, players_df):
+    """Creates a horizontal bar chart showing a player's performance with different partners."""
+    if player_name not in partner_stats or not partner_stats[player_name]:
+        return None
 
+    partners_data = partner_stats[player_name]
+    
+    # Exclude "Visitor" and prepare data for DataFrame
+    chart_data = []
+    for partner, stats in partners_data.items():
+        if partner == "Visitor":
+            continue
+        win_percentage = (stats['wins'] / stats['matches'] * 100) if stats['matches'] > 0 else 0
+        chart_data.append({
+            'Partner': partner,
+            'Win %': win_percentage,
+            'Matches Played': stats['matches'],
+            'Wins': stats['wins'],
+            'Losses': stats['losses']
+        })
+
+    if not chart_data:
+        return None
+
+    df = pd.DataFrame(chart_data).sort_values(by='Win %', ascending=True)
+
+    # Define colors
+    optic_yellow = '#fff500'
+    bright_orange = '#FFA500'
+    
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        y=df['Partner'],
+        x=df['Win %'],
+        orientation='h',
+        text=df.apply(lambda row: f"{row['Wins']}W - {row['Losses']}L ({row['Matches Played']} Matches)", axis=1),
+        textposition='auto',
+        marker=dict(
+            color=df['Win %'],
+            colorscale='Viridis', # A nice color scale from purple to yellow
+            colorbar=dict(title='Win %')
+        )
+    ))
+
+    fig.update_layout(
+        title=f'Partnership Performance for: {player_name}',
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color=optic_yellow),
+        xaxis=dict(
+            title='Win Percentage (%)',
+            titlefont=dict(color=optic_yellow),
+            tickfont=dict(color=optic_yellow),
+            showgrid=True,
+            gridcolor='rgba(255, 165, 0, 0.2)'
+        ),
+        yaxis=dict(
+            title='Partner',
+            titlefont=dict(color=optic_yellow),
+            tickfont=dict(color=optic_yellow),
+            showgrid=False
+        ),
+        margin=dict(l=100, r=20, t=60, b=40) # Adjust left margin for partner names
+    )
+
+    return fig
+  #-----------------------------------------------------------------------------------
 
 def load_bookings():
     try:
