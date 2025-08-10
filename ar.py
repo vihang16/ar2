@@ -843,16 +843,6 @@ def display_community_stats(matches_df):
     num_active_players = len(active_players)
     st.metric("Active Players", num_active_players)
 
-    # 3. Most active player in the last 7 days
-    all_players_list = recent_matches[player_columns].values.ravel('K').tolist()
-    all_players_list = [p for p in all_players_list if pd.notna(p) and p != '']
-
-    if all_players_list:
-        player_counts = pd.Series(all_players_list).value_counts()
-        most_active_player = player_counts.index[0]
-        most_active_player_matches = player_counts.iloc[0]
-        st.metric("Most Active Player", f"{most_active_player} ({most_active_player_matches} matches)")
-
     # 4. Other interesting item: Top 5 players with the most wins in the last 7 days
     st.markdown("##### Top 5 Winners (Last 7 Days)")
     winners = []
