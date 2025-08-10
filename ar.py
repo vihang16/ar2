@@ -1421,7 +1421,7 @@ with tabs[0]:
                 st.info("No players have played enough matches to calculate a meaningful win percentage.")
 
             st.markdown("---")
-            st.markdown(f"### Community Activity : Last 7 Days ")    
+            st.markdown(f"###🗓️ Community Activity : Last 7 Days ")    
 
             if 'matches_df' in st.session_state and not st.session_state.matches_df.empty:
                 display_community_stats(st.session_state.matches_df)
