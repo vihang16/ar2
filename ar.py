@@ -223,8 +223,9 @@ div.st-emotion-cache-1jm692n h3 {
 
 /* Streamlit tabs for mobile responsiveness */
 .stTabs [data-baseweb="tab-list"] {
-    flex-wrap: wrap;
-    gap: 5px;
+    flex-wrap: nowrap; /* Prevents tabs from wrapping to the next line */
+    overflow-x: auto;  /* Adds a horizontal scrollbar if tabs overflow */
+    gap: 10px;         /* Optional: Adjust gap for better spacing */
 }
 
 .stTabs [data-baseweb="tab"] {
