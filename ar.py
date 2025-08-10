@@ -811,6 +811,67 @@ def calculate_rankings(matches_to_rank):
 
 from itertools import combinations  # Required for suggest_balanced_pairing
 
+
+def display_community_stats(matches_df):
+    """
+    Calculates and displays interesting community stats for the last 7 days.
+    """
+    st.subheader("AR Tennis Community Interesting Facts (Last 7 Days)")
+
+    # Ensure the 'date' column is in datetime format
+    matches_df['date'] = pd.to_datetime(matches_df['date'], errors='coerce')
+
+    # Get the date 7 days ago from today
+    seven_days_ago = datetime.now() - pd.Timedelta(days=7)
+
+    # Filter matches from the last 7 days
+    recent_matches = matches_df[matches_df['date'] >= seven_days_ago]
+
+    if recent_matches.empty:
+        st.info("No matches played in the last 7 days.")
+        return
+
+    # 1. Number of matches played in the last 7 days
+    num_matches = len(recent_matches)
+    st.metric("Matches Played", num_matches)
+
+    # 2. Number of active players in the last 7 days
+    player_columns = ['team1_player1', 'team1_player2', 'team2_player1', 'team2_player2']
+    active_players = pd.unique(recent_matches[player_columns].values.ravel('K'))
+    # Remove any potential 'None' or empty values
+    active_players = [player for player in active_players if pd.notna(player) and player != '']
+    num_active_players = len(active_players)
+    st.metric("Active Players", num_active_players)
+
+    # 3. Most active player in the last 7 days
+    all_players_list = recent_matches[player_columns].values.ravel('K').tolist()
+    all_players_list = [p for p in all_players_list if pd.notna(p) and p != '']
+
+    if all_players_list:
+        player_counts = pd.Series(all_players_list).value_counts()
+        most_active_player = player_counts.index[0]
+        most_active_player_matches = player_counts.iloc[0]
+        st.metric("Most Active Player", f"{most_active_player} ({most_active_player_matches} matches)")
+
+    # 4. Other interesting item: Top 5 players with the most wins in the last 7 days
+    st.markdown("##### Top 5 Winners (Last 7 Days)")
+    winners = []
+    for index, row in recent_matches.iterrows():
+        if row['winner'] == 'Team 1':
+            winners.extend([row['team1_player1'], row['team1_player2']])
+        elif row['winner'] == 'Team 2':
+            winners.extend([row['team2_player1'], row['team2_player2']])
+
+    winners = [w for w in winners if pd.notna(w) and w != '']
+    if winners:
+        win_counts = pd.Series(winners).value_counts().nlargest(5)
+        st.table(win_counts)
+    else:
+        st.info("No wins recorded in the last 7 days.")
+
+
+
+
 def load_bookings():
     try:
         response = supabase.table(bookings_table_name).select("*").execute()
