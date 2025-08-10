@@ -2122,9 +2122,11 @@ with tabs[4]:
                         p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
                         p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
                         pairing_suggestion = f"<div><strong style='color:#fff500;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
-        except Exception as e:
+            except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggestion:</strong> Error calculating: {e}</div>"
 
+            
+            
             st.markdown(f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
                 <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
