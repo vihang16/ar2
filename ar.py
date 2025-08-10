@@ -2090,7 +2090,7 @@ with tabs[4]:
 
             pairing_suggestion = "" 
 
-        try:
+            try:
                 if row['match_type'] == "Doubles" and len(players) == 4:
                     suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
                     
@@ -2124,6 +2124,8 @@ with tabs[4]:
                         pairing_suggestion = f"<div><strong style='color:#fff500;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
             except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggestion:</strong> Error calculating: {e}</div>"
+
+
 
             
             
