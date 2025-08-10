@@ -942,6 +942,7 @@ def create_nerd_stats_chart(rank_df):
 
 
 # --------------------------------------
+
 def create_partnership_chart(player_name, partner_stats, players_df):
     """Creates a horizontal bar chart showing a player's performance with different partners."""
     if player_name not in partner_stats or not partner_stats[player_name]:
@@ -970,7 +971,6 @@ def create_partnership_chart(player_name, partner_stats, players_df):
 
     # Define colors
     optic_yellow = '#fff500'
-    bright_orange = '#FFA500'
     
     fig = go.Figure()
 
@@ -982,33 +982,35 @@ def create_partnership_chart(player_name, partner_stats, players_df):
         textposition='auto',
         marker=dict(
             color=df['Win %'],
-            colorscale='Viridis', # A nice color scale from purple to yellow
+            colorscale='Viridis',
             colorbar=dict(title='Win %')
         )
     ))
 
+    # --- THIS SECTION IS CORRECTED ---
     fig.update_layout(
         title=f'Partnership Performance for: {player_name}',
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(color=optic_yellow),
         xaxis=dict(
-            title='Win Percentage (%)',
-            titlefont=dict(color=optic_yellow),
+            title=dict(text='Win Percentage (%)', font=dict(color=optic_yellow)),
             tickfont=dict(color=optic_yellow),
             showgrid=True,
             gridcolor='rgba(255, 165, 0, 0.2)'
         ),
         yaxis=dict(
-            title='Partner',
-            titlefont=dict(color=optic_yellow),
+            title=dict(text='Partner', font=dict(color=optic_yellow)),
             tickfont=dict(color=optic_yellow),
             showgrid=False
         ),
-        margin=dict(l=100, r=20, t=60, b=40) # Adjust left margin for partner names
+        margin=dict(l=100, r=20, t=60, b=40)
     )
 
     return fig
+
+
+
   #-----------------------------------------------------------------------------------
 
 def load_bookings():
