@@ -859,7 +859,80 @@ def display_community_stats(matches_df):
     else:
         st.info("No wins recorded in the last 7 days.")
 
+# Chart --------------
+def create_nerd_stats_chart(rank_df):
+    """Creates a styled, stacked bar chart for player performance."""
+    if rank_df is None or rank_df.empty:
+        return None
 
+    # Sort players from highest to lowest rank (which is the default order of rank_df)
+    df = rank_df.copy()
+
+    # Define colors
+    optic_yellow = '#fff500'
+    bright_orange = '#FFA500'
+    bar_colors = ['#7FFFD4', '#40E0D0', '#20B2AA']  # Aquamarine -> Turquoise -> LightSeaGreen
+
+    fig = go.Figure()
+
+    # Add traces for the stacked bars as per the user's request
+    fig.add_trace(go.Bar(
+        x=df['Player'],
+        y=df['Matches'],
+        name='Matches Played',
+        marker_color=bar_colors[0]
+    ))
+    fig.add_trace(go.Bar(
+        x=df['Player'],
+        y=df['Wins'],
+        name='Matches Won',
+        marker_color=bar_colors[1]
+    ))
+    fig.add_trace(go.Bar(
+        x=df['Player'],
+        y=df['Points'],
+        name='Points',
+        marker_color=bar_colors[2]
+    ))
+
+    # Update the layout for custom styling
+    fig.update_layout(
+        barmode='stack',
+        paper_bgcolor='rgba(0,0,0,0)',  # Transparent background
+        plot_bgcolor='rgba(0,0,0,0)',   # Transparent plot area
+        font=dict(color=optic_yellow),  # Set default font color for the chart
+        xaxis=dict(
+            title_text='Players (Ranked Highest to Lowest)',
+            tickfont=dict(color=optic_yellow),
+            titlefont=dict(color=optic_yellow),
+            showgrid=False,
+            linecolor=bright_orange,
+            linewidth=2,
+            mirror=True
+        ),
+        yaxis=dict(
+            title_text='Stacked Value (Points + Wins + Matches)',
+            tickfont=dict(color=optic_yellow),
+            titlefont=dict(color=optic_yellow),
+            gridcolor='rgba(255, 165, 0, 0.2)',  # Faint orange grid lines
+            linecolor=bright_orange,
+            linewidth=2,
+            mirror=True
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            font=dict(color=optic_yellow)
+        ),
+        margin=dict(t=60, b=10, l=10, r=10)  # Adjust top margin for legend
+    )
+
+    return fig
+
+# --------------------------------------
 
 
 def load_bookings():
