@@ -1583,6 +1583,36 @@ with tabs[0]:
             else:
                 st.info("Not enough data to generate the performance chart.")
             # --- End of Inserted Chart Section ---
+            # --- Start of new chart integration ---
+            st.markdown("---")
+            st.markdown("### 🤝 Partnership Performance Analyzer")
+
+            # Get a list of players who have played doubles
+            doubles_players = []
+            if partner_stats:
+                doubles_players = sorted([p for p in partner_stats.keys() if p != "Visitor"])
+
+            if not doubles_players:
+                st.info("No doubles match data available to analyze partnerships.")
+            else:
+                selected_player_for_partners = st.selectbox(
+                    "Select a player to see their partnership stats:",
+                    doubles_players
+                )
+
+                if selected_player_for_partners:
+                    partnership_chart = create_partnership_chart(selected_player_for_partners, partner_stats, players_df)
+                    if partnership_chart:
+                        st.plotly_chart(partnership_chart, use_container_width=True)
+                    else:
+                        st.info(f"{selected_player_for_partners} has no partnership data to display.")
+
+            # --- End of new chart integration ---
+
+            st.markdown("---")
+
+
+            
 
             st.markdown("---")
             with st.expander("Process being used for Rankings" , expanded=False, icon="➡️"):
