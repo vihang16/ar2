@@ -903,18 +903,22 @@ def create_nerd_stats_chart(rank_df):
         plot_bgcolor='rgba(0,0,0,0)',   # Transparent plot area
         font=dict(color=optic_yellow),  # Set default font color for the chart
         xaxis=dict(
-            title='Players (Ranked Highest to Lowest)', # Corrected property from title_text to title
+            title=dict(
+                text='Players (Ranked Highest to Lowest)',
+                font=dict(color=optic_yellow)
+            ),
             tickfont=dict(color=optic_yellow),
-            titlefont=dict(color=optic_yellow),
             showgrid=False,
             linecolor=bright_orange,
             linewidth=2,
             mirror=True
         ),
         yaxis=dict(
-            title='Stacked Value (Points + Wins + Matches)', # Corrected property from title_text to title
+            title=dict(
+                text='Stacked Value (Points + Wins + Matches)',
+                font=dict(color=optic_yellow)
+            ),
             tickfont=dict(color=optic_yellow),
-            titlefont=dict(color=optic_yellow),
             gridcolor='rgba(255, 165, 0, 0.2)',  # Faint orange grid lines
             linecolor=bright_orange,
             linewidth=2,
