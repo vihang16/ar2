@@ -1928,7 +1928,10 @@ with tabs[4]:
                     p4_booking = ""
                 court_name = st.selectbox("Court Name *", [""] + court_names, key=f"court_booking_{st.session_state.form_key_suffix}")
                 booking_date = st.date_input("Booking Date *", value=datetime.now().date(), key=f"date_booking_{st.session_state.form_key_suffix}")
-                hours = [f"{h:02d}:00" for h in range(6, 22)]  # 6 AM to 9 PM
+                
+                # UPDATED: Generate time slots in AM/PM format
+                hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
+                
                 booking_time = st.selectbox("Booking Time *", hours, key=f"time_booking_{st.session_state.form_key_suffix}")
                 screenshot = st.file_uploader("Upload Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"screenshot_booking_{st.session_state.form_key_suffix}")
                 st.markdown("*Required fields", unsafe_allow_html=True)
@@ -1939,6 +1942,9 @@ with tabs[4]:
                     elif not booking_date or not booking_time:
                         st.error("Booking date and time are required.")
                     else:
+                        # Convert AM/PM time back to 24-hour format for consistent storage
+                        time_24hr = datetime.strptime(booking_time, "%I:%M %p").strftime("%H:%M")
+                        
                         selected_players = [p for p in [p1_booking, p2_booking, p3_booking, p4_booking] if p]
                         if match_type_booking == "Doubles" and len(set(selected_players)) != len(selected_players):
                             st.error("Please select different players for each position.")
@@ -1950,7 +1956,7 @@ with tabs[4]:
                             new_booking = {
                                 "booking_id": booking_id,
                                 "date": booking_date,
-                                "time": booking_time,
+                                "time": time_24hr, # Save in 24hr format
                                 "match_type": match_type_booking,
                                 "court_name": court_name,
                                 "player1": p1_booking,
@@ -1974,7 +1980,6 @@ with tabs[4]:
     else:
         bookings_df['datetime'] = pd.to_datetime(bookings_df['date'] + ' ' + bookings_df['time'], errors='coerce')
         bookings_df = bookings_df.sort_values(by='datetime', ascending=True).reset_index(drop=True)
-        # Compute rankings once for efficiency
         try:
             rank_df, _ = calculate_rankings(st.session_state.matches_df)
         except Exception as e:
@@ -1986,10 +1991,12 @@ with tabs[4]:
             players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
             date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
             
-            pairing_suggestion = "" # Initialize empty suggestion
+            # UPDATED: Display time in AM/PM format
+            time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
+
+            pairing_suggestion = "" 
 
             try:
-                # Handle doubles matches
                 if row['match_type'] == "Doubles" and len(players) == 4:
                     suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
                     if team1_odds is not None:
@@ -1997,25 +2004,20 @@ with tabs[4]:
                         pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {suggested_pairing}{odds_text}</div>"
                     else:
                         pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
-
-                # Handle singles matches
                 elif row['match_type'] == "Singles" and len(players) == 2:
                     p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
                     if p1_odds is not None:
                         p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
                         p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
                         pairing_suggestion = f"<div><strong style='color:#fff500;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
-
             except Exception as e:
-                # This will catch any unexpected errors during calculation
                 pairing_suggestion = f"<div><strong style='color:#fff500;'>Suggestion:</strong> Error calculating: {e}</div>"
 
-            # Display the booking card
             st.markdown(f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
                 <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
                 <div><strong>Date:</strong> {date_str}</div>
-                <div><strong>Time:</strong> {row['time']}</div>
+                <div><strong>Time:</strong> {time_ampm}</div>
                 <div><strong>Match Type:</strong> {row['match_type']}</div>
                 <div><strong>Players:</strong> {players_str}</div>
                 {pairing_suggestion}
@@ -2033,9 +2035,10 @@ with tabs[4]:
         booking_options = []
         for _, row in bookings_df.iterrows():
             date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
+            time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
             players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
             players_str = ", ".join(players) if players else "No players"
-            desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {row['time']} | Match Type: {row['match_type']} | Players: {players_str}"
+            desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str}"
             booking_options.append(f"{desc} | Booking ID: {row['booking_id']}")
         selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key="select_booking_to_edit")
         if selected_booking:
@@ -2044,10 +2047,19 @@ with tabs[4]:
             booking_idx = bookings_df[bookings_df["booking_id"] == booking_id].index[0]
             with st.expander("Edit Booking Details"):
                 date_edit = st.date_input("Booking Date *", value=pd.to_datetime(booking_row["date"]).date(), key=f"edit_booking_date_{booking_id}")
-                hours = [f"{h:02d}:00" for h in range(6, 22)]
-                time_edit = st.selectbox("Booking Time *", hours, index=hours.index(booking_row["time"]) if booking_row["time"] in hours else 0, key=f"edit_booking_time_{booking_id}")
+                
+                # UPDATED: Generate and handle AM/PM time slots for editing
+                hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
+                
+                # Convert the stored 24hr time to AM/PM to find the correct index
+                current_time_ampm = datetime.strptime(booking_row["time"], "%H:%M").strftime("%-I:00 %p")
+                time_index = hours.index(current_time_ampm) if current_time_ampm in hours else 0
+                
+                time_edit = st.selectbox("Booking Time *", hours, index=time_index, key=f"edit_booking_time_{booking_id}")
+                
                 match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if booking_row["match_type"] == "Doubles" else 1, key=f"edit_booking_match_type_{booking_id}")
                 if match_type_edit == "Doubles":
+                    # ... (rest of the form remains the same)
                     col1, col2 = st.columns(2)
                     with col1:
                         p1_edit = st.selectbox("Team 1 - Player 1 (optional)", [""] + available_players, index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0, key=f"edit_t1p1_{booking_id}")
@@ -2078,10 +2090,14 @@ with tabs[4]:
                                 screenshot_url_edit = booking_row["screenshot_url"]
                                 if screenshot_edit:
                                     screenshot_url_edit = upload_image_to_supabase(screenshot_edit, booking_id, image_type="booking")
+                                
+                                # Convert edited AM/PM time back to 24-hour format
+                                time_24hr_edit = datetime.strptime(time_edit, "%I:%M %p").strftime("%H:%M")
+
                                 st.session_state.bookings_df.loc[booking_idx] = {
                                     "booking_id": booking_id,
                                     "date": date_edit,
-                                    "time": time_edit,
+                                    "time": time_24hr_edit, # Save in 24hr format
                                     "match_type": match_type_edit,
                                     "court_name": court_edit,
                                     "player1": p1_edit,
