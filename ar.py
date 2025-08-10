@@ -816,7 +816,7 @@ def display_community_stats(matches_df):
     """
     Calculates and displays interesting community stats for the last 7 days.
     """
-    st.subheader("AR Tennis Community Interesting Facts (Last 7 Days)")
+    #st.subheader("AR Tennis Community Interesting Facts (Last 7 Days)")
 
     # Ensure the 'date' column is in datetime format
     matches_df['date'] = pd.to_datetime(matches_df['date'], errors='coerce')
