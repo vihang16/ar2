@@ -14,6 +14,7 @@ from reportlab.lib.units import inch
 import io  # Added to fix 'name io is not defined' error
 from itertools import combinations
 from dateutil import parser
+import plotly.graph_objects as go # Added for the new chart
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
