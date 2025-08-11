@@ -546,7 +546,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
     view_option = st.radio("Select View", ["Player Insights", "Birthdays"], horizontal=True, key=f"{key_prefix}view_selector")
 
     if view_option == "Birthdays":
-        # ... (This part remains unchanged)
+        # ... (Birthday view code remains unchanged)
         birthday_data = []
         for player in selected_players:
             player_info = players_df[players_df["name"] == player].iloc[0] if player in players_df["name"].values else None
@@ -557,7 +557,6 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             if birthday and re.match(r'^\d{2}-\d{2}$', birthday):
                 try:
                     day, month = map(int, birthday.split("-"))
-                    # Create a datetime object for sorting (use a fixed year for consistency)
                     birthday_dt = datetime.strptime(f"{day:02d}-{month:02d}-2000", "%d-%m-%Y")
                     birthday_formatted = birthday_dt.strftime("%d %b")
                     birthday_data.append({
@@ -573,11 +572,9 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             st.info("No valid birthday data available for selected players.")
             return
 
-        # Convert to DataFrame and sort by birthday
         birthday_df = pd.DataFrame(birthday_data)
         birthday_df = birthday_df.sort_values(by="SortDate").reset_index(drop=True)
 
-        # Display birthdays in a card-like format
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
         for _, row in birthday_df.iterrows():
@@ -596,9 +593,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-
     else:  # Player Insights view
-        # Filter players who have played at least one match, excluding "Visitor"
         active_players = []
         for player in selected_players:
             if player in rank_df["Player"].values and player != "Visitor":
@@ -606,19 +601,16 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
                 if player_data["Matches"] > 0:
                     active_players.append(player)
 
-        # Sort active players by name
         active_players = sorted(active_players)
 
         if not active_players:
             st.info("No players with matches played are available for insights.")
             return
 
-        # Use the same container and scroll styling as rankings
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
 
         for selected_player in active_players:
-            # Fetch player information
             player_info = players_df[players_df["name"] == selected_player].iloc[0] if selected_player in players_df["name"].values else None
             if player_info is None:
                 continue
@@ -626,13 +618,10 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             profile_image = player_info.get("profile_image_url", "")
             trend = get_player_trend(selected_player, matches_df)
 
-            # Prepare profile image HTML with link to full image
             profile_html = f'<a href="{profile_image}" target="_blank"><img src="{profile_image}" class="profile-image" alt="Profile"></a>' if profile_image else ''
 
-            # Style player name and values
             player_styled = f"<span style='font-weight:bold; color:#fff500;'>{selected_player}</span>"
 
-            # Populate stats for players with match data
             player_data = rank_df[rank_df["Player"] == selected_player].iloc[0]
             rank = player_data["Rank"]
             points = player_data["Points"]
@@ -641,7 +630,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             wins = int(player_data["Wins"])
             losses = int(player_data["Losses"])
             game_diff_avg = player_data["Game Diff Avg"]
-            cumulative_game_diff = int(player_data["Cumulative Game Diff"]) # New: Get the value
+            cumulative_game_diff = int(player_data["Cumulative Game Diff"])
             games_won = int(player_data["Games Won"])
 
             # Partners and most effective partner, excluding "Visitor"
@@ -655,8 +644,8 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
                 sorted_partners = sorted(
                     [(p, item) for p, item in partner_stats[selected_player].items() if p != "Visitor"],
                     key=lambda item: (
-                        item[1]['wins'] / item[1]['matches'] if item[1]['matches'] > 0 else 0,  # Win percentage
-                        item[1]['game_diff_sum'] / item[1]['matches'] if item[1]['matches'] > 0 else 0,  # Average game diff
+                        item[1]['wins'] / item[1]['matches'] if item[1]['matches'] > 0 else 0,
+                        item[1]['game_diff_sum'] / item[1]['matches'] if item[1]['matches'] > 0 else 0,
                         item[1]['wins']
                     ),
                     reverse=True
@@ -667,21 +656,20 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
                     best_win_percent = (best_stats['wins'] / best_stats['matches'] * 100) if best_stats['matches'] > 0 else 0
                     best_partner = f"{best_partner_name} ({best_stats['wins']} {'win' if best_stats['wins'] == 1 else 'wins'}, {best_win_percent:.1f}% win rate)"
 
-            # Style the values in yellow
             points_styled = f"<span style='font-weight:bold; color:#fff500;'>{points:.1f}</span>"
             win_percent_styled = f"<span style='font-weight:bold; color:#fff500;'>{win_percent:.1f}%</span>"
             matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{matches}</span>"
             wins_styled = f"<span style='font-weight:bold; color:#fff500;'>{wins}</span>"
             losses_styled = f"<span style='font-weight:bold; color:#fff500;'>{losses}</span>"
             game_diff_avg_styled = f"<span style='font-weight:bold; color:#fff500;'>{game_diff_avg:.2f}</span>"
-            cumulative_game_diff_styled = f"<span style='font-weight:bold; color:#fff500;'>{cumulative_game_diff}</span>" # New: Style the value
+            cumulative_game_diff_styled = f"<span style='font-weight:bold; color:#fff500;'>{cumulative_game_diff}</span>"
             games_won_styled = f"<span style='font-weight:bold; color:#fff500;'>{games_won}</span>"
             birthday_styled = f"<span style='font-weight:bold; color:#fff500;'>{birthday}</span>"
             partners_styled = f"<span style='font-weight:bold; color:#fff500;'>{partners_list}</span>"
             best_partner_styled = f"<span style='font-weight:bold; color:#fff500;'>{best_partner}</span>"
             trend_styled = f"<span style='font-weight:bold; color:#fff500;'>{trend}</span>"
 
-            # Render the card
+            # Updated HTML markup to ensure labels are displayed
             st.markdown(f"""
             <div class="ranking-row">
                 <div class="rank-profile-player-group">
@@ -698,8 +686,8 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
                 <div class="cumulative-game-diff-col">{cumulative_game_diff_styled}</div>
                 <div class="games-won-col">{games_won_styled}</div>
                 <div class="birthday-col">{birthday_styled}</div>
-                <div class="partners-col">{partners_styled}</div>
-                <div class="best-partner-col">{best_partner_styled}</div>
+                <div class="partners-col"><span style='font-weight:bold; color:#bbbbbb;'>Partners: </span>{partners_styled}</div>
+                <div class="best-partner-col"><span style='font-weight:bold; color:#bbbbbb;'>Most Effective Partner: </span>{best_partner_styled}</div>
                 <div class="trend-col">{trend_styled}</div>
             </div>
             """, unsafe_allow_html=True)
