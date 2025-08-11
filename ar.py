@@ -1718,6 +1718,7 @@ with tabs[0]:
         else:
             st.info("Player insights will be available once a player is selected.")
 
+
 with tabs[1]:
     st.header("Matches")
     with st.expander("➕ Post New Match Result", expanded=False, icon="➡️"):
@@ -1858,7 +1859,6 @@ with tabs[1]:
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
 
     st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
-    
     st.subheader("✏️ Manage Existing Match")
     clean_match_options = []
     # The list of matches to edit/delete is now also filtered
@@ -1874,7 +1874,8 @@ with tabs[1]:
         else:
             desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
-    selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit")
+    # Use a unique key for the first selectbox
+    selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_1")
     if selected_match_to_edit:
         selected_id = selected_match_to_edit.split(" | ")[-1]
         row = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].iloc[0]
@@ -1925,11 +1926,10 @@ with tabs[1]:
             load_matches()
             st.success("Match deleted.")
             st.rerun()
-            with cols[2]:
-                share_link = generate_whatsapp_link(row)
-                st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
-            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
 
+    # Remove the second instance of the selectbox and related code
+    # The following block was removed to avoid duplication:
+    """
     st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
     st.subheader("✏️ Manage Existing Match")
     clean_match_options = []
@@ -1996,6 +1996,8 @@ with tabs[1]:
             load_matches()
             st.success("Match deleted.")
             st.rerun()
+    """
+
 
 # Player Profile tab
 with tabs[2]:
