@@ -2110,9 +2110,9 @@ with tabs[3]:
                     """, unsafe_allow_html=True)
     
     # Display sections
-    with st.expander("Arabian Ranches Tennis Courts", expanded=True):
+    with st.expander("Arabian Ranches Tennis Courts", expanded=False, icon="➡️"):
         display_courts("", ar_courts)  # No extra title inside expander
-    with st.expander("Mira & Mira Oasis Tennis Courts", expanded=True):
+    with st.expander("Mira & Mira Oasis Tennis Courts", expanded=False, icon="➡️"):
         display_courts("", mira_courts)
 
 with tabs[4]:
