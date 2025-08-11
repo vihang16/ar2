@@ -679,6 +679,7 @@ def calculate_rankings(matches_to_rank):
     matches_played = defaultdict(int)
     games_won = defaultdict(int)
     game_diff = defaultdict(float)
+    cumulative_game_diff = defaultdict(int) # New: For cumulative game difference
     partner_stats = defaultdict(lambda: defaultdict(lambda: {'wins': 0, 'losses': 0, 'ties': 0, 'matches': 0, 'game_diff_sum': 0}))
 
     for _, row in matches_to_rank.iterrows():
@@ -688,7 +689,7 @@ def calculate_rankings(matches_to_rank):
         else:
             t1 = [row['team1_player1']]
             t2 = [row['team2_player1']]
-        
+
         team1_total_games = 0
         team2_total_games = 0
         match_gd_sum = 0
@@ -701,6 +702,18 @@ def calculate_rankings(matches_to_rank):
                     team2_total_games += team2_games
                     match_gd_sum += team1_games - team2_games
                     set_count += 1
+
+                    # New: Calculate cumulative game difference for each player per set
+                    set_difference = team1_games - team2_games
+                    for p in t1:
+                        if p != "Visitor":
+                            games_won[p] += team1_games
+                            cumulative_game_diff[p] += set_difference
+                    for p in t2:
+                        if p != "Visitor":
+                            games_won[p] += team2_games
+                            cumulative_game_diff[p] -= set_difference
+
                 except ValueError:
                     continue
         match_gd_avg = match_gd_sum / set_count if set_count > 0 else 0
@@ -738,20 +751,6 @@ def calculate_rankings(matches_to_rank):
                     scores[p] += 1.5
                     matches_played[p] += 1
                     game_diff[p] += match_gd_avg if p in t1 else -match_gd_avg
-
-        # Update games won
-        for set_score in [row['set1'], row['set2'], row['set3']]:
-            if set_score and '-' in set_score:
-                try:
-                    team1_games, team2_games = map(int, set_score.split('-'))
-                    for p in t1:
-                        if p != "Visitor":
-                            games_won[p] += team1_games
-                    for p in t2:
-                        if p != "Visitor":
-                            games_won[p] += team2_games
-                except ValueError:
-                    continue
 
         # Update partner stats for doubles matches
         if row['match_type'] == 'Doubles':
@@ -798,6 +797,7 @@ def calculate_rankings(matches_to_rank):
             "Losses": losses[player],
             "Games Won": games_won[player],
             "Game Diff Avg": round(game_diff_avg, 2),
+            "Cumulative Game Diff": cumulative_game_diff[player], # New: Add to rank data
             "Recent Trend": player_trend
         })
 
@@ -810,8 +810,6 @@ def calculate_rankings(matches_to_rank):
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
 
     return rank_df, partner_stats
-
-from itertools import combinations  # Required for suggest_balanced_pairing
 
 
 def display_community_stats(matches_df):
