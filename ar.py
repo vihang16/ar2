@@ -1858,10 +1858,9 @@ with tabs[1]:
                 st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
 
-    st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
+    st.markdown("---")
     st.subheader("✏️ Manage Existing Match")
     clean_match_options = []
-    # The list of matches to edit/delete is now also filtered
     for _, row in filtered_matches.iterrows():
         score_plain = f"{row['set1']}"
         if row['set2']:
@@ -1874,7 +1873,7 @@ with tabs[1]:
         else:
             desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
-    # Use a unique key for the first selectbox
+    # Use a unique key to avoid conflicts
     selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_1")
     if selected_match_to_edit:
         selected_id = selected_match_to_edit.split(" | ")[-1]
@@ -1921,82 +1920,11 @@ with tabs[1]:
                 load_matches()
                 st.success("Match updated.")
                 st.rerun()
-        if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
-            delete_match_from_db(selected_id)
-            load_matches()
-            st.success("Match deleted.")
-            st.rerun()
-
-    # Remove the second instance of the selectbox and related code
-    # The following block was removed to avoid duplication:
-    """
-    st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
-    st.subheader("✏️ Manage Existing Match")
-    clean_match_options = []
-    for _, row in filtered_matches.iterrows():
-        score_plain = f"{row['set1']}"
-        if row['set2']:
-            score_plain += f", {row['set2']}"
-        if row['set3']:
-            score_plain += f", {row['set3']}"
-        date_plain = row['date'].strftime('%d %b %y %H:%M')
-        if row["match_type"] == "Singles":
-            desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
-        else:
-            desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
-        clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
-    selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit")
-    if selected_match_to_edit:
-        selected_id = selected_match_to_edit.split(" | ")[-1]
-        row = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].iloc[0]
-        idx = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].index[0]
-        current_date_dt = pd.to_datetime(row["date"])
-        all_scores = [""] + tennis_scores()
-        set1_index = all_scores.index(row["set1"]) if row["set1"] in all_scores else 0
-        set2_index = all_scores.index(row["set2"]) if row["set2"] in all_scores else 0
-        set3_index = all_scores.index(row["set3"]) if row["set3"] in all_scores else 0
-        with st.expander("Edit Match Details"):
-            date_edit = st.date_input("Match Date", value=current_date_dt.date(), key=f"edit_date_{selected_id}")
-            time_edit = st.time_input("Match Time", value=current_date_dt.time(), key=f"edit_time_{selected_id}")
-            match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
-            p1_edit = st.selectbox("Team 1 - Player 1", [""] + available_players, index=available_players.index(row["team1_player1"]) + 1 if row["team1_player1"] in available_players else 0, key=f"edit_t1p1_{selected_id}")
-            p2_edit = st.selectbox("Team 1 - Player 2", [""] + available_players, index=available_players.index(row["team1_player2"]) + 1 if row["team1_player2"] in available_players else 0, key=f"edit_t1p2_{selected_id}")
-            p3_edit = st.selectbox("Team 2 - Player 1", [""] + available_players, index=available_players.index(row["team2_player1"]) + 1 if row["team2_player1"] in available_players else 0, key=f"edit_t2p1_{selected_id}")
-            p4_edit = st.selectbox("Team 2 - Player 2", [""] + available_players, index=available_players.index(row["team2_player2"]) + 1 if row["team2_player2"] in available_players else 0, key=f"edit_t2p2_{selected_id}")
-            set1_edit = st.selectbox("Set 1", all_scores, index=set1_index, key=f"edit_set1_{selected_id}")
-            set2_edit = st.selectbox("Set 2 (optional)", all_scores, index=set2_index, key=f"edit_set2_{selected_id}")
-            set3_edit = st.selectbox("Set 3 (optional)", all_scores, index=set3_index, key=f"edit_set3_{selected_id}")
-            winner_edit = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
-            match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
-            if st.button("Save Changes", key=f"save_match_changes_{selected_id}"):
-                image_url_edit = row["match_image_url"]
-                if match_image_edit:
-                    image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
-                combined_datetime = datetime.combine(date_edit, time_edit)
-                st.session_state.matches_df.loc[idx] = {
-                    "match_id": selected_id,
-                    "date": combined_datetime,
-                    "match_type": match_type_edit,
-                    "team1_player1": p1_edit,
-                    "team1_player2": p2_edit,
-                    "team2_player1": p3_edit,
-                    "team2_player2": p4_edit,
-                    "set1": set1_edit,
-                    "set2": set2_edit,
-                    "set3": set3_edit,
-                    "winner": winner_edit,
-                    "match_image_url": image_url_edit
-                }
-                save_matches(st.session_state.matches_df)
+            if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
+                delete_match_from_db(selected_id)
                 load_matches()
-                st.success("Match updated.")
+                st.success("Match deleted.")
                 st.rerun()
-        if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
-            delete_match_from_db(selected_id)
-            load_matches()
-            st.success("Match deleted.")
-            st.rerun()
-    """
 
 
 # Player Profile tab
