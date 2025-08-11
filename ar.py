@@ -91,7 +91,45 @@ st.markdown("""
 
 /* End of Birthday Banner Styling */
 
-
+/* Card styling for court locations */
+.court-card {
+    background: linear-gradient(to bottom, #031827, #07314f); /* Matches your app's gradient */
+    border: 1px solid #fff500; /* Optic yellow border */
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-align: center;
+}
+.court-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(255, 245, 0, 0.3); /* Yellow glow on hover */
+}
+.court-card h4 {
+    color: #fff500; /* Optic yellow for court names */
+    margin-bottom: 10px;
+}
+.court-card a {
+    background-color: #fff500; /* Yellow button */
+    color: #031827; /* Dark text for contrast */
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 10px;
+    transition: background-color 0.2s;
+}
+.court-card a:hover {
+    background-color: #ffd700; /* Slightly darker yellow on hover */
+}
+.court-icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+}
+/* End of Card styling for court locations */
 
 
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
