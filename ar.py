@@ -2271,7 +2271,7 @@ with tabs[4]:
                         st.rerun()
 #--MINI TOURNEY -----------------------
 with tabs[5]:
-    st.header("Tournaments")
+    st.header("Mini Tournaments Organiser")
     st.markdown("<small><i>Assignments of teams and courts are done randomly.</i></small>", unsafe_allow_html=True)
 
     # Input fields
