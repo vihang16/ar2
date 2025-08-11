@@ -515,7 +515,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
     view_option = st.radio("Select View", ["Player Insights", "Birthdays"], horizontal=True, key=f"{key_prefix}view_selector")
 
     if view_option == "Birthdays":
-        # Prepare birthday data, only including players with valid birthday entries
+        # ... (This part remains unchanged)
         birthday_data = []
         for player in selected_players:
             player_info = players_df[players_df["name"] == player].iloc[0] if player in players_df["name"].values else None
@@ -565,6 +565,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+
     else:  # Player Insights view
         # Filter players who have played at least one match, excluding "Visitor"
         active_players = []
@@ -609,6 +610,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             wins = int(player_data["Wins"])
             losses = int(player_data["Losses"])
             game_diff_avg = player_data["Game Diff Avg"]
+            cumulative_game_diff = int(player_data["Cumulative Game Diff"]) # New: Get the value
             games_won = int(player_data["Games Won"])
 
             # Partners and most effective partner, excluding "Visitor"
@@ -641,6 +643,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             wins_styled = f"<span style='font-weight:bold; color:#fff500;'>{wins}</span>"
             losses_styled = f"<span style='font-weight:bold; color:#fff500;'>{losses}</span>"
             game_diff_avg_styled = f"<span style='font-weight:bold; color:#fff500;'>{game_diff_avg:.2f}</span>"
+            cumulative_game_diff_styled = f"<span style='font-weight:bold; color:#fff500;'>{cumulative_game_diff}</span>" # New: Style the value
             games_won_styled = f"<span style='font-weight:bold; color:#fff500;'>{games_won}</span>"
             birthday_styled = f"<span style='font-weight:bold; color:#fff500;'>{birthday}</span>"
             partners_styled = f"<span style='font-weight:bold; color:#fff500;'>{partners_list}</span>"
@@ -661,6 +664,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
                 <div class="wins-col">{wins_styled}</div>
                 <div class="losses-col">{losses_styled}</div>
                 <div class="game-diff-avg-col">{game_diff_avg_styled}</div>
+                <div class="cumulative-game-diff-col">{cumulative_game_diff_styled}</div>
                 <div class="games-won-col">{games_won_styled}</div>
                 <div class="birthday-col">{birthday_styled}</div>
                 <div class="partners-col">{partners_styled}</div>
