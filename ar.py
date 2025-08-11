@@ -193,6 +193,37 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
 .cumulative-game-diff-col::before { content: "Cumulative Game Diff.: "; font-weight: bold; color: #bbbbbb; }
 .trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
 .birthday-col::before { content: "Birthday: "; font-weight: bold; color: #bbbbbb; }
+
+/* Ensure Partners and Best Partner columns are visible */
+.partners-col, .best-partner-col {
+    display: block !important;
+    visibility: visible !important;
+    width: 100%;
+    text-align: left;
+    padding: 2px 0;
+    font-size: 1em;
+    margin-bottom: 5px;
+    word-break: break-word;
+    color: #fff500; /* Ensure text is optic yellow */
+}
+
+/* Add specific styling for longer content to prevent overflow */
+.partners-col {
+    max-height: 100px; /* Allow scrolling for long partner lists */
+    overflow-y: auto;
+}
+
+/* Ensure no conflicting display rules */
+.ranking-row {
+    display: block;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #696969;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    overflow: visible; /* Prevent clipping of content */
+}
+
 /* ... (existing styles) ... */
 
 /* Ensure the actual values are yellow. Applies to the text content within the div, not the ::before. */
