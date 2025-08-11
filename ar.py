@@ -1858,6 +1858,7 @@ with tabs[1]:
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
 
     st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
+    
     st.subheader("✏️ Manage Existing Match")
     clean_match_options = []
     # The list of matches to edit/delete is now also filtered
@@ -2232,10 +2233,6 @@ with tabs[4]:
             except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
 
-          
-
-
-
             
             
             st.markdown(f"""
@@ -2284,7 +2281,6 @@ with tabs[4]:
                 
                 match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if booking_row["match_type"] == "Doubles" else 1, key=f"edit_booking_match_type_{booking_id}")
                 if match_type_edit == "Doubles":
-                    # ... (rest of the form remains the same)
                     col1, col2 = st.columns(2)
                     with col1:
                         p1_edit = st.selectbox("Team 1 - Player 1 (optional)", [""] + available_players, index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0, key=f"edit_t1p1_{booking_id}")
