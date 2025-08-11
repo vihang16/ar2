@@ -2054,11 +2054,11 @@ with tabs[4]:
                 if match_type_booking == "Doubles":
                     col1, col2 = st.columns(2)
                     with col1:
-                        p1_booking = st.selectbox("Team 1 - Player 1 (optional)", [""] + available_players, key=f"t1p1_booking_{st.session_state.form_key_suffix}")
-                        p2_booking = st.selectbox("Team 1 - Player 2 (optional)", [""] + available_players, key=f"t1p2_booking_{st.session_state.form_key_suffix}")
+                        p1_booking = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"t1p1_booking_{st.session_state.form_key_suffix}")
+                        p2_booking = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"t1p2_booking_{st.session_state.form_key_suffix}")
                     with col2:
-                        p3_booking = st.selectbox("Team 2 - Player 1 (optional)", [""] + available_players, key=f"t2p1_booking_{st.session_state.form_key_suffix}")
-                        p4_booking = st.selectbox("Team 2 - Player 2 (optional)", [""] + available_players, key=f"t2p2_booking_{st.session_state.form_key_suffix}")
+                        p3_booking = st.selectbox("Player 3 (optional)", [""] + available_players, key=f"t2p1_booking_{st.session_state.form_key_suffix}")
+                        p4_booking = st.selectbox("Player 4 (optional)", [""] + available_players, key=f"t2p2_booking_{st.session_state.form_key_suffix}")
                 else:
                     p1_booking = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"s1p1_booking_{st.session_state.form_key_suffix}")
                     p3_booking = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"s1p2_booking_{st.session_state.form_key_suffix}")
