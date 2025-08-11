@@ -15,6 +15,8 @@ import io  # Added to fix 'name io is not defined' error
 from itertools import combinations
 from dateutil import parser
 import plotly.graph_objects as go # Added for the new chart
+import random
+from fpdf import FPDF
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
@@ -1341,7 +1343,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
 
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations", "Bookings"]
+tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations", "Bookings","Mini Tourney"]
 
 tabs = st.tabs(tab_names)
 
