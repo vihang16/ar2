@@ -91,6 +91,47 @@ st.markdown("""
 
 /* End of Birthday Banner Styling */
 
+/* Card styling for court locations */
+.court-card {
+    background: linear-gradient(to bottom, #031827, #07314f); /* Matches your app's gradient */
+    border: 1px solid #fff500; /* Optic yellow border */
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-align: center;
+}
+.court-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(255, 245, 0, 0.3); /* Yellow glow on hover */
+}
+.court-card h4 {
+    color: #fff500; /* Optic yellow for court names */
+    margin-bottom: 10px;
+}
+.court-card a {
+    background-color: #fff500; /* Yellow button */
+    color: #031827; /* Dark text for contrast */
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 10px;
+    transition: background-color 0.2s;
+}
+.court-card a:hover {
+    background-color: #ffd700; /* Slightly darker yellow on hover */
+}
+.court-icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+}
+/* End of Court location */
+
+
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
 html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     font-family: 'Offside', sans-serif !important;
@@ -2019,29 +2060,44 @@ with tabs[2]:
     else:
         st.info("No players available for insights. Please add players above.")
 
-with tabs[3]:
-    st.header("Court Locations")
-    st.markdown("### Arabian Ranches Tennis Courts")
-    st.markdown("- [Alvorado 1 & 2](https://maps.google.com/?q=25.041792,55.259258)")
-    st.markdown("- [Palmera 2](https://maps.app.goo.gl/CHimjtqQeCfU1d3W6)")
-    st.markdown("- [Palmera 4](https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6)")
-    st.markdown("- [Saheel](https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8)")
-    st.markdown("- [Hattan](https://maps.app.goo.gl/fjGpeNzncyG1o34c7)")
-    st.markdown("- [MLC Mirador La Colleccion](https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6)")
-    st.markdown("- [Al Mahra](https://maps.app.goo.gl/zVivadvUsD6yyL2Y9)")
-    st.markdown("- [Mirador](https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8)")
-    st.markdown("- [Reem 1](https://maps.app.goo.gl/qKswqmb9Lqsni5RD7)")
-    st.markdown("- [Reem 2](https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5)")
-    st.markdown("- [Reem 3](https://maps.app.goo.gl/o8z9pHo8tSqTbEL39)")
-    st.markdown("- [Alma](https://maps.app.goo.gl/BZNfScABbzb3osJ18)")
-    st.markdown("### Mira & Mira Oasis Tennis Courts")
-    st.markdown("- [Mira 2](https://maps.app.goo.gl/JeVmwiuRboCnzhnb9)")
-    st.markdown("- [Mira 4](https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A)")
-    st.markdown("- [Mira 5 A & B](https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6)")
-    st.markdown("- [Mira Oasis 1](https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8)")
-    st.markdown("- [Mira Oasis 2](https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9)")
-    st.markdown("- [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)")
-    st.markdown("- [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)")
+/* Card styling for court locations */
+.court-card {
+    background: linear-gradient(to bottom, #031827, #07314f); /* Matches your app's gradient */
+    border: 1px solid #fff500; /* Optic yellow border */
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-align: center;
+}
+.court-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(255, 245, 0, 0.3); /* Yellow glow on hover */
+}
+.court-card h4 {
+    color: #fff500; /* Optic yellow for court names */
+    margin-bottom: 10px;
+}
+.court-card a {
+    background-color: #fff500; /* Yellow button */
+    color: #031827; /* Dark text for contrast */
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 10px;
+    transition: background-color 0.2s;
+}
+.court-card a:hover {
+    background-color: #ffd700; /* Slightly darker yellow on hover */
+}
+.court-icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+}
 
 with tabs[4]:
     st.header("Bookings")
