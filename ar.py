@@ -124,7 +124,7 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
 }
 
 /* Adjust individual columns for card layout */
-.rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
+.rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .cumulative-game-diff-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
     width: 100%;
     text-align: left;
     padding: 2px 0;
@@ -190,13 +190,13 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
 .losses-col::before { content: "Losses: "; font-weight: bold; color: #bbbbbb; }
 .games-won-col::before { content: "Games Won: "; font-weight: bold; color: #bbbbbb; }
 .game-diff-avg-col::before { content: "Game Diff Avg: "; font-weight: bold; color: #bbbbbb; }
+.cumulative-game-diff-col::before { content: "Cumulative Game Diff.: "; font-weight: bold; color: #bbbbbb; }
 .trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
 .birthday-col::before { content: "Birthday: "; font-weight: bold; color: #bbbbbb; }
-.partners-col::before { content: " Partners Played With: "; font-weight: bold; color: #bbbbbb; }
-.best-partner-col::before { content: "Most Effective Partner: "; font-weight: bold; color: #bbbbbb; }
+/* ... (existing styles) ... */
 
 /* Ensure the actual values are yellow. Applies to the text content within the div, not the ::before. */
-.points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
+.points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .cumulative-game-diff-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
     color: #fff500;
 }
 
