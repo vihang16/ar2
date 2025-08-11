@@ -2213,11 +2213,11 @@ with tabs[4]:
                 if match_type_edit == "Doubles":
                     col1, col2 = st.columns(2)
                     with col1:
-                        p1_edit = st.selectbox("Team 1 - Player 1 (optional)", [""] + available_players, index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0, key=f"edit_t1p1_{booking_id}")
-                        p2_edit = st.selectbox("Team 1 - Player 2 (optional)", [""] + available_players, index=available_players.index(booking_row["player2"]) + 1 if booking_row["player2"] in available_players else 0, key=f"edit_t1p2_{booking_id}")
+                        p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players, index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0, key=f"edit_t1p1_{booking_id}")
+                        p2_edit = st.selectbox("Player 2 (optional)", [""] + available_players, index=available_players.index(booking_row["player2"]) + 1 if booking_row["player2"] in available_players else 0, key=f"edit_t1p2_{booking_id}")
                     with col2:
-                        p3_edit = st.selectbox("Team 2 - Player 1 (optional)", [""] + available_players, index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0, key=f"edit_t2p1_{booking_id}")
-                        p4_edit = st.selectbox("Team 2 - Player 2 (optional)", [""] + available_players, index=available_players.index(booking_row["player4"]) + 1 if booking_row["player4"] in available_players else 0, key=f"edit_t2p2_{booking_id}")
+                        p3_edit = st.selectbox("Player 3 (optional)", [""] + available_players, index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0, key=f"edit_t2p1_{booking_id}")
+                        p4_edit = st.selectbox("Player 4 (optional)", [""] + available_players, index=available_players.index(booking_row["player4"]) + 1 if booking_row["player4"] in available_players else 0, key=f"edit_t2p2_{booking_id}")
                 else:
                     p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players, index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0, key=f"edit_s1p1_{booking_id}")
                     p3_edit = st.selectbox("Player 2 (optional)", [""] + available_players, index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0, key=f"edit_s1p2_{booking_id}")
