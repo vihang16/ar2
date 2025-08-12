@@ -1729,73 +1729,59 @@ with tabs[0]:
         if rank_df.empty:
             st.info("No ranking data available for this view.")
         else:
-            # --- Custom HTML Top 3 Players (Scrollable on Mobile) ---
-            top_3_players = rank_df[rank_df["Player"] != "Visitor"].head(3)
-
-            if not top_3_players.empty:
-                st.markdown("""
-                <style>
-                .top-players-container {
-                    display: flex;
-                    overflow-x: auto;
-                    gap: 10px;
-                    padding-bottom: 10px;
-                    scrollbar-width: none; /* Firefox */
-                }
-                .top-players-container::-webkit-scrollbar {
-                    display: none; /* Chrome, Safari */
-                }
-                .top-player-card {
-                    flex: 0 0 auto;
-                    width: 160px;
-                    background: #222;
-                    color: white;
-                    padding: 10px;
-                    border-radius: 10px;
-                    text-align: center;
-                    border: 2px solid gold;
-                }
-                .top-player-card img {
-                    border-radius: 50%;
-                    width: 70px;
-                    height: 70px;
-                    object-fit: cover;
-                    margin-bottom: 5px;
-                }
-                @media (max-width: 500px) {
-                    .top-player-card {
-                        width: 120px;
-                        padding: 8px;
-                    }
-                    .top-player-card img {
-                        width: 60px;
-                        height: 60px;
-                    }
-                }
-                </style>
-                """, unsafe_allow_html=True)
-
-                cards_html = '<div class="top-players-container">'
-                for _, player_data in top_3_players.iterrows():
-                    rank = player_data["Rank"]
-                    player_name = player_data["Player"]
-                    profile_image_url = (
-                        player_data["Profile"]
-                        if pd.notna(player_data["Profile"]) and player_data["Profile"]
-                        else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
-                    )
-
-                    cards_html += f"""
-                    <div class="top-player-card">
-                        <img src="{profile_image_url}" alt="Profile">
-                        <h3>{rank}</h3>
-                        <p><b>{player_name}</b></p>
-                    </div>
-                    """
-                cards_html += "</div>"
-
-                st.markdown(cards_html, unsafe_allow_html=True)
-                st.markdown("---")
+                    # --- Top 3 Players Display ---
+                    if not rank_df_combined.empty:
+                        top_3_players = rank_df_combined.head(3)
+                        st.markdown("""
+                            <style>
+                            .top-players-container {
+                                display: flex;
+                                justify-content: space-around;
+                                margin-bottom: 20px;
+                            }
+                            .top-player-card {
+                                text-align: center;
+                                padding: 10px;
+                                background: linear-gradient(to bottom, #031827, #07314f);
+                                border: 2px solid #fff500;
+                                border-radius: 10px;
+                                width: 30%;
+                                color: #fff500;
+                            }
+                            .top-player-card img {
+                                border-radius: 50%;
+                                width: 80px;
+                                height: 80px;
+                                object-fit: cover;
+                                margin-bottom: 5px;
+                            }
+                            @media (max-width: 400px) {
+                                .top-players-container {
+                                    flex-wrap: wrap;
+                                }
+                                .top-player-card {
+                                    flex: 0 0 30%;
+                                }
+                            }
+                            </style>
+                        """, unsafe_allow_html=True)
+        
+                        # Build HTML string for top 3 players
+                        cards_html = '<div class="top-players-container">'
+                        for _, player_data in top_3_players.iterrows():
+                            rank = player_data["Rank"]
+                            player_name = player_data["Player"]
+                            profile_image_url = (
+                                player_data["Profile"]
+                                if pd.notna(player_data["Profile"]) and player_data["Profile"]
+                                else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
+                            )
+                            cards_html += f'<div class="top-player-card"><img src="{profile_image_url}" alt="Profile"><h3>🏆 {rank}</h3><p><b>{player_name}</b></p></div>'
+                        cards_html += '</div>'
+        
+                        st.markdown(cards_html, unsafe_allow_html=True)
+                        st.markdown("---")
+                    # --- End Top 3 Players ---
         # --- End Top 3 Players ---
             # --- END: New Top 3 Players Display ---
 
