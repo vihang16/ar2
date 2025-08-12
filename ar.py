@@ -1476,7 +1476,7 @@ with tabs[0]:
         else:
             rank_df, partner_stats = calculate_rankings(matches)
 
-            # Most Effective Partnership
+#Most Effective Partnership
             st.markdown("### 🤝 Most Effective Partnership")
             best_partner = None
             max_value = -1
@@ -1503,7 +1503,7 @@ with tabs[0]:
 
             st.markdown("---")
 
-            # Best Player to Partner With
+#Best Player to Partner With
             st.markdown("### 🥇 Best Player to Partner With")
             player_stats = defaultdict(lambda: {'wins': 0, 'gd_sum': 0, 'partners': set()})
             for _, row in matches.iterrows():
@@ -1553,7 +1553,7 @@ with tabs[0]:
                 max_partners = max(partners_list) if partners_list else 1
 
                 for player, stats in player_stats.items():
-                    # Normalize scores and create a composite score
+#Normalize scores and create a composite score
                     normalized_wins = stats['wins'] / max_wins
                     normalized_gd = stats['gd_sum'] / max_gd
                     normalized_partners = len(stats['partners']) / max_partners
@@ -1578,7 +1578,7 @@ with tabs[0]:
 
             st.markdown("---")
 
-            # Most Frequent Player
+#Most Frequent Player
             st.markdown("### 🏟️ Most Frequent Player")
             if not rank_df.empty:
                 most_frequent_player = rank_df.sort_values(by="Matches", ascending=False).iloc[0]
@@ -1589,7 +1589,7 @@ with tabs[0]:
 
             st.markdown("---")
 
-            # Player with highest Game Difference
+#Player with highest Game Difference
             st.markdown("### 📈 Player with highest Game Difference")
             cumulative_game_diff = defaultdict(int)
             for _, row in matches.iterrows():
@@ -1618,15 +1618,15 @@ with tabs[0]:
 
             st.markdown("---")
 
-            # Player with the most wins
+#Player with the most wins
             st.markdown(f"### 👑 Player with the Most Wins")
             most_wins_player = rank_df.sort_values(by="Wins", ascending=False).iloc[0]
             player_styled = f"<span style='font-weight:bold; color:#fff500;'>{most_wins_player['Player']}</span>"
             st.markdown(f"{player_styled} holds the record for most wins with **{int(most_wins_player['Wins'])}** wins.", unsafe_allow_html=True)
 
-            st.markdown("---") 
+            st.markdown("---")
 
-            # Player with the highest win percentage (minimum 5 matches)
+#Player with the highest win percentage(minimum 5 matches)
             st.markdown(f"### 🔥 Highest Win Percentage (Min. 5 Matches)")
             eligible_players = rank_df[rank_df['Matches'] >= 5].sort_values(by="Win %", ascending=False)
             if not eligible_players.empty:
@@ -1649,12 +1649,12 @@ with tabs[0]:
                 st.plotly_chart(nerd_chart, use_container_width=True)
             else:
                 st.info("Not enough data to generate the performance chart.")
-            # --- End of Inserted Chart Section ---
-            # --- Start of new chart integration ---
+#-- - End of Inserted Chart Section -- -
+#-- - Start of new chart integration -- -
             st.markdown("---")
             st.markdown("### 🤝 Partnership Performance Analyzer")
 
-            # Get a list of players who have played doubles
+#Get a list of players who have played doubles
             doubles_players = []
             if partner_stats:
                 doubles_players = sorted([p for p in partner_stats.keys() if p != "Visitor"])
@@ -1674,7 +1674,7 @@ with tabs[0]:
                     else:
                         st.info(f"{selected_player_for_partners} has no partnership data to display.")
 
-            # --- End of new chart integration ---
+#-- - End of new chart integration -- -
 
             st.markdown("---")
             with st.expander("Process being used for Rankings" , expanded=False, icon="➡️"):
@@ -1691,21 +1691,21 @@ with tabs[0]:
                 
                 """)
     elif ranking_type == "Table View":
-        # Calculate combined rankings
+#Calculate combined rankings
         rank_df_combined, _ = calculate_rankings(matches)
         display_rankings_table(rank_df_combined, "Combined")
-        
-        # Calculate doubles rankings
+
+#Calculate doubles rankings
         doubles_matches = matches[matches['match_type'] == 'Doubles']
         rank_df_doubles, _ = calculate_rankings(doubles_matches)
         display_rankings_table(rank_df_doubles, "Doubles")
-        
-        # Calculate singles rankings
+
+#Calculate singles rankings
         singles_matches = matches[matches['match_type'] == 'Singles']
         rank_df_singles, _ = calculate_rankings(singles_matches)
         display_rankings_table(rank_df_singles, "Singles")
-        
-        # Add PDF download button
+
+#Add PDF download button
         st.markdown("---")
         st.subheader("Download Rankings as PDF")
         if st.button("Download All Rankings", key="download_rankings_pdf"):
@@ -1729,43 +1729,53 @@ with tabs[0]:
         if rank_df.empty:
             st.info("No ranking data available for this view.")
         else:
-            # --- Custom HTML Top 3 Players ---
+#-- - Custom HTML Top 3 Players -- -
            top_3_players = rank_df[rank_df["Player"] != "Visitor"].head(3)
 
            if not top_3_players.empty:
                 st.markdown("""
                 <style>
                 .top-players-container {
-                    display: flex;
-                    flex-wrap: nowrap;
-                    justify-content: space-around;
-                    gap: 10px;
-                    margin-bottom: 20px;
+display:
+  flex;
+  flex - wrap : nowrap;
+  justify - content : space - around;
+gap:
+  10px;
+  margin - bottom : 20px;
                 }
                 .top-player-card {
-                    flex: 1;
-                    background: #222;
-                    color: white;
-                    padding: 10px;
-                    border-radius: 10px;
-                    text-align: center;
-                    border: 2px solid gold;
+flex:
+  1;
+background:
+# 222;
+color:
+  white;
+padding:
+  10px;
+  border - radius : 10px;
+  text - align : center;
+border:
+  2px solid gold;
                 }
                 .top-player-card img {
-                    border-radius: 50%;
-                    width: 80px;
-                    height: 80px;
-                    object-fit: cover;
-                    margin-bottom: 5px;
+  border - radius : 50 % ;
+width:
+  80px;
+height:
+  80px;
+  object - fit : cover;
+  margin - bottom : 5px;
                 }
                 @media (max-width: 400px) {
                     .top-players-container {
                         flex-wrap: wrap;
-                    }
-                    .top-player-card {
-                        flex: 0 0 30%;
-                    }
-                }
+}
+.top - player - card {
+flex:
+  0 0 30 % ;
+}
+}
                 </style>
                 """, unsafe_allow_html=True)
 
@@ -1790,8 +1800,8 @@ with tabs[0]:
 
                 st.markdown(cards_html, unsafe_allow_html=True)
                 st.markdown("---")
-        # --- End Top 3 Players ---
-        # --- END: New Top 3 Players Display ---
+#-- - End Top 3 Players -- -
+#-- - END : New Top 3 Players Display -- -
 
           st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
           st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
@@ -1827,7 +1837,6 @@ with tabs[0]:
                 display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_stats, key_prefix="rankings_combined_")
             else:
                 st.info("Player insights will be available once a player is selected.")
-
 
 with tabs[1]:
     st.header("Matches")
