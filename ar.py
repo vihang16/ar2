@@ -1720,87 +1720,76 @@ with tabs[0]:
                 )
             except Exception as e:
                 st.error(f"Error generating PDF: {str(e)}")
-
     else:  # Combined view
-      filtered_matches = matches.copy()
-      rank_df, partner_stats = calculate_rankings(filtered_matches)
-      current_date_formatted = datetime.now().strftime("%d/%m")
-      st.subheader(f"Rankings as of {current_date_formatted}")
+        filtered_matches = matches.copy()
+        rank_df, partner_stats = calculate_rankings(filtered_matches)
+        current_date_formatted = datetime.now().strftime("%d/%m")
+        st.subheader(f"Rankings as of {current_date_formatted}")
 
-      if rank_df.empty:
-          st.info("No ranking data available for this view.")
-      else:
-          # --- START: New Top 3 Players Display with Streamlit Columns ---
-          top_3_players = rank_df[rank_df["Player"] != "Visitor"].head(3)
+        if rank_df.empty:
+            st.info("No ranking data available for this view.")
+        else:
+            # --- START: New Top 3 Players Display ---
+            top_3_players = rank_df.head(3)
+            
+            st.markdown("---")
+            # Create 3 columns for the top players
+            cols = st.columns(3)
+            
+            # Iterate through the top 3 players and display them in the columns
+            for i in range(len(top_3_players)):
+                with cols[i]:
+                    player_data = top_3_players.iloc[i]
+                    rank = player_data["Rank"]
+                    player_name = player_data["Player"]
+                    # Use a default image if no profile picture is available
+                    profile_image_url = player_data["Profile"] if pd.notna(player_data["Profile"]) and player_data["Profile"] else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
+                    
+                    # Center-align content using markdown and HTML
+                    st.markdown(f"""
+                    <div style="text-align: center;">
+                        <h2 style="color: #fff500; margin-bottom: 5px;">{rank}</h2>
+                        <h4 style="color: white; margin-top: 5px; margin-bottom: 10px; height: 40px; overflow: hidden;">{player_name}</h4>
+                        <img src="{profile_image_url}" style="height: 100px; width: 100px; object-fit: cover; border-radius: 50%; display: block; margin-left: auto; margin-right: auto; border: 2px solid #fff500;">
+                    </div>
+                    """, unsafe_allow_html=True)
+            st.markdown("---")
+            # --- END: New Top 3 Players Display ---
 
-          if not top_3_players.empty:
-              st.markdown("---")
-              cols = st.columns(3)
-              for col, (_, player_data) in zip(cols, top_3_players.iterrows()):
-                  rank = player_data["Rank"]
-                  player_name = player_data["Player"]
-                  profile_image_url = (
-                      player_data["Profile"]
-                      if pd.notna(player_data["Profile"]) and player_data["Profile"]
-                      else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
-                  )
-
-                  with col:
-                      st.image(profile_image_url, width=80)
-                      st.markdown(f"### {rank}")
-                      st.markdown(f"**{player_name}**")
-              st.markdown("---")
-          # --- END: New Top 3 Players Display ---
-
-          st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
-          st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
-  
-          for index, row in rank_df.iterrows():
-              profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
-              player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-              points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-              trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-              st.markdown(f"""
-              <div class="ranking-row">
-                  <div class="rank-profile-player-group">
-                      <div class="rank-col">{row["Rank"]}</div>
-                      <div class="profile-col">{profile_html}</div>
-                      <div class="player-col">{player_styled}</div>
-                  </ div>
-                  <div class="points-col">{points_value_styled}</div>
-                  <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                  <div class="matches-col">{int(row["Matches"])}</div>
-                  <div class="wins-col">{int(row["Wins"])}</div>
-                  <div class="losses-col">{int(row["Losses"])}</div>
-                  <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                  <div class="games-won-col">{int(row["Games Won"])}</div>
-                   <div class="trend-col">{trend_value_styled}</div>
-              </div>
-              """, unsafe_allow_html=True)
-
-          st.markdown('</div>', unsafe_allow_html=True)
-          st.markdown('</div>', unsafe_allow_html=True)
-
-          st.subheader("Player Insights")
-          selected_player_rankings = st.selectbox(
-              "Select a player for insights",
-              [""] + players,
-              index=0,
-              key="insights_player_rankings_combined"
-          )
-          if selected_player_rankings:
-              display_player_insights(
-                  selected_player_rankings,
-                  players_df,
-                  filtered_matches,
-                  rank_df,
-                  partner_stats,
-                  key_prefix="rankings_combined_"
-              )
-          else:
-              st.info("Player insights will be available once a player is selected.")
-                  
-
+            st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
+            st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
+            
+            for index, row in rank_df.iterrows():
+                profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+                st.markdown(f"""
+                <div class="ranking-row">
+                    <div class="rank-profile-player-group">
+                        <div class="rank-col">{row["Rank"]}</div>
+                        <div class="profile-col">{profile_html}</div>
+                        <div class="player-col">{player_styled}</div>
+                    </div>
+                    <div class="points-col">{points_value_styled}</div>
+                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                    <div class="matches-col">{int(row["Matches"])}</div>
+                    <div class="wins-col">{int(row["Wins"])}</div>
+                    <div class="losses-col">{int(row["Losses"])}</div>
+                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                    <div class="games-won-col">{int(row["Games Won"])}</div>
+                    <div class="trend-col">{trend_value_styled}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            st.subheader("Player Insights")
+            selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_combined")
+            if selected_player_rankings:
+                display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_stats, key_prefix="rankings_combined_")
+            else:
+                st.info("Player insights will be available once a player is selected.")
 
 
 with tabs[1]:
