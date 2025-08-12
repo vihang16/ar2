@@ -1779,8 +1779,8 @@ with tabs[0]:
                             cards_html += f'<div class="top-player-card"><img src="{profile_image_url}" alt="Profile"><h3>🏆 {rank}</h3><p><b>{player_name}</b></p></div>'
                         cards_html += '</div>'
         
-                        st.markdown(cards_html, unsafe_allow_html=True)
-                        st.markdown("---")
+            st.markdown(cards_html, unsafe_allow_html=True)
+            st.markdown("---")
                     # --- End Top 3 Players ---
         # --- End Top 3 Players ---
             # --- END: New Top 3 Players Display ---
