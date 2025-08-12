@@ -1720,35 +1720,35 @@ with tabs[0]:
                 )
             except Exception as e:
                 st.error(f"Error generating PDF: {str(e)}")
-else:  # Combined view
-    filtered_matches = matches.copy()
-    rank_df, partner_stats = calculate_rankings(filtered_matches)
-    current_date_formatted = datetime.now().strftime("%d/%m")
-    st.subheader(f"Rankings as of {current_date_formatted}")
+    else:  # Combined view
+        filtered_matches = matches.copy()
+        rank_df, partner_stats = calculate_rankings(filtered_matches)
+        current_date_formatted = datetime.now().strftime("%d/%m")
+        st.subheader(f"Rankings as of {current_date_formatted}")
 
-    if rank_df.empty:
-        st.info("No ranking data available for this view.")
-    else:
-        # --- START: New Top 3 Players Display with Streamlit Columns ---
-        top_3_players = rank_df[rank_df["Player"] != "Visitor"].head(3)
+        if rank_df.empty:
+            st.info("No ranking data available for this view.")
+        else:
+            # --- START: New Top 3 Players Display with Streamlit Columns ---
+            top_3_players = rank_df[rank_df["Player"] != "Visitor"].head(3)
+ 
+            if not top_3_players.empty:
+                st.markdown("---")
+                cols = st.columns(3)
+                for col, (_, player_data) in zip(cols, top_3_players.iterrows()):
+                    rank = player_data["Rank"]
+                    player_name = player_data["Player"]
+                    profile_image_url = (
+                        player_data["Profile"]
+                        if pd.notna(player_data["Profile"]) and player_data["Profile"]
+                        else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
+                    )
 
-        if not top_3_players.empty:
-            st.markdown("---")
-            cols = st.columns(3)
-            for col, (_, player_data) in zip(cols, top_3_players.iterrows()):
-                rank = player_data["Rank"]
-                player_name = player_data["Player"]
-                profile_image_url = (
-                    player_data["Profile"]
-                    if pd.notna(player_data["Profile"]) and player_data["Profile"]
-                    else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
-                )
-
-                with col:
-                    st.image(profile_image_url, width=80)
-                    st.markdown(f"### {rank}")
-                    st.markdown(f"**{player_name}**")
-            st.markdown("---")
+                    with col:
+                        st.image(profile_image_url, width=80)
+                        st.markdown(f"### {rank}")
+                        st.markdown(f"**{player_name}**")
+                st.markdown("---")
         # --- END: New Top 3 Players Display ---
             # --- END: New Top 3 Players Display ---
 
