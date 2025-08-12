@@ -1917,7 +1917,7 @@ with tabs[1]:
             desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
     # Use a unique key to avoid conflicts
-    selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_1")
+    selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_selectionbox")
     if selected_match_to_edit:
         selected_id = selected_match_to_edit.split(" | ")[-1]
         row = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].iloc[0]
