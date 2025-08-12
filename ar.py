@@ -1732,7 +1732,7 @@ with tabs[0]:
             # --- Custom HTML Top 3 Players ---
            top_3_players = rank_df[rank_df["Player"] != "Visitor"].head(3)
 
-            if not top_3_players.empty:
+           if not top_3_players.empty:
                 st.markdown("""
                 <style>
                 .top-players-container {
