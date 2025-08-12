@@ -1736,10 +1736,10 @@ with tabs[0]:
   	          st.markdown("---")
   	          cols = st.columns(3)
   	          for col, (_, player_data) in zip(cols, top_3_players.iterrows()):
-   	             rank = player_data["Rank"]
+   	    	        rank = player_data["Rank"]
     	            player_name = player_data["Player"]
     	            profile_image_url = (
-   	                 player_data["Profile"]
+   	                 	player_data["Profile"]
         	            if pd.notna(player_data["Profile"]) and player_data["Profile"]
         	            else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
         	        )
