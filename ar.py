@@ -1730,7 +1730,7 @@ with tabs[0]:
             st.info("No ranking data available for this view.")
         else:
             # --- Custom HTML Top 3 Players ---
-            top_3_players = rank_df[rank_df["Player"] != "Visitor"].head(3)
+           top_3_players = rank_df[rank_df["Player"] != "Visitor"].head(3)
 
             if not top_3_players.empty:
                 st.markdown("""
