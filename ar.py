@@ -1728,32 +1728,78 @@ with tabs[0]:
 
         if rank_df.empty:
             st.info("No ranking data available for this view.")
-        else:
-            # --- START: New Top 3 Players Display ---
-            top_3_players = rank_df.head(3)
-            
-            st.markdown("---")
-            # Create 3 columns for the top players
-            cols = st.columns(3)
-            
-            # Iterate through the top 3 players and display them in the columns
-            for i in range(len(top_3_players)):
-                with cols[i]:
-                    player_data = top_3_players.iloc[i]
-                    rank = player_data["Rank"]
-                    player_name = player_data["Player"]
-                    # Use a default image if no profile picture is available
-                    profile_image_url = player_data["Profile"] if pd.notna(player_data["Profile"]) and player_data["Profile"] else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
-                    
-                    # Center-align content using markdown and HTML
-                    st.markdown(f"""
-                    <div style="text-align: center;">
-                        <h2 style="color: #fff500; margin-bottom: 5px;">{rank}</h2>
-                        <h4 style="color: white; margin-top: 5px; margin-bottom: 10px; height: 40px; overflow: hidden;">{player_name}</h4>
-                        <img src="{profile_image_url}" style="height: 100px; width: 100px; object-fit: cover; border-radius: 50%; display: block; margin-left: auto; margin-right: auto; border: 2px solid #fff500;">
-                    </div>
+        #----trying top 3 after fixing the damned indentation issue------
+        else:  # Combined view
+            filtered_matches = matches.copy()
+            rank_df, partner_stats = calculate_rankings(filtered_matches)
+            current_date_formatted = datetime.now().strftime("%d/%m")
+            st.subheader(f"Rankings as of {current_date_formatted}")
+
+            if rank_df.empty:
+                st.info("No ranking data available for this view.")
+            else:
+                # --- Custom HTML Top 3 Players ---
+                top_3_players = rank_df[rank_df["Player"] != "Visitor"].head(3)
+
+                if not top_3_players.empty:
+                    st.markdown("""
+                    <style>
+                    .top-players-container {
+                        display: flex;
+                        flex-wrap: nowrap;
+                        justify-content: space-around;
+                        gap: 10px;
+                        margin-bottom: 20px;
+                    }
+                    .top-player-card {
+                        flex: 1;
+                        background: #222;
+                        color: white;
+                        padding: 10px;
+                        border-radius: 10px;
+                        text-align: center;
+                        border: 2px solid gold;
+                    }
+                    .top-player-card img {
+                        border-radius: 50%;
+                        width: 80px;
+                        height: 80px;
+                        object-fit: cover;
+                        margin-bottom: 5px;
+                    }
+                    @media (max-width: 400px) {
+                        .top-players-container {
+                            flex-wrap: wrap;
+                        }
+                        .top-player-card {
+                            flex: 0 0 30%;
+                        }
+                    }
+                    </style>
                     """, unsafe_allow_html=True)
-            st.markdown("---")
+
+                    cards_html = '<div class="top-players-container">'
+                    for _, player_data in top_3_players.iterrows():
+                        rank = player_data["Rank"]
+                        player_name = player_data["Player"]
+                        profile_image_url = (
+                            player_data["Profile"]
+                            if pd.notna(player_data["Profile"]) and player_data["Profile"]
+                            else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
+                        )
+
+                        cards_html += f"""
+                        <div class="top-player-card">
+                            <img src="{profile_image_url}" alt="Profile">
+                            <h3>{rank}</h3>
+                            <p><b>{player_name}</b></p>
+                        </div>
+                        """
+                    cards_html += "</div>"
+
+                    st.markdown(cards_html, unsafe_allow_html=True)
+                    st.markdown("---")
+                # --- End Top 3 Players ---
             # --- END: New Top 3 Players Display ---
 
             st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
