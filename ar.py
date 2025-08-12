@@ -1793,8 +1793,8 @@ with tabs[0]:
         # --- End Top 3 Players ---
         # --- END: New Top 3 Players Display ---
 
-            st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
-            st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
+          st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
+          st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
             
             for index, row in rank_df.iterrows():
                 profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
