@@ -1729,13 +1729,48 @@ with tabs[0]:
         if rank_df.empty:
             st.info("No ranking data available for this view.")
         else:
-            # --- START: New Top 3 Players Display with Streamlit Columns ---
+            # --- Custom HTML Top 3 Players ---
             top_3_players = rank_df[rank_df["Player"] != "Visitor"].head(3)
- 
+
             if not top_3_players.empty:
-                st.markdown("---")
-                cols = st.columns(3)
-                for col, (_, player_data) in zip(cols, top_3_players.iterrows()):
+                st.markdown("""
+                <style>
+                .top-players-container {
+                    display: flex;
+                    flex-wrap: nowrap;
+                    justify-content: space-around;
+                    gap: 10px;
+                    margin-bottom: 20px;
+                }
+                .top-player-card {
+                    flex: 1;
+                    background: #222;
+                    color: white;
+                    padding: 10px;
+                    border-radius: 10px;
+                    text-align: center;
+                    border: 2px solid gold;
+                }
+                .top-player-card img {
+                    border-radius: 50%;
+                    width: 80px;
+                    height: 80px;
+                    object-fit: cover;
+                    margin-bottom: 5px;
+                }
+                @media (max-width: 400px) {
+                    .top-players-container {
+                        flex-wrap: wrap;
+                    }
+                    .top-player-card {
+                        flex: 0 0 30%;
+                    }
+                }
+                </style>
+                """, unsafe_allow_html=True)
+
+                cards_html = '<div class="top-players-container">'
+                for _, player_data in top_3_players.iterrows():
                     rank = player_data["Rank"]
                     player_name = player_data["Player"]
                     profile_image_url = (
@@ -1744,13 +1779,19 @@ with tabs[0]:
                         else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
                     )
 
-                    with col:
-                        st.image(profile_image_url, width=80)
-                        st.markdown(f"### {rank}")
-                        st.markdown(f"**{player_name}**")
+                    cards_html += f"""
+                    <div class="top-player-card">
+                        <img src="{profile_image_url}" alt="Profile">
+                        <h3>{rank}</h3>
+                        <p><b>{player_name}</b></p>
+                    </div>
+                    """
+                cards_html += "</div>"
+
+                st.markdown(cards_html, unsafe_allow_html=True)
                 st.markdown("---")
+        # --- End Top 3 Players ---
         # --- END: New Top 3 Players Display ---
-            # --- END: New Top 3 Players Display ---
 
             st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
             st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
