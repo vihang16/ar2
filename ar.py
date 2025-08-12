@@ -1720,23 +1720,23 @@ with tabs[0]:
                 )
             except Exception as e:
                 st.error(f"Error generating PDF: {str(e)}")
-   else:  # Combined view
-    filtered_matches = matches.copy()
-    rank_df, partner_stats = calculate_rankings(filtered_matches)
-    current_date_formatted = datetime.now().strftime("%d/%m")
-    st.subheader(f"Rankings as of {current_date_formatted}")
-
-    if rank_df.empty:
-        st.info("No ranking data available for this view.")
     else:  # Combined view
-        filtered_matches = matches.copy()
-        rank_df, partner_stats = calculate_rankings(filtered_matches)
-        current_date_formatted = datetime.now().strftime("%d/%m")
-        st.subheader(f"Rankings as of {current_date_formatted}")
+      filtered_matches = matches.copy()
+      rank_df, partner_stats = calculate_rankings(filtered_matches)
+      current_date_formatted = datetime.now().strftime("%d/%m")
+      st.subheader(f"Rankings as of {current_date_formatted}")
 
-        if rank_df.empty:
-            st.info("No ranking data available for this view.")
-        else:
+      if rank_df.empty:
+          st.info("No ranking data available for this view.")
+      else:  # Combined view
+          filtered_matches = matches.copy()
+          rank_df, partner_stats = calculate_rankings(filtered_matches)
+          current_date_formatted = datetime.now().strftime("%d/%m")
+          st.subheader(f"Rankings as of {current_date_formatted}")
+
+          if rank_df.empty:
+              st.info("No ranking data available for this view.")
+          else:
             # Custom CSS to ensure top 3 players display side by side on all devices
             st.markdown("""
             <style>
