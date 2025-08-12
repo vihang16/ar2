@@ -1384,7 +1384,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
 
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations", "Bookings","Mini Tourney"]
+tab_names = ["Rankings", "Matches", "Player Profile", "Bookings", "Court Locations", "Mini Tourney"]
 
 tabs = st.tabs(tab_names)
 
@@ -2060,62 +2060,9 @@ with tabs[2]:
     else:
         st.info("No players available for insights. Please add players above.")
 
-with tabs[3]:
-    st.header("Court Locations")
-    
-    # Icon URL (use a free tennis court icon; you can host it or use an external link)
-    court_icon_url = "https://img.icons8.com/color/48/000000/tennis.png"  # Example from Icons8; replace if needed
-    
-    # Arabian Ranches courts (as a list of dicts for name and URL)
-    ar_courts = [
-        {"name": "Alvorado 1 & 2", "url": "https://maps.google.com/?q=25.041792,55.259258"},
-        {"name": "Palmera 2", "url": "https://maps.app.goo.gl/CHimjtqQeCfU1d3W6"},
-        {"name": "Palmera 4", "url": "https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6"},
-        {"name": "Saheel", "url": "https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8"},
-        {"name": "Hattan", "url": "https://maps.app.goo.gl/fjGpeNzncyG1o34c7"},
-        {"name": "MLC Mirador La Colleccion", "url": "https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6"},
-        {"name": "Al Mahra", "url": "https://maps.app.goo.gl/zVivadvUsD6yyL2Y9"},
-        {"name": "Mirador", "url": "https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8"},
-        {"name": "Reem 1", "url": "https://maps.app.goo.gl/qKswqmb9Lqsni5RD7"},
-        {"name": "Reem 2", "url": "https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5"},
-        {"name": "Reem 3", "url": "https://maps.app.goo.gl/o8z9pHo8tSqTbEL39"},
-        {"name": "Alma", "url": "https://maps.app.goo.gl/BZNfScABbzb3osJ18"},
-    ]
-    
-    # Mira & Mira Oasis courts
-    mira_courts = [
-        {"name": "Mira 2", "url": "https://maps.app.goo.gl/JeVmwiuRboCnzhnb9"},
-        {"name": "Mira 4", "url": "https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A"},
-        {"name": "Mira 5 A & B", "url": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6"},
-        {"name": "Mira Oasis 1", "url": "https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8"},
-        {"name": "Mira Oasis 2", "url": "https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9"},
-        {"name": "Mira Oasis 3 A & B", "url": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9"},
-        {"name": "Mira Oasis 3 C", "url": "https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8"},
-    ]
-    
-    # Function to display courts in a grid
-    def display_courts(section_title, courts_list):
-        st.subheader(section_title)
-        num_cols = 3 if len(courts_list) > 6 else 2  # Responsive: 2-3 columns based on list length
-        for i in range(0, len(courts_list), num_cols):
-            cols = st.columns(num_cols)
-            for j, court in enumerate(courts_list[i:i+num_cols]):
-                with cols[j]:
-                    st.markdown(f"""
-                    <div class="court-card">
-                        <img src="{court_icon_url}" class="court-icon" alt="Tennis Court Icon">
-                        <h4>{court['name']}</h4>
-                        <a href="{court['url']}" target="_blank">View on Map</a>
-                    </div>
-                    """, unsafe_allow_html=True)
-    
-    # Display sections
-    with st.expander("Arabian Ranches Tennis Courts", expanded=False, icon="➡️"):
-        display_courts("", ar_courts)  # No extra title inside expander
-    with st.expander("Mira & Mira Oasis Tennis Courts", expanded=False, icon="➡️"):
-        display_courts("", mira_courts)
 
-with tabs[4]:
+
+with tabs[3]:
     st.header("Bookings")
     with st.expander("➕ Enter a Bookings", expanded=False, icon="➡️"):
         st.subheader("Court Booking Form")
@@ -2341,6 +2288,62 @@ with tabs[4]:
                         load_bookings()
                         st.success("Booking deleted.")
                         st.rerun()
+
+with tabs[4]:
+    st.header("Court Locations")
+    
+    # Icon URL (use a free tennis court icon; you can host it or use an external link)
+    court_icon_url = "https://img.icons8.com/color/48/000000/tennis.png"  # Example from Icons8; replace if needed
+    
+    # Arabian Ranches courts (as a list of dicts for name and URL)
+    ar_courts = [
+        {"name": "Alvorado 1 & 2", "url": "https://maps.google.com/?q=25.041792,55.259258"},
+        {"name": "Palmera 2", "url": "https://maps.app.goo.gl/CHimjtqQeCfU1d3W6"},
+        {"name": "Palmera 4", "url": "https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6"},
+        {"name": "Saheel", "url": "https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8"},
+        {"name": "Hattan", "url": "https://maps.app.goo.gl/fjGpeNzncyG1o34c7"},
+        {"name": "MLC Mirador La Colleccion", "url": "https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6"},
+        {"name": "Al Mahra", "url": "https://maps.app.goo.gl/zVivadvUsD6yyL2Y9"},
+        {"name": "Mirador", "url": "https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8"},
+        {"name": "Reem 1", "url": "https://maps.app.goo.gl/qKswqmb9Lqsni5RD7"},
+        {"name": "Reem 2", "url": "https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5"},
+        {"name": "Reem 3", "url": "https://maps.app.goo.gl/o8z9pHo8tSqTbEL39"},
+        {"name": "Alma", "url": "https://maps.app.goo.gl/BZNfScABbzb3osJ18"},
+    ]
+    
+    # Mira & Mira Oasis courts
+    mira_courts = [
+        {"name": "Mira 2", "url": "https://maps.app.goo.gl/JeVmwiuRboCnzhnb9"},
+        {"name": "Mira 4", "url": "https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A"},
+        {"name": "Mira 5 A & B", "url": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6"},
+        {"name": "Mira Oasis 1", "url": "https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8"},
+        {"name": "Mira Oasis 2", "url": "https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9"},
+        {"name": "Mira Oasis 3 A & B", "url": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9"},
+        {"name": "Mira Oasis 3 C", "url": "https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8"},
+    ]
+    
+    # Function to display courts in a grid
+    def display_courts(section_title, courts_list):
+        st.subheader(section_title)
+        num_cols = 3 if len(courts_list) > 6 else 2  # Responsive: 2-3 columns based on list length
+        for i in range(0, len(courts_list), num_cols):
+            cols = st.columns(num_cols)
+            for j, court in enumerate(courts_list[i:i+num_cols]):
+                with cols[j]:
+                    st.markdown(f"""
+                    <div class="court-card">
+                        <img src="{court_icon_url}" class="court-icon" alt="Tennis Court Icon">
+                        <h4>{court['name']}</h4>
+                        <a href="{court['url']}" target="_blank">View on Map</a>
+                    </div>
+                    """, unsafe_allow_html=True)
+    
+    # Display sections
+    with st.expander("Arabian Ranches Tennis Courts", expanded=False, icon="➡️"):
+        display_courts("", ar_courts)  # No extra title inside expander
+    with st.expander("Mira & Mira Oasis Tennis Courts", expanded=False, icon="➡️"):
+        display_courts("", mira_courts)
+                        
 #--MINI TOURNEY -----------------------
 with tabs[5]:
     st.header("Mini Tournaments Organiser")
