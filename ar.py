@@ -1720,8 +1720,7 @@ with tabs[0]:
                 )
             except Exception as e:
                 st.error(f"Error generating PDF: {str(e)}")
-# Combined view --------------------------------------------------
-else:  
+      else:  # Combined view
     filtered_matches = matches.copy()
     rank_df, partner_stats = calculate_rankings(filtered_matches)
     current_date_formatted = datetime.now().strftime("%d/%m")
