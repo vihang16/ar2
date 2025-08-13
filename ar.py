@@ -713,7 +713,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             points_styled = f"<span style='font-weight:bold; color:#fff500;'>{points:.1f}</span>"
             win_percent_styled = f"<span style='font-weight:bold; color:#fff500;'>{win_percent:.1f}%</span>"
             # --- MODIFIED: Updated matches_styled to include D/S count ---
-            matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{matches} (D: {doubles_count}, S: {singles_count})</span>"
+            matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{matches} (Doubles: {doubles_count}, Singles: {singles_count})</span>"
             wins_styled = f"<span style='font-weight:bold; color:#fff500;'>{wins}</span>"
             losses_styled = f"<span style='font-weight:bold; color:#fff500;'>{losses}</span>"
             game_diff_avg_styled = f"<span style='font-weight:bold; color:#fff500;'>{game_diff_avg:.2f}</span>"
