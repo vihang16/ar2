@@ -1785,21 +1785,20 @@ with tabs[0]:
 
             # --- Top 3 podium view ---
             top3 = rank_df.head(3).reset_index(drop=True)
-            cards_html = '<div class="top3-container">'
+            st.markdown('<div class="top3-container">', unsafe_allow_html=True)
             for idx, row in top3.iterrows():
-                profile_url = row["Profile"] if row["Profile"] else "https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png"
+                profile_html = f'<img src="{row["Profile"]}" alt="Profile">' if row["Profile"] else '<img src="https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png" alt="Profile">'
                 podium_class = f"podium-{idx+1}"
-                cards_html += f"""
+                st.markdown(f"""
                 <div class="top3-card {podium_class}">
                     <div style="font-size:1.5em;">{row['Rank']}</div>
-                    <img src="{profile_url}" alt="Profile">
+                    {profile_html}
                     <div class="player-name">{row['Player']}</div>
                     <div style="color:#fff500; font-size:1.1em;">{row['Points']:.1f} pts</div>
                     <div style="color:#bbbbbb;">Win%: {row['Win %']:.1f}</div>
                 </div>
-                """
-            cards_html += '</div>'
-            st.markdown(cards_html, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
             # --- Remaining rankings vertical ---
             st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
