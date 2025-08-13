@@ -2350,42 +2350,36 @@ with tabs[4]:
                 pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
             
             # --- START: New section for visuals (Screenshot & Thumbnails) ---
-            if row["screenshot_url"]:
-                screenshot_html = f'<img src="{row["screenshot_url"]}" style="width:120px; margin-right:20px;">'
-            else:
-                screenshot_html = ''
+            # Prepare screenshot HTML
+            screenshot_html = f'<img src="{row["screenshot_url"]}" style="width:120px; margin-right:20px;">' if row["screenshot_url"] else ''
 
+            # Prepare player thumbnails HTML
             booking_players = [row['player1'], row['player2'], row['player3'], row['player4']]
             players_df = st.session_state.players_df
-
-            pictures_html = ""
+            pictures_html = '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
             for player_name in booking_players:
-                # Check if player_name is a valid, non-empty string
                 if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
                     player_data = players_df[players_df["name"] == player_name]
                     if not player_data.empty:
                         img_url = player_data.iloc[0].get("profile_image_url")
-                        # Check if the image URL is a valid, non-empty string
                         if img_url and isinstance(img_url, str) and img_url.strip():
                             pictures_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
                         else:
-                            # Fallback to a placeholder with the player's initial
                             initial = player_name[0].upper()
                             pictures_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
+            pictures_html += '</div>'
 
+            # Combine visuals (screenshot and thumbnails) only if at least one exists
             visuals_html = ""
-            if screenshot_html or pictures_html:
+            if screenshot_html or '<img' in pictures_html or '<div' in pictures_html:
                 visuals_html = f"""
-                <div style='display: flex; flex-direction: row; align-items: center; margin-top: 10px;'>
+                <div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">
                     {screenshot_html}
-                    <div style='display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;'>
-                        {pictures_html}
-                    </div>
+                    {pictures_html}
                 </div>
                 """
-            # --- END: New section for visuals ---
-
-            # Display the main text-based booking information
+            
+            # Display the main text-based booking information with visuals
             st.markdown(f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
                 <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
@@ -2400,6 +2394,7 @@ with tabs[4]:
             
             # Add a horizontal line to separate booking entries
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
+            # --- END: New section for visuals ---
             
     st.markdown("---")
     st.subheader("✏️ Manage Existing Booking")
@@ -2489,6 +2484,8 @@ with tabs[4]:
                         load_bookings()
                         st.success("Booking deleted.")
                         st.rerun()
+
+
 #--MINI TOURNEY -----------------------
 with tabs[5]:
     st.header("Mini Tournaments Organiser")
