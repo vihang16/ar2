@@ -1786,6 +1786,7 @@ with tabs[0]:
             # --- Top 3 podium view ---
             # --- Top 3 podium view ---
             top3 = rank_df.head(3).reset_index(drop=True)
+
             cards_html = '<div class="top3-container">'
             for idx, row in top3.iterrows():
                 profile_html = f'<img src="{row["Profile"]}" alt="Profile">' if row["Profile"] else '<img src="https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png" alt="Profile">'
@@ -1799,7 +1800,7 @@ with tabs[0]:
                     <div style="color:#bbbbbb;">Win%: {row['Win %']:.1f}</div>
                 </div>
                 """
-            cards_html += '</div>'
+            cards_html += '</div>'  # Close container after all cards
             st.markdown(cards_html, unsafe_allow_html=True)
 
 
