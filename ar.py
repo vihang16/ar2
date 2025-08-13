@@ -2295,100 +2295,98 @@ with tabs[4]:
 
     st.markdown("---")
     st.subheader("Upcoming Bookings")
-bookings_df = st.session_state.bookings_df.copy()
-if bookings_df.empty:
-    st.info("No upcoming bookings found.")
-else:
-    bookings_df['datetime'] = pd.to_datetime(bookings_df['date'] + ' ' + bookings_df['time'], errors='coerce')
-    bookings_df = bookings_df.sort_values(by='datetime', ascending=True).reset_index(drop=True)
-    try:
-        rank_df, _ = calculate_rankings(st.session_state.matches_df)
-    except Exception as e:
-        rank_df = pd.DataFrame()
-        st.warning(f"Unable to load rankings for pairing suggestions: {str(e)}")
-
-    for _, row in bookings_df.iterrows():
-        players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
-        players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
-        date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
-
-        # Display time in AM/PM format
-        time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
-
-        pairing_suggestion = ""
-
+    bookings_df = st.session_state.bookings_df.copy()
+    if bookings_df.empty:
+        st.info("No upcoming bookings found.")
+    else:
+        bookings_df['datetime'] = pd.to_datetime(bookings_df['date'] + ' ' + bookings_df['time'], errors='coerce')
+        bookings_df = bookings_df.sort_values(by='datetime', ascending=True).reset_index(drop=True)
         try:
-            if row['match_type'] == "Doubles" and len(players) == 4:
-                suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
-
-                if team1_odds is not None and team2_odds is not None:
-                    teams = suggested_pairing.split(' vs ')
-                    team1_players = teams[0].replace('Team 1: ', '')
-                    team2_players = teams[1].replace('Team 2: ', '')
-
-                    pairing_suggestion = (
-                        f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
-                        f"{team1_players} (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
-                        f"{team2_players} (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
-                    )
-                else:
-                    pairing_suggestion = f"<div><strong style='color:white;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
-
-            elif row['match_type'] == "Singles" and len(players) == 2:
-                p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
-                if p1_odds is not None:
-                    p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
-                    p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
-                    pairing_suggestion = f"<div><strong style='color:white;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
+            rank_df, _ = calculate_rankings(st.session_state.matches_df)
         except Exception as e:
-            pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
-
-        # Corrected: Build the HTML for player thumbnails
-        pictures_html = "<div style='display: flex; flex-direction: row; align-items: center; padding-top: 10px; flex-wrap: nowrap;'>"
-        booking_players = [row['player1'], row['player2'], row['player3'], row['player4']]
-        players_df = st.session_state.players_df
-        for player_name in booking_players:
-            if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
-                player_data = players_df[players_df["name"] == player_name]
-                if not player_data.empty:
-                    img_url = player_data.iloc[0].get("profile_image_url")
-                    if img_url and isinstance(img_url, str) and img_url.strip():
-                        pictures_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
+            rank_df = pd.DataFrame()
+            st.warning(f"Unable to load rankings for pairing suggestions: {str(e)}")
+    
+        for _, row in bookings_df.iterrows():
+            players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
+            players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
+            date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
+    
+            # Display time in AM/PM format
+            time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
+    
+            pairing_suggestion = ""
+    
+            try:
+                if row['match_type'] == "Doubles" and len(players) == 4:
+                    suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
+    
+                    if team1_odds is not None and team2_odds is not None:
+                        teams = suggested_pairing.split(' vs ')
+                        team1_players = teams[0].replace('Team 1: ', '')
+                        team2_players = teams[1].replace('Team 2: ', '')
+    
+                        pairing_suggestion = (
+                            f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
+                            f"{team1_players} (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
+                            f"{team2_players} (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
+                        )
                     else:
-                        initial = player_name[0].upper()
-                        pictures_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
-
-        pictures_html += "</div>"
-        
-        # This is the single, combined st.markdown block that replaces the multiple ones
-        st.markdown(f"""
-        <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <div style="flex: 0 0 auto;">
-                    <h4 style="color:#fff500; font-weight:bold; margin-bottom: 5px;">Match Details</h4>
-                    <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
-                    <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
-                    <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
-                    <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
-                    <div><strong>Players:</strong> {players_str}</div>
-                    {pairing_suggestion}
-                </div>
-                <div style="flex-grow: 1;">
-                    <div style="display: flex; justify-content: flex-end; align-items: center;">
-                        {"<img src='" + row["screenshot_url"] + "' style='width: 120px; border-radius: 4px;' />" if row["screenshot_url"] else ""}
+                        pairing_suggestion = f"<div><strong style='color:white;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
+    
+                elif row['match_type'] == "Singles" and len(players) == 2:
+                    p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
+                    if p1_odds is not None:
+                        p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
+                        p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
+                        pairing_suggestion = f"<div><strong style='color:white;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
+            except Exception as e:
+                pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
+    
+            # Corrected: Build the HTML for player thumbnails
+            pictures_html = "<div style='display: flex; flex-direction: row; align-items: center; padding-top: 10px; flex-wrap: nowrap;'>"
+            booking_players = [row['player1'], row['player2'], row['player3'], row['player4']]
+            players_df = st.session_state.players_df
+            for player_name in booking_players:
+                if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
+                    player_data = players_df[players_df["name"] == player_name]
+                    if not player_data.empty:
+                        img_url = player_data.iloc[0].get("profile_image_url")
+                        if img_url and isinstance(img_url, str) and img_url.strip():
+                            pictures_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
+                        else:
+                            initial = player_name[0].upper()
+                            pictures_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
+    
+            pictures_html += "</div>"
+    
+            # This is the single, combined st.markdown block that replaces the multiple ones
+            st.markdown(f"""
+            <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="flex: 0 0 auto;">
+                        <h4 style="color:#fff500; font-weight:bold; margin-bottom: 5px;">Match Details</h4>
+                        <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
+                        <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
+                        <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
+                        <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
+                        <div><strong>Players:</strong> {players_str}</div>
+                        {pairing_suggestion}
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <div style="display: flex; justify-content: flex-end; align-items: center;">
+                            {"<img src='" + row["screenshot_url"] + "' style='width: 120px; border-radius: 4px;' />" if row["screenshot_url"] else ""}
+                        </div>
                     </div>
                 </div>
+                <div style="margin-top: 15px;">
+                    {pictures_html}
+                </div>
+                <div style="text-align: center; margin-top: 10px;">
+                    {"<a href='" + row["screenshot_url"] + "' target='_blank' style='color:#fff500; text-decoration: none; font-weight:bold;'>View Screenshot</a>" if row["screenshot_url"] else ""}
+                </div>
             </div>
-            <div style="margin-top: 15px;">
-                {pictures_html}
-            </div>
-            <div style="text-align: center; margin-top: 10px;">
-                {"<a href='" + row["screenshot_url"] + "' target='_blank' style='color:#fff500; text-decoration: none; font-weight:bold;'>View Screenshot</a>" if row["screenshot_url"] else ""}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # You can now remove the old st.columns and st.markdown('<hr>') blocks here.
+            """, unsafe_allow_html=True)
             
     st.markdown("---")
     st.subheader("✏️ Manage Existing Booking")
