@@ -676,6 +676,17 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
             cumulative_game_diff = int(player_data["Cumulative Game Diff"])
             games_won = int(player_data["Games Won"])
 
+            # --- START: New calculation for D/S matches ---
+            player_matches_df = matches_df[
+                (matches_df['team1_player1'] == selected_player) |
+                (matches_df['team1_player2'] == selected_player) |
+                (matches_df['team2_player1'] == selected_player) |
+                (matches_df['team2_player2'] == selected_player)
+            ]
+            doubles_count = player_matches_df[player_matches_df['match_type'] == 'Doubles'].shape[0]
+            singles_count = player_matches_df[player_matches_df['match_type'] == 'Singles'].shape[0]
+            # --- END: New calculation for D/S matches ---
+
             # Partners and most effective partner, excluding "Visitor"
             partners_list = "None"
             best_partner = "None"
@@ -701,7 +712,8 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
 
             points_styled = f"<span style='font-weight:bold; color:#fff500;'>{points:.1f}</span>"
             win_percent_styled = f"<span style='font-weight:bold; color:#fff500;'>{win_percent:.1f}%</span>"
-            matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{matches}</span>"
+            # --- MODIFIED: Updated matches_styled to include D/S count ---
+            matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{matches} (D: {doubles_count}, S: {singles_count})</span>"
             wins_styled = f"<span style='font-weight:bold; color:#fff500;'>{wins}</span>"
             losses_styled = f"<span style='font-weight:bold; color:#fff500;'>{losses}</span>"
             game_diff_avg_styled = f"<span style='font-weight:bold; color:#fff500;'>{game_diff_avg:.2f}</span>"
@@ -737,6 +749,7 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
 
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
+
 
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
