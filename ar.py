@@ -2348,15 +2348,23 @@ with tabs[4]:
             
             # Display the main text-based booking information
             st.markdown(f"""
-            <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
-                <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
-                <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
-                <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
-                <div><strong>Players:</strong> {players_str}</div>
-                {pairing_suggestion}
+            # Updated HTML markup for upcoming bookings
+            st.markdown(f"""
+            <div class="booking-row">
+                <h4 style="color:#fff500; font-weight:bold; margin-bottom: 5px;">Match Details</h4>
+                <p style="color:#fff500; font-size:1.1em; margin: 0;"><strong>Date:</strong> {booking['date']}</p>
+                <p style="color:#fff500; font-size:1.1em; margin: 0;"><strong>Time:</strong> {booking['time']}</p>
+                <p style="color:#fff500; font-size:1.1em; margin: 0;"><strong>Court:</strong> {booking['court_name']}</p>
+                <h5 style="color:#fff500; font-weight:bold; margin-top: 15px; margin-bottom: 5px;">Players:</h5>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    {player_thumbnails_html}
+                </div>
+                <div style="text-align:center; margin-top:15px;">
+                    <a href="{booking['screenshot_url']}" target="_blank" style="color:#fff500; text-decoration: none; font-weight:bold;">View Screenshot</a>
+                </div>
             </div>
             """, unsafe_allow_html=True)
+            
             
             # --- START: New section for visuals (Screenshot & Thumbnails) ---
             col1, col2 = st.columns([1, 2])
