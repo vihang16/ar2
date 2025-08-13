@@ -756,13 +756,17 @@ def calculate_rankings(matches_to_rank):
     wins = defaultdict(int)
     losses = defaultdict(int)
     matches_played = defaultdict(int)
+    singles_matches = defaultdict(int) # Added
+    doubles_matches = defaultdict(int) # Added
     games_won = defaultdict(int)
     game_diff = defaultdict(float)
     cumulative_game_diff = defaultdict(int) # New: For cumulative game difference
     partner_stats = defaultdict(lambda: defaultdict(lambda: {'wins': 0, 'losses': 0, 'ties': 0, 'matches': 0, 'game_diff_sum': 0}))
 
     for _, row in matches_to_rank.iterrows():
-        if row['match_type'] == 'Doubles':
+        match_type = row['match_type'] # Added
+        
+        if match_type == 'Doubles':
             t1 = [row['team1_player1'], row['team1_player2']]
             t2 = [row['team2_player1'], row['team2_player2']]
         else:
@@ -805,12 +809,16 @@ def calculate_rankings(matches_to_rank):
                     wins[p] += 1
                     matches_played[p] += 1
                     game_diff[p] += match_gd_avg
+                    if match_type == 'Doubles': doubles_matches[p] += 1 # Added
+                    else: singles_matches[p] += 1 # Added
             for p in t2:
                 if p != "Visitor":
                     scores[p] += 1
                     losses[p] += 1
                     matches_played[p] += 1
                     game_diff[p] -= match_gd_avg
+                    if match_type == 'Doubles': doubles_matches[p] += 1 # Added
+                    else: singles_matches[p] += 1 # Added
         elif row["winner"] == "Team 2":
             for p in t2:
                 if p != "Visitor":
@@ -818,18 +826,25 @@ def calculate_rankings(matches_to_rank):
                     wins[p] += 1
                     matches_played[p] += 1
                     game_diff[p] -= match_gd_avg
+                    if match_type == 'Doubles': doubles_matches[p] += 1 # Added
+                    else: singles_matches[p] += 1 # Added
             for p in t1:
                 if p != "Visitor":
                     scores[p] += 1
                     losses[p] += 1
                     matches_played[p] += 1
                     game_diff[p] += match_gd_avg
-        else:  # Tie
+                    if match_type == 'Doubles': doubles_matches[p] += 1 # Added
+                    else: singles_matches[p] += 1 # Added
+        else:
+            # Tie
             for p in t1 + t2:
                 if p != "Visitor":
                     scores[p] += 1.5
                     matches_played[p] += 1
                     game_diff[p] += match_gd_avg if p in t1 else -match_gd_avg
+                    if match_type == 'Doubles': doubles_matches[p] += 1 # Added
+                    else: singles_matches[p] += 1 # Added
 
         # Update partner stats for doubles matches
         if row['match_type'] == 'Doubles':
@@ -860,7 +875,7 @@ def calculate_rankings(matches_to_rank):
     players_df = st.session_state.players_df
     for player in scores:
         if player == "Visitor":
-            continue  # Skip Visitor in rankings
+            continue # Skip Visitor in rankings
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         game_diff_avg = (game_diff[player] / matches_played[player]) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
@@ -872,6 +887,8 @@ def calculate_rankings(matches_to_rank):
             "Points": scores[player],
             "Win %": round(win_percentage, 2),
             "Matches": matches_played[player],
+            "Doubles Matches": doubles_matches[player], # Added
+            "Singles Matches": singles_matches[player], # Added
             "Wins": wins[player],
             "Losses": losses[player],
             "Games Won": games_won[player],
@@ -887,9 +904,7 @@ def calculate_rankings(matches_to_rank):
             ascending=[False, False, False, False, True]
         ).reset_index(drop=True)
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
-
     return rank_df, partner_stats
-
 
 def display_community_stats(matches_df):
     """
