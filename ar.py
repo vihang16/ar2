@@ -1721,125 +1721,124 @@ with tabs[0]:
             except Exception as e:
                 st.error(f"Error generating PDF: {str(e)}")
     else:  # Combined view
-	    filtered_matches = matches.copy()
-	    rank_df, partner_stats = calculate_rankings(filtered_matches)
-	    current_date_formatted = datetime.now().strftime("%d/%m")
-	    st.subheader(f"Rankings as of {current_date_formatted}")
+        filtered_matches = matches.copy()
+        rank_df, partner_stats = calculate_rankings(filtered_matches)
+        current_date_formatted = datetime.now().strftime("%d/%m")
+        st.subheader(f"Rankings as of {current_date_formatted}")
 
-	    if rank_df.empty:
-		st.info("No ranking data available for this view.")
-	    else:
-		# --- CSS for horizontal + podium top 3 ---
-		st.markdown("""
-		<style>
-		.top3-container {
-		    display: flex;
-		    flex-wrap: nowrap;
-		    overflow-x: auto;
-		    gap: 15px;
-		    margin-bottom: 25px;
-		    justify-content: center; /* Center on desktop */
-		}
-		.top3-card {
-		    flex: 0 0 auto;
-		    background: linear-gradient(to bottom, #031827, #07314f);
-		    border: 2px solid #fff500;
-		    border-radius: 12px;
-		    padding: 15px;
-		    text-align: center;
-		    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-		    width: 180px;
-		    transition: transform 0.2s ease, box-shadow 0.2s ease;
-		}
-		.top3-card:hover {
-		    transform: translateY(-5px) scale(1.05);
-		    box-shadow: 0 8px 16px rgba(255,245,0,0.4);
-		}
-		.top3-card img {
-		    width: 70px;
-		    height: 70px;
-		    object-fit: cover;
-		    border-radius: 50%;
-		    margin-bottom: 10px;
-		    border: 2px solid #fff500;
-		}
-		.top3-card .player-name {
-		    font-weight: bold;
-		    color: #fff500;
-		    font-size: 1.2em;
-		}
-		.podium-1 { order: 2; }
-		.podium-2 { order: 1; margin-top: 20px; }
-		.podium-3 { order: 3; margin-top: 20px; }
-		@media (max-width: 768px) {
-		    .top3-container {
-		        justify-content: flex-start;
-		    }
-		    .top3-card {
-		        width: 150px;
-		        margin-top: 0 !important;
-		    }
-		}
-		</style>
-		""", unsafe_allow_html=True)
+        if rank_df.empty:
+            st.info("No ranking data available for this view.")
+        else:
+            # --- CSS for horizontal + podium top 3 ---
+            st.markdown("""
+            <style>
+            .top3-container {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                gap: 15px;
+                margin-bottom: 25px;
+                justify-content: center; /* Center on desktop */
+            }
+            .top3-card {
+                flex: 0 0 auto;
+                background: linear-gradient(to bottom, #031827, #07314f);
+                border: 2px solid #fff500;
+                border-radius: 12px;
+                padding: 15px;
+                text-align: center;
+                box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+                width: 180px;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+            .top3-card:hover {
+                transform: translateY(-5px) scale(1.05);
+                box-shadow: 0 8px 16px rgba(255,245,0,0.4);
+            }
+            .top3-card img {
+                width: 70px;
+                height: 70px;
+                object-fit: cover;
+                border-radius: 50%;
+                margin-bottom: 10px;
+                border: 2px solid #fff500;
+            }
+            .top3-card .player-name {
+                font-weight: bold;
+                color: #fff500;
+                font-size: 1.2em;
+            }
+            .podium-1 { order: 2; }
+            .podium-2 { order: 1; margin-top: 20px; }
+            .podium-3 { order: 3; margin-top: 20px; }
+            @media (max-width: 768px) {
+                .top3-container {
+                    justify-content: flex-start;
+                }
+                .top3-card {
+                    width: 150px;
+                    margin-top: 0 !important;
+                }
+            }
+            </style>
+            """, unsafe_allow_html=True)
 
-		# --- Top 3 podium view ---
-		top3 = rank_df.head(3).reset_index(drop=True)
-		st.markdown('<div class="top3-container">', unsafe_allow_html=True)
-		for idx, row in top3.iterrows():
-		    profile_html = f'<img src="{row["Profile"]}" alt="Profile">' if row["Profile"] else '<img src="https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png" alt="Profile">'
-		    podium_class = f"podium-{idx+1}"
-		    st.markdown(f"""
-		    <div class="top3-card {podium_class}">
-		        <div style="font-size:1.5em;">{row['Rank']}</div>
-		        {profile_html}
-		        <div class="player-name">{row['Player']}</div>
-		        <div style="color:#fff500; font-size:1.1em;">{row['Points']:.1f} pts</div>
-		        <div style="color:#bbbbbb;">Win%: {row['Win %']:.1f}</div>
-		    </div>
-		    """, unsafe_allow_html=True)
-		st.markdown('</div>', unsafe_allow_html=True)
+            # --- Top 3 podium view ---
+            top3 = rank_df.head(3).reset_index(drop=True)
+            st.markdown('<div class="top3-container">', unsafe_allow_html=True)
+            for idx, row in top3.iterrows():
+                profile_html = f'<img src="{row["Profile"]}" alt="Profile">' if row["Profile"] else '<img src="https://raw.githubusercontent.com/mahadevbk/ar2/main/default_profile.png" alt="Profile">'
+                podium_class = f"podium-{idx+1}"
+                st.markdown(f"""
+                <div class="top3-card {podium_class}">
+                    <div style="font-size:1.5em;">{row['Rank']}</div>
+                    {profile_html}
+                    <div class="player-name">{row['Player']}</div>
+                    <div style="color:#fff500; font-size:1.1em;">{row['Points']:.1f} pts</div>
+                    <div style="color:#bbbbbb;">Win%: {row['Win %']:.1f}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-		# --- Remaining rankings vertical ---
-		st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
-		st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
-		for _, row in rank_df.iloc[3:].iterrows():
-		    profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
-		    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-		    points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-		    trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-		    st.markdown(f"""
-		    <div class="ranking-row">
-		        <div class="rank-profile-player-group">
-		            <div class="rank-col">{row["Rank"]}</div>
-		            <div class="profile-col">{profile_html}</div>
-		            <div class="player-col">{player_styled}</div>
-		        </div>
-		        <div class="points-col">{points_value_styled}</div>
-		        <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-		        <div class="matches-col">{int(row["Matches"])}</div>
-		        <div class="wins-col">{int(row["Wins"])}</div>
-		        <div class="losses-col">{int(row["Losses"])}</div>
-		        <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-		        <div class="games-won-col">{int(row["Games Won"])}</div>
-		        <div class="trend-col">{trend_value_styled}</div>
-		    </div>
-		    """, unsafe_allow_html=True)
-		st.markdown('</div>', unsafe_allow_html=True)
-		st.markdown('</div>', unsafe_allow_html=True)
+            # --- Remaining rankings vertical ---
+            st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
+            st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
+            for _, row in rank_df.iloc[3:].iterrows():
+                profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
+                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
+                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
+                st.markdown(f"""
+                <div class="ranking-row">
+                    <div class="rank-profile-player-group">
+                        <div class="rank-col">{row["Rank"]}</div>
+                        <div class="profile-col">{profile_html}</div>
+                        <div class="player-col">{player_styled}</div>
+                    </div>
+                    <div class="points-col">{points_value_styled}</div>
+                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
+                    <div class="matches-col">{int(row["Matches"])}</div>
+                    <div class="wins-col">{int(row["Wins"])}</div>
+                    <div class="losses-col">{int(row["Losses"])}</div>
+                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
+                    <div class="games-won-col">{int(row["Games Won"])}</div>
+                    <div class="trend-col">{trend_value_styled}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-		# --- Player Insights ---
-		st.subheader("Player Insights")
-		selected_player_rankings = st.selectbox(
-		    "Select a player for insights", [""] + players, index=0, key="insights_player_rankings_combined"
-		)
-		if selected_player_rankings:
-		    display_player_insights(
-		        selected_player_rankings, players_df, filtered_matches, rank_df, partner_stats, key_prefix="rankings_combined_"
-		    )
-		else:
-		    st.info("Player insights will be available once a player is selected.")
-
+            # --- Player Insights ---
+            st.subheader("Player Insights")
+            selected_player_rankings = st.selectbox(
+                "Select a player for insights", [""] + players, index=0, key="insights_player_rankings_combined"
+            )
+            if selected_player_rankings:
+                display_player_insights(
+                    selected_player_rankings, players_df, filtered_matches, rank_df, partner_stats, key_prefix="rankings_combined_"
+                )
+            else:
+                st.info("Player insights will be available once a player is selected.")
 
 
 with tabs[1]:
