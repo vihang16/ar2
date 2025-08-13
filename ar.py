@@ -2328,9 +2328,8 @@ with tabs[4]:
                         pairing_suggestion = f"<div><strong style='color:white;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
             except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
-
             
-            
+            # Display the main text-based booking information
             st.markdown(f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
                 <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
@@ -2342,9 +2341,46 @@ with tabs[4]:
             </div>
             """, unsafe_allow_html=True)
             
-            if row["screenshot_url"]:
-                st.image(row["screenshot_url"], width=100, caption="Booking Screenshot")
+            # --- START: New section for visuals (Screenshot & Thumbnails) ---
+            col1, col2 = st.columns([1, 2])
 
+            with col1:
+                # Display booking screenshot if it exists
+                if row["screenshot_url"]:
+                    st.image(row["screenshot_url"], width=120)
+
+            with col2:
+                # Get player names and the players dataframe
+                booking_players = [row['player1'], row['player2'], row['player3'], row['player4']]
+                players_df = st.session_state.players_df
+                
+                # Build the HTML for player thumbnails
+                pictures_html = "<div style='display: flex; flex-direction: row; align-items: center; padding-top: 10px; flex-wrap: nowrap;'>"
+
+                for player_name in booking_players:
+                    # Check if player_name is a valid, non-empty string
+                    if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
+                        player_data = players_df[players_df["name"] == player_name]
+                        if not player_data.empty:
+                            img_url = player_data.iloc[0].get("profile_image_url")
+                            # Check if the image URL is a valid, non-empty string
+                            if img_url and isinstance(img_url, str) and img_url.strip():
+                                pictures_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
+                            else:
+                                # Fallback to a placeholder with the player's initial
+                                initial = player_name[0].upper()
+                                pictures_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
+
+                pictures_html += "</div>"
+                
+                # Render the HTML only if pictures or placeholders were added
+                if 'img' in pictures_html or 'initial' in pictures_html:
+                    st.markdown(pictures_html, unsafe_allow_html=True)
+            
+            # Add a horizontal line to separate booking entries
+            st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
+            # --- END: New section for visuals ---
+            
     st.markdown("---")
     st.subheader("✏️ Manage Existing Booking")
     if bookings_df.empty:
