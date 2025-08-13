@@ -1841,6 +1841,7 @@ with tabs[0]:
             for index, row in rank_df.iterrows():
                 profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                # matches styled 
                 matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(row['Matches'])} (Doubles: {int(row['Doubles Matches'])}, Singles: {int(row['Singles Matches'])})</span>"
                 points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
                 trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
@@ -1853,7 +1854,7 @@ with tabs[0]:
                     </div>
                     <div class="points-col">{points_value_styled}</div>
                     <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                    <div class="matches-col">{int(row["Matches"])}</div>
+                    <div class="matches-col">{matches_styled}</div>
                     <div class="wins-col">{int(row["Wins"])}</div>
                     <div class="losses-col">{int(row["Losses"])}</div>
                     <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
