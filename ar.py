@@ -2224,112 +2224,74 @@ with tabs[3]:
     with st.expander("Mira & Mira Oasis Tennis Courts", expanded=False, icon="➡️"):
         display_courts("", mira_courts)
 
-with tab[4]:
+with tabs[4]:
     st.header("Bookings")
-
-    def load_bookings():
-        try:
-            response = supabase.table(bookings_table_name).select("*").execute()
-            df = pd.DataFrame(response.data)
-            expected_columns = ["booking_id", "date", "time", "match_type", "court_name", "player1", "player2", "player3", "player4", "screenshot_url"]
-            for col in expected_columns:
-                if col not in df.columns:
-                    df[col] = ""
-            df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['time'], errors='coerce')
-            st.session_state.bookings_df = df
-        except Exception as e:
-            st.error(f"Error loading bookings: {str(e)}")
-
-    def save_bookings(df):
-        try:
-            df_to_save = df.copy()
-            if 'date' in df_to_save.columns:
-                df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce')
-                df_to_save = df_to_save.dropna(subset=['date'])
-                df_to_save['date'] = df_to_save['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
-
-            duplicates = df_to_save[df_to_save.duplicated(subset=['booking_id'], keep=False)]
-            if not duplicates.empty:
-                st.warning(f"Found duplicate booking_id values: {duplicates['booking_id'].tolist()}")
-                df_to_save = df_to_save.drop_duplicates(subset=['booking_id'], keep='last')
-
-            df_to_save = df_to_save.where(pd.notna(df_to_save), None)
-            supabase.table(bookings_table_name).upsert(df_to_save.to_dict("records")).execute()
-        except Exception as e:
-            st.error(f"Error saving bookings: {str(e)}")
-
-    def generate_booking_id(bookings_df):
-        return str(uuid.uuid4())
-
-    def get_upcoming_bookings(df):
-        now = datetime.now()
-        df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['time'], errors='coerce')
-        return df[(df['datetime'] > now) | (df['date'].isna())].sort_values(by='datetime', ascending=True)
-
-    def delete_booking_from_db(booking_id):
-        try:
-            supabase.table(bookings_table_name).delete().eq("booking_id", booking_id).execute()
-        except Exception as e:
-            st.error(f"Error deleting booking: {str(e)}")
-
-    load_bookings()
-
-    st.subheader("Add New Booking")
-    with st.form("new_booking_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            booking_date = st.date_input("Date")
-        with col2:
-            booking_time = st.time_input("Time")
-
-        court_name = st.selectbox("Court Name", ["MLC Mirador La Colleccion"])
-        match_type = st.radio("Match Type", ["Singles", "Doubles"], horizontal=True)
-
-        player_options = sorted(st.session_state.players_df["name"].tolist()) + ["Visitor"]
-        col3, col4, col5, col6 = st.columns(4)
-        with col3:
-            player1 = st.selectbox("Player 1", options=player_options)
-        with col4:
-            player2 = st.selectbox("Player 2", options=player_options, key="player2_booking")
-        with col5:
-            player3 = st.selectbox("Player 3", options=player_options, key="player3_booking", disabled=(match_type == "Singles"))
-        with col6:
-            player4 = st.selectbox("Player 4", options=player_options, key="player4_booking", disabled=(match_type == "Singles"))
-
-        uploaded_screenshot = st.file_uploader("Upload Booking Screenshot", type=["png", "jpg", "jpeg"], key="booking_screenshot_uploader")
-
-        submit_booking_button = st.form_submit_button("Add Booking")
-        if submit_booking_button:
-            if not booking_date or not booking_time or not player1 or not player2:
-                st.error("Please fill in all required fields.")
-            else:
-                new_booking_id = generate_booking_id(st.session_state.bookings_df)
-                screenshot_url = ""
-                if uploaded_screenshot:
-                    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                    file_name = f"booking_screenshot_{timestamp}_{new_booking_id}.png"
-                    screenshot_url = upload_image_to_supabase(uploaded_screenshot, file_name, "booking")
-                    if not screenshot_url:
-                        st.warning("Failed to upload screenshot. Booking will be saved without it.")
-
-                new_booking = {
-                    "booking_id": new_booking_id,
-                    "date": str(booking_date),
-                    "time": str(booking_time),
-                    "match_type": match_type,
-                    "court_name": court_name,
-                    "player1": player1,
-                    "player2": player2,
-                    "player3": player3,
-                    "player4": player4,
-                    "screenshot_url": screenshot_url
-                }
+    with st.expander("➕ Enter a Bookings", expanded=False, icon="➡️"):
+        st.subheader("Court Booking Form")
+        match_type_booking = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key=f"booking_match_type_{st.session_state.form_key_suffix}")
+        available_players = sorted([p for p in players_df["name"].dropna().tolist() if p != "Visitor"] + ["Visitor"]) if "name" in players_df.columns else ["Visitor"]
+        if not available_players:
+            st.warning("No players available. Please add players in the Player Profile tab.")
+        else:
+            with st.form(key=f"booking_form_{st.session_state.form_key_suffix}"):
+                if match_type_booking == "Doubles":
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        p1_booking = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"t1p1_booking_{st.session_state.form_key_suffix}")
+                        p2_booking = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"t1p2_booking_{st.session_state.form_key_suffix}")
+                    with col2:
+                        p3_booking = st.selectbox("Player 3 (optional)", [""] + available_players, key=f"t2p1_booking_{st.session_state.form_key_suffix}")
+                        p4_booking = st.selectbox("Player 4 (optional)", [""] + available_players, key=f"t2p2_booking_{st.session_state.form_key_suffix}")
+                else:
+                    p1_booking = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"s1p1_booking_{st.session_state.form_key_suffix}")
+                    p3_booking = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"s1p2_booking_{st.session_state.form_key_suffix}")
+                    p2_booking = ""
+                    p4_booking = ""
+                court_name = st.selectbox("Court Name *", [""] + court_names, key=f"court_booking_{st.session_state.form_key_suffix}")
+                booking_date = st.date_input("Booking Date *", value=datetime.now().date(), key=f"date_booking_{st.session_state.form_key_suffix}")
                 
-                new_booking_df = pd.DataFrame([new_booking])
-                st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, new_booking_df], ignore_index=True)
-                save_bookings(st.session_state.bookings_df)
-                st.success("Booking added successfully!")
-                st.experimental_rerun()
+                # UPDATED: Generate time slots in AM/PM format
+                hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
+                
+                booking_time = st.selectbox("Booking Time *", hours, key=f"time_booking_{st.session_state.form_key_suffix}")
+                screenshot = st.file_uploader("Upload Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"screenshot_booking_{st.session_state.form_key_suffix}")
+                st.markdown("*Required fields", unsafe_allow_html=True)
+                submit_booking = st.form_submit_button("Submit Booking")
+                if submit_booking:
+                    if not court_name:
+                        st.error("Court name is required.")
+                    elif not booking_date or not booking_time:
+                        st.error("Booking date and time are required.")
+                    else:
+                        # Convert AM/PM time back to 24-hour format for consistent storage
+                        time_24hr = datetime.strptime(booking_time, "%I:%M %p").strftime("%H:%M")
+                        
+                        selected_players = [p for p in [p1_booking, p2_booking, p3_booking, p4_booking] if p]
+                        if match_type_booking == "Doubles" and len(set(selected_players)) != len(selected_players):
+                            st.error("Please select different players for each position.")
+                        else:
+                            booking_id = generate_booking_id(st.session_state.bookings_df, booking_date)
+                            screenshot_url = ""
+                            if screenshot:
+                                screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking")
+                            new_booking = {
+                                "booking_id": booking_id,
+                                "date": booking_date,
+                                "time": time_24hr, # Save in 24hr format
+                                "match_type": match_type_booking,
+                                "court_name": court_name,
+                                "player1": p1_booking,
+                                "player2": p2_booking,
+                                "player3": p3_booking,
+                                "player4": p4_booking,
+                                "screenshot_url": screenshot_url
+                            }
+                            bookings_to_save = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
+                            save_bookings(bookings_to_save)
+                            load_bookings()
+                            st.success("Booking submitted.")
+                            st.session_state.form_key_suffix += 1
+                            st.rerun()
 
     st.markdown("---")
     st.subheader("Upcoming Bookings")
@@ -2349,27 +2311,29 @@ with tab[4]:
             players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
             players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
             date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
-
+            
             # Display time in AM/PM format
             time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
 
-            pairing_suggestion = ""
+            pairing_suggestion = "" 
 
             try:
                 if row['match_type'] == "Doubles" and len(players) == 4:
                     suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
-
+                    
                     if team1_odds is not None and team2_odds is not None:
                         teams = suggested_pairing.split(' vs ')
                         team1_players = teams[0].replace('Team 1: ', '')
                         team2_players = teams[1].replace('Team 2: ', '')
 
+                        # The "Suggested Pairing:" label is now set to white
                         pairing_suggestion = (
                             f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
                             f"{team1_players} (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
                             f"{team2_players} (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
                         )
                     else:
+                        # Also updated here for the fallback case
                         pairing_suggestion = f"<div><strong style='color:white;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
 
                 elif row['match_type'] == "Singles" and len(players) == 2:
@@ -2377,54 +2341,62 @@ with tab[4]:
                     if p1_odds is not None:
                         p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
                         p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
+                        # The "Odds:" label is also set to white for consistency
                         pairing_suggestion = f"<div><strong style='color:white;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
             except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
-
-            # Corrected: Build the HTML for player thumbnails
-            pictures_html = "<div style='display: flex; flex-direction: row; align-items: center; padding-top: 10px; flex-wrap: nowrap;'>"
-            booking_players = [row['player1'], row['player2'], row['player3'], row['player4']]
-            players_df = st.session_state.players_df
-            for player_name in booking_players:
-                if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
-                    player_data = players_df[players_df["name"] == player_name]
-                    if not player_data.empty:
-                        img_url = player_data.iloc[0].get("profile_image_url")
-                        if img_url and isinstance(img_url, str) and img_url.strip():
-                            pictures_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
-                        else:
-                            initial = player_name[0].upper()
-                            pictures_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
-
-            pictures_html += "</div>"
-
-            # This is the single, combined st.markdown block that replaces the multiple ones
+            
+            # Display the main text-based booking information
             st.markdown(f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <div style="flex: 0 0 auto;">
-                        <h4 style="color:#fff500; font-weight:bold; margin-bottom: 5px;">Match Details</h4>
-                        <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
-                        <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
-                        <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
-                        <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
-                        <div><strong>Players:</strong> {players_str}</div>
-                        {pairing_suggestion}
-                    </div>
-                    <div style="flex-grow: 1;">
-                        <div style="display: flex; justify-content: flex-end; align-items: center;">
-                            {"<img src='" + row["screenshot_url"] + "' style='width: 120px; border-radius: 4px;' />" if row["screenshot_url"] else ""}
-                        </div>
-                    </div>
-                </div>
-                <div style="margin-top: 15px;">
-                    {pictures_html}
-                </div>
-                <div style="text-align: center; margin-top: 10px;">
-                    {"<a href='" + row["screenshot_url"] + "' target='_blank' style='color:#fff500; text-decoration: none; font-weight:bold;'>View Screenshot</a>" if row["screenshot_url"] else ""}
-                </div>
+                <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
+                <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
+                <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
+                <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
+                <div><strong>Players:</strong> {players_str}</div>
+                {pairing_suggestion}
             </div>
             """, unsafe_allow_html=True)
+            
+            # --- START: New section for visuals (Screenshot & Thumbnails) ---
+            col1, col2 = st.columns([1, 2])
+
+            with col1:
+                # Display booking screenshot if it exists
+                if row["screenshot_url"]:
+                    st.image(row["screenshot_url"], width=120)
+
+            with col2:
+                # Get player names and the players dataframe
+                booking_players = [row['player1'], row['player2'], row['player3'], row['player4']]
+                players_df = st.session_state.players_df
+                
+                # Build the HTML for player thumbnails
+                pictures_html = "<div style='display: flex; flex-direction: row; align-items: center; padding-top: 10px; flex-wrap: nowrap;'>"
+
+                for player_name in booking_players:
+                    # Check if player_name is a valid, non-empty string
+                    if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
+                        player_data = players_df[players_df["name"] == player_name]
+                        if not player_data.empty:
+                            img_url = player_data.iloc[0].get("profile_image_url")
+                            # Check if the image URL is a valid, non-empty string
+                            if img_url and isinstance(img_url, str) and img_url.strip():
+                                pictures_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
+                            else:
+                                # Fallback to a placeholder with the player's initial
+                                initial = player_name[0].upper()
+                                pictures_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
+
+                pictures_html += "</div>"
+                
+                # Render the HTML only if pictures or placeholders were added
+                if 'img' in pictures_html or 'initial' in pictures_html:
+                    st.markdown(pictures_html, unsafe_allow_html=True)
+            
+            # Add a horizontal line to separate booking entries
+            st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
+            # --- END: New section for visuals ---
             
     st.markdown("---")
     st.subheader("✏️ Manage Existing Booking")
