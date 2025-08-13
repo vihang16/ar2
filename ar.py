@@ -1841,6 +1841,7 @@ with tabs[0]:
             for index, row in rank_df.iterrows():
                 profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
                 player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
+                matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(row['Matches'])} (Doubles: {int(row['Doubles Matches'])}, Singles: {int(row['Singles Matches'])})</span>"
                 points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
                 trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
                 st.markdown(f"""
