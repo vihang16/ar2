@@ -2293,6 +2293,9 @@ with tabs[4]:
                             }
                             bookings_to_save = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
                             try:
+                                # Drop unexpected columns before saving
+                                expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+                                bookings_to_save = bookings_to_save[expected_columns]
                                 save_bookings(bookings_to_save)
                                 load_bookings()
                                 st.success("Booking submitted.")
@@ -2307,10 +2310,13 @@ with tabs[4]:
     if bookings_df.empty:
         st.info("No upcoming bookings found.")
     else:
-        # Ensure standby_player column exists
+        # Ensure standby_player column exists and drop standby if present
         if 'standby_player' not in bookings_df.columns:
             bookings_df['standby_player'] = ""
             st.warning("standby_player column missing in bookings_df; initialized with empty strings.")
+        if 'standby' in bookings_df.columns:
+            bookings_df = bookings_df.drop(columns=['standby'])
+            st.warning("Dropped unexpected 'standby' column from bookings_df.")
         
         # Debug: Display bookings_df columns and sample data
         st.write(f"Debug: bookings_df columns: {list(bookings_df.columns)}")
@@ -2519,7 +2525,10 @@ with tabs[4]:
                                 st.write(f"Debug: Saving booking with standby_player='{standby_edit}' for booking ID {booking_id}")
                                 st.session_state.bookings_df.loc[booking_idx] = updated_booking
                                 try:
-                                    save_bookings(st.session_state.bookings_df)
+                                    # Drop unexpected columns before saving
+                                    expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+                                    bookings_to_save = st.session_state.bookings_df[expected_columns]
+                                    save_bookings(bookings_to_save)
                                     load_bookings()
                                     # Debug: Verify bookings_df after reload
                                     reloaded_booking = st.session_state.bookings_df[st.session_state.bookings_df["booking_id"] == booking_id]
@@ -2541,7 +2550,6 @@ with tabs[4]:
                         # Increment key for next selectbox render
                         st.session_state.edit_booking_key += 1
                         st.rerun()
-
 
             
 
