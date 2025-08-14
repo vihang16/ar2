@@ -2368,10 +2368,10 @@ with tabs[4]:
                         else:
                             placeholder_initials.append((player_name, player_name[0].upper()))
 
-            # Try rendering with st.markdown first
+            # Render visuals with clickable screenshot
             visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
             if screenshot_url:
-                visuals_html += f'<img src="{screenshot_url}" style="width:120px; margin-right:20px;">'
+                visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
             visuals_html += '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
             for player_name, img_url in image_urls:
                 visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
@@ -2394,7 +2394,7 @@ with tabs[4]:
                 {pairing_suggestion.replace('<div><strong style="color:white;">', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style="font-weight:bold; color:#fff500;">', '').replace('</span>', '')}
                 """, unsafe_allow_html=True)
                 if screenshot_url:
-                    st.image(screenshot_url, width=120)
+                    st.markdown(f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; cursor:pointer;" title="Click to view full-size"></a>', unsafe_allow_html=True)
                 if image_urls or placeholder_initials:
                     cols = st.columns(len(image_urls) + len(placeholder_initials))
                     col_idx = 0
@@ -2491,7 +2491,6 @@ with tabs[4]:
                         load_bookings()
                         st.success("Booking deleted.")
                         st.rerun()
-
 
 
 
