@@ -2307,6 +2307,10 @@ with tabs[4]:
     st.markdown("---")
     st.subheader("Upcoming Bookings")
     bookings_df = st.session_state.bookings_df.copy()
+    # Define court name to URL mapping from tab[3]
+    court_url_mapping = {
+        court["name"]: court["url"] for court in ar_courts + mira_courts
+    }
     if bookings_df.empty:
         st.info("No upcoming bookings found.")
     else:
@@ -2332,6 +2336,10 @@ with tabs[4]:
             standby_str = f"<span style='font-weight:bold; color:#fff500;'>{row['standby_player']}</span>" if 'standby_player' in row and row['standby_player'] else "None"
             date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
             time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
+            
+            # Get court URL or default to a placeholder
+            court_url = court_url_mapping.get(row['court_name'], "#")
+            court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#fff500; text-decoration:none;'>{row['court_name']}</a>"
 
             pairing_suggestion = ""
             try:
@@ -2357,10 +2365,10 @@ with tabs[4]:
             except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
 
-            # Prepare booking text
+            # Prepare booking text with clickable court name
             booking_text = f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                <div><strong>Court:</strong> <span style='font-weight:bold; color:#fff500;'>{row['court_name']}</span></div>
+                <div><strong>Court:</strong> {court_name_html}</div>
                 <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
                 <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
                 <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
@@ -2404,7 +2412,7 @@ with tabs[4]:
                 st.warning(f"Failed to render HTML for booking: {str(e)}")
                 # Fallback: Render text and images separately
                 st.markdown(f"""
-                **Court:** {row['court_name']}  
+                **Court:** {court_name_html}  
                 **Date:** {date_str}  
                 **Time:** {time_ampm}  
                 **Match Type:** {row['match_type']}  
@@ -2537,8 +2545,7 @@ with tabs[4]:
                             st.error(f"Failed to delete booking: {str(e)}")
                         # Increment key for next selectbox render
                         st.session_state.edit_booking_key += 1
-                        st.rerun()
-            
+                        st.rerun()            
 
 #--MINI TOURNEY -----------------------
 with tabs[5]:
