@@ -19,6 +19,7 @@ import random
 from fpdf import FPDF
 import zipfile
 import io
+from datetime import datetime
 
 
 # Set the page title
@@ -2708,13 +2709,16 @@ with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
     bookings_csv = st.session_state.bookings_df.to_csv(index=False)
     zip_file.writestr("bookings.csv", bookings_csv)
 zip_buffer.seek(0)
+# Format current date and time for filename
+current_time = datetime.now().strftime("%Y%m%d-%H%M")
 st.download_button(
     label="Backup",
     data=zip_buffer,
-    file_name="tennis_data_backup.zip",
+    file_name=f"ar-tennis-data-{current_time}.zip",
     mime="application/zip",
     key=f"backup_download_{st.session_state.get('form_key_suffix', 0)}"
 )
+
 st.markdown("""
 <div style='background-color: #0d5384; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
 Built with ❤️ using <a href='https://streamlit.io/' style='color: #ccff00;'>Streamlit</a> — free and open source.
