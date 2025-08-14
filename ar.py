@@ -2250,6 +2250,7 @@ with tabs[4]:
                     p3_booking = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"s1p2_booking_{st.session_state.form_key_suffix}")
                     p2_booking = ""
                     p4_booking = ""
+                standby_booking = st.selectbox("Standby Player (optional)", [""] + available_players, key=f"standby_booking_{st.session_state.form_key_suffix}")
                 court_name = st.selectbox("Court Name *", [""] + court_names, key=f"court_booking_{st.session_state.form_key_suffix}")
                 booking_date = st.date_input("Booking Date *", value=datetime.now().date(), key=f"date_booking_{st.session_state.form_key_suffix}")
                 
@@ -2269,7 +2270,7 @@ with tabs[4]:
                         # Convert AM/PM time back to 24-hour format for consistent storage
                         time_24hr = datetime.strptime(booking_time, "%I:%M %p").strftime("%H:%M")
                         
-                        selected_players = [p for p in [p1_booking, p2_booking, p3_booking, p4_booking] if p]
+                        selected_players = [p for p in [p1_booking, p2_booking, p3_booking, p4_booking, standby_booking] if p]
                         if match_type_booking == "Doubles" and len(set(selected_players)) != len(selected_players):
                             st.error("Please select different players for each position.")
                         else:
@@ -2287,6 +2288,7 @@ with tabs[4]:
                                 "player2": p2_booking,
                                 "player3": p3_booking,
                                 "player4": p4_booking,
+                                "standby_player": standby_booking,
                                 "screenshot_url": screenshot_url
                             }
                             bookings_to_save = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
@@ -2313,6 +2315,7 @@ with tabs[4]:
         for _, row in bookings_df.iterrows():
             players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
             players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
+            standby_str = f"<span style='font-weight:bold; color:#fff500;'>{row['standby_player']}</span>" if 'standby_player' in row and row['standby_player'] else "None"
             date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
             time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
 
@@ -2348,12 +2351,13 @@ with tabs[4]:
                 <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
                 <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
                 <div><strong>Players:</strong> {players_str}</div>
+                <div><strong>Standby Player:</strong> {standby_str}</div>
                 {pairing_suggestion}
             """
 
             # Prepare visuals (screenshot and thumbnails)
             screenshot_url = row["screenshot_url"] if row["screenshot_url"] and isinstance(row["screenshot_url"], str) else None
-            booking_players = [row['player1'], row['player2'], row['player3'], row['player4']]
+            booking_players = [row['player1'], row['player2'], row['player3'], row['player4'], row.get('standby_player', '')]
             players_df = st.session_state.players_df
             image_urls = []
             placeholder_initials = []
@@ -2391,6 +2395,7 @@ with tabs[4]:
                 **Time:** {time_ampm}  
                 **Match Type:** {row['match_type']}  
                 **Players:** {', '.join(players)}  
+                **Standby Player:** {row.get('standby_player', 'None')}  
                 {pairing_suggestion.replace('<div><strong style="color:white;">', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style="font-weight:bold; color:#fff500;">', '').replace('</span>', '')}
                 """, unsafe_allow_html=True)
                 if screenshot_url:
@@ -2423,7 +2428,8 @@ with tabs[4]:
             time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
             players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
             players_str = ", ".join(players) if players else "No players"
-            desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str}"
+            standby_str = row.get('standby_player', "None")
+            desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str} | Standby: {standby_str}"
             booking_options.append(f"{desc} | Booking ID: {row['booking_id']}")
         selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key="select_booking_to_edit")
         if selected_booking:
@@ -2450,6 +2456,7 @@ with tabs[4]:
                     p3_edit = st.selectbox("Player 2 (optional)", [""] + available_players, index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0, key=f"edit_s1p2_{booking_id}")
                     p2_edit = ""
                     p4_edit = ""
+                standby_edit = st.selectbox("Standby Player (optional)", [""] + available_players, index=available_players.index(booking_row["standby_player"]) + 1 if "standby_player" in booking_row and booking_row["standby_player"] in available_players else 0, key=f"edit_standby_{booking_id}")
                 court_edit = st.selectbox("Court Name *", [""] + court_names, index=court_names.index(booking_row["court_name"]) + 1 if booking_row["court_name"] in court_names else 0, key=f"edit_court_{booking_id}")
                 screenshot_edit = st.file_uploader("Update Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_screenshot_{booking_id}")
                 st.markdown("*Required fields", unsafe_allow_html=True)
@@ -2461,7 +2468,7 @@ with tabs[4]:
                         elif not date_edit or not time_edit:
                             st.error("Booking date and time are required.")
                         else:
-                            selected_players_edit = [p for p in [p1_edit, p2_edit, p3_edit, p4_edit] if p]
+                            selected_players_edit = [p for p in [p1_edit, p2_edit, p3_edit, p4_edit, standby_edit] if p]
                             if match_type_edit == "Doubles" and len(set(selected_players_edit)) != len(selected_players_edit):
                                 st.error("Please select different players for each position.")
                             else:
@@ -2479,6 +2486,7 @@ with tabs[4]:
                                     "player2": p2_edit,
                                     "player3": p3_edit,
                                     "player4": p4_edit,
+                                    "standby_player": standby_edit,
                                     "screenshot_url": screenshot_url_edit
                                 }
                                 save_bookings(st.session_state.bookings_df)
