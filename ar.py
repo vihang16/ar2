@@ -17,6 +17,9 @@ from dateutil import parser
 import plotly.graph_objects as go # Added for the new chart
 import random
 from fpdf import FPDF
+import zipfile
+import io
+
 
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
