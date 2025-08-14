@@ -2304,6 +2304,9 @@ with tabs[4]:
     if bookings_df.empty:
         st.info("No upcoming bookings found.")
     else:
+        # Debug: Display bookings_df to verify data
+        st.write(f"Debug: bookings_df after load: {bookings_df[['booking_id', 'court_name', 'date', 'time', 'standby_player']].to_dict(orient='records')}")
+        
         bookings_df['datetime'] = pd.to_datetime(bookings_df['date'] + ' ' + bookings_df['time'], errors='coerce')
         bookings_df = bookings_df.sort_values(by='datetime', ascending=True).reset_index(drop=True)
         try:
@@ -2500,23 +2503,34 @@ with tabs[4]:
                                     "standby_player": standby_edit if standby_edit else "",
                                     "screenshot_url": screenshot_url_edit
                                 }
-                                # Debug logging to confirm standby player
-                                st.write(f"Debug: Saving standby player as '{standby_edit}' for booking ID {booking_id}")
+                                # Debug: Log the updated booking before saving
+                                st.write(f"Debug: Saving booking with standby_player='{standby_edit}' for booking ID {booking_id}")
                                 st.session_state.bookings_df.loc[booking_idx] = updated_booking
-                                save_bookings(st.session_state.bookings_df)
-                                load_bookings()
-                                st.success("Booking updated successfully.")
+                                try:
+                                    save_bookings(st.session_state.bookings_df)
+                                    load_bookings()
+                                    # Debug: Verify bookings_df after reload
+                                    reloaded_booking = st.session_state.bookings_df[st.session_state.bookings_df["booking_id"] == booking_id]
+                                    st.write(f"Debug: Reloaded booking standby_player='{reloaded_booking['standby_player'].iloc[0] if not reloaded_booking.empty else 'Not found'}' for booking ID {booking_id}")
+                                    st.success("Booking updated successfully.")
+                                except Exception as e:
+                                    st.error(f"Failed to save booking: {str(e)}")
                                 # Increment key for next selectbox render
                                 st.session_state.edit_booking_key += 1
                                 st.rerun()
                 with col_delete:
                     if st.button("🗑️ Delete This Booking", key=f"delete_booking_{booking_id}"):
-                        delete_booking_from_db(booking_id)
-                        load_bookings()
-                        st.success("Booking deleted.")
+                        try:
+                            delete_booking_from_db(booking_id)
+                            load_bookings()
+                            st.success("Booking deleted.")
+                        except Exception as e:
+                            st.error(f"Failed to delete booking: {str(e)}")
                         # Increment key for next selectbox render
                         st.session_state.edit_booking_key += 1
                         st.rerun()
+
+
 
             
 
