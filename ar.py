@@ -158,6 +158,7 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
 .ranking-header-row {
     display: none;
 }
+/* Card layout for all screen sizes */
 .ranking-row {
     display: block;
     padding: 10px;
@@ -165,6 +166,8 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     border: 1px solid #696969;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    background-color: rgba(255, 255, 255, 0.1); /* Light grey background to match bookings */
+    overflow: visible; /* Prevent clipping of content */
 }
 .ranking-row:last-child {
     margin-bottom: 0;
