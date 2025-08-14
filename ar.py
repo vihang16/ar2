@@ -2422,6 +2422,14 @@ with tabs[4]:
             if bookings_df.empty:
                 st.info("No bookings available to manage.")
             else:
+                # Initialize edit_booking_key if not already set
+                if 'edit_booking_key' not in st.session_state:
+                    st.session_state.edit_booking_key = 0
+                
+                # Increment key for this render to ensure uniqueness
+                st.session_state.edit_booking_key += 1
+                unique_key = f"select_booking_to_edit_{st.session_state.edit_booking_key}"
+                
                 booking_options = []
                 for _, row in bookings_df.iterrows():
                     date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
@@ -2431,7 +2439,7 @@ with tabs[4]:
                     standby_str = row.get('standby_player', "None")
                     desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str} | Standby: {standby_str}"
                     booking_options.append(f"{desc} | Booking ID: {row['booking_id']}")
-                selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key=f"select_booking_to_edit_{st.session_state.get('edit_booking_key', 0)}")
+                selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key=unique_key)
                 if selected_booking:
                     booking_id = selected_booking.split(" | Booking ID: ")[-1]
                     booking_row = bookings_df[bookings_df["booking_id"] == booking_id].iloc[0]
@@ -2497,15 +2505,19 @@ with tabs[4]:
                                         save_bookings(st.session_state.bookings_df)
                                         load_bookings()
                                         st.success("Booking updated successfully.")
-                                        # Increment key to avoid duplicate key errors
-                                        st.session_state.edit_booking_key = st.session_state.get('edit_booking_key', 0) + 1
+                                        # Increment key to ensure next render has a unique key
+                                        st.session_state.edit_booking_key += 1
                                         st.rerun()
                         with col_delete:
                             if st.button("🗑️ Delete This Booking", key=f"delete_booking_{booking_id}"):
                                 delete_booking_from_db(booking_id)
                                 load_bookings()
                                 st.success("Booking deleted.")
+                                # Increment key to ensure next render has a unique key
+                                st.session_state.edit_booking_key += 1
                                 st.rerun()
+
+            
 
 #--MINI TOURNEY -----------------------
 with tabs[5]:
