@@ -2292,9 +2292,12 @@ with tabs[4]:
                                 "screenshot_url": screenshot_url
                             }
                             bookings_to_save = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
-                            save_bookings(bookings_to_save)
-                            load_bookings()
-                            st.success("Booking submitted.")
+                            try:
+                                save_bookings(bookings_to_save)
+                                load_bookings()
+                                st.success("Booking submitted.")
+                            except Exception as e:
+                                st.error(f"Failed to save booking: {str(e)}")
                             st.session_state.form_key_suffix = st.session_state.get('form_key_suffix', 0) + 1
                             st.rerun()
 
@@ -2304,8 +2307,17 @@ with tabs[4]:
     if bookings_df.empty:
         st.info("No upcoming bookings found.")
     else:
-        # Debug: Display bookings_df to verify data
-        st.write(f"Debug: bookings_df after load: {bookings_df[['booking_id', 'court_name', 'date', 'time', 'standby_player']].to_dict(orient='records')}")
+        # Ensure standby_player column exists
+        if 'standby_player' not in bookings_df.columns:
+            bookings_df['standby_player'] = ""
+            st.warning("standby_player column missing in bookings_df; initialized with empty strings.")
+        
+        # Debug: Display bookings_df columns and sample data
+        st.write(f"Debug: bookings_df columns: {list(bookings_df.columns)}")
+        try:
+            st.write(f"Debug: bookings_df sample: {bookings_df[['booking_id', 'court_name', 'date', 'time', 'standby_player']].head().to_dict(orient='records')}")
+        except KeyError as e:
+            st.error(f"KeyError in bookings_df: {str(e)}. Check Supabase table schema.")
         
         bookings_df['datetime'] = pd.to_datetime(bookings_df['date'] + ' ' + bookings_df['time'], errors='coerce')
         bookings_df = bookings_df.sort_values(by='datetime', ascending=True).reset_index(drop=True)
@@ -2375,7 +2387,7 @@ with tabs[4]:
                         else:
                             placeholder_initials.append((player_name, player_name[0].upper()))
 
-            # Render visuals with clickable screenshot
+            # Fix thumbnail concatenation issue
             visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
             if screenshot_url:
                 visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
@@ -2529,7 +2541,6 @@ with tabs[4]:
                         # Increment key for next selectbox render
                         st.session_state.edit_booking_key += 1
                         st.rerun()
-
 
 
             
