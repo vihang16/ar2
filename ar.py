@@ -2244,75 +2244,75 @@ with tabs[4]:
     # New Booking Form (Expandable)
     #st.markdown("---")
     #st.subheader("Create New Booking")
-    #with st.expander("Add New Booking", expanded=False, icon="➡️"):
-    st.subheader("Add New Booking")
-    # Match type selector outside the form to trigger re-render
-    match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_booking_match_type_{st.session_state.form_key_suffix}")
-    
-    with st.form(key=f"add_booking_form_{st.session_state.form_key_suffix}"):
-        date = st.date_input("Booking Date *", value=datetime.today())
-        hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
-        time = st.selectbox("Booking Time *", hours, key=f"new_booking_time_{st.session_state.form_key_suffix}")
-        
-        # Player selection based on match type
-        if match_type == "Doubles":
-            col1, col2 = st.columns(2)
-            with col1:
-                p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"t1p1_{st.session_state.form_key_suffix}")
-                p2 = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"t1p2_{st.session_state.form_key_suffix}")
-            with col2:
-                p3 = st.selectbox("Player 3 (optional)", [""] + available_players, key=f"t2p1_{st.session_state.form_key_suffix}")
-                p4 = st.selectbox("Player 4 (optional)", [""] + available_players, key=f"t2p2_{st.session_state.form_key_suffix}")
-        else:
-            p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"s1p1_{st.session_state.form_key_suffix}")
-            p3 = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"s1p2_{st.session_state.form_key_suffix}")
-            p2 = ""
-            p4 = ""
-        
-        standby = st.selectbox("Standby Player (optional)", [""] + available_players, key=f"standby_{st.session_state.form_key_suffix}")
-        court = st.selectbox("Court Name *", [""] + court_names, key=f"court_{st.session_state.form_key_suffix}")
-        screenshot = st.file_uploader("Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"screenshot_{st.session_state.form_key_suffix}")
-        st.markdown("*Required fields", unsafe_allow_html=True)
-        
-        submit = st.form_submit_button("Add Booking")
-        if submit:
-            if not court:
-                st.error("Court name is required.")
-            elif not date or not time:
-                st.error("Booking date and time are required.")
-            else:
-                selected_players = [p for p in [p1, p2, p3, p4, standby] if p]
-                if match_type == "Doubles" and len(set(selected_players)) != len(selected_players):
-                    st.error("Please select different players for each position.")
-                else:
-                    booking_id = str(uuid.uuid4())
-                    screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking") if screenshot else ""
-                    time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
-                    new_booking = {
-                        "booking_id": booking_id,
-                        "date": date,
-                        "time": time_24hr,
-                        "match_type": match_type,
-                        "court_name": court,
-                        "player1": p1,
-                        "player2": p2,
-                        "player3": p3,
-                        "player4": p4,
-                        "standby_player": standby if standby else "",
-                        "screenshot_url": screenshot_url
-                    }
-                    st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
-                    try:
-                        expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
-                        bookings_to_save = st.session_state.bookings_df[expected_columns]
-                        save_bookings(bookings_to_save)
-                        load_bookings()
-                        st.write(f"New booking added: {new_booking}")
-                        st.success("Booking added successfully.")
-                        st.session_state.form_key_suffix += 1
-                    except Exception as e:
-                        st.error(f"Failed to save booking: {str(e)}")
-                    st.rerun()
+    with st.expander("Add New Booking", expanded=False, icon="➡️"):
+      st.subheader("Add New Booking")
+      # Match type selector outside the form to trigger re-render
+      match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_booking_match_type_{st.session_state.form_key_suffix}")
+      
+      with st.form(key=f"add_booking_form_{st.session_state.form_key_suffix}"):
+          date = st.date_input("Booking Date *", value=datetime.today())
+          hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
+          time = st.selectbox("Booking Time *", hours, key=f"new_booking_time_{st.session_state.form_key_suffix}")
+          
+          # Player selection based on match type
+          if match_type == "Doubles":
+              col1, col2 = st.columns(2)
+              with col1:
+                  p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"t1p1_{st.session_state.form_key_suffix}")
+                  p2 = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"t1p2_{st.session_state.form_key_suffix}")
+              with col2:
+                  p3 = st.selectbox("Player 3 (optional)", [""] + available_players, key=f"t2p1_{st.session_state.form_key_suffix}")
+                  p4 = st.selectbox("Player 4 (optional)", [""] + available_players, key=f"t2p2_{st.session_state.form_key_suffix}")
+          else:
+              p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"s1p1_{st.session_state.form_key_suffix}")
+              p3 = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"s1p2_{st.session_state.form_key_suffix}")
+              p2 = ""
+              p4 = ""
+          
+          standby = st.selectbox("Standby Player (optional)", [""] + available_players, key=f"standby_{st.session_state.form_key_suffix}")
+          court = st.selectbox("Court Name *", [""] + court_names, key=f"court_{st.session_state.form_key_suffix}")
+          screenshot = st.file_uploader("Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"screenshot_{st.session_state.form_key_suffix}")
+          st.markdown("*Required fields", unsafe_allow_html=True)
+          
+          submit = st.form_submit_button("Add Booking")
+          if submit:
+              if not court:
+                  st.error("Court name is required.")
+              elif not date or not time:
+                  st.error("Booking date and time are required.")
+              else:
+                  selected_players = [p for p in [p1, p2, p3, p4, standby] if p]
+                  if match_type == "Doubles" and len(set(selected_players)) != len(selected_players):
+                      st.error("Please select different players for each position.")
+                  else:
+                      booking_id = str(uuid.uuid4())
+                      screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking") if screenshot else ""
+                      time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
+                      new_booking = {
+                          "booking_id": booking_id,
+                          "date": date,
+                          "time": time_24hr,
+                          "match_type": match_type,
+                          "court_name": court,
+                          "player1": p1,
+                          "player2": p2,
+                          "player3": p3,
+                          "player4": p4,
+                          "standby_player": standby if standby else "",
+                          "screenshot_url": screenshot_url
+                      }
+                      st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
+                      try:
+                          expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+                          bookings_to_save = st.session_state.bookings_df[expected_columns]
+                          save_bookings(bookings_to_save)
+                          load_bookings()
+                          st.write(f"New booking added: {new_booking}")
+                          st.success("Booking added successfully.")
+                          st.session_state.form_key_suffix += 1
+                      except Exception as e:
+                          st.error(f"Failed to save booking: {str(e)}")
+                      st.rerun()
 
     st.markdown("---")
     st.subheader("Upcoming Bookings")
