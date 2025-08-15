@@ -2236,8 +2236,6 @@ with tabs[3]:
 #-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
 
 
-
-
 with tabs[4]:
     load_bookings()
     st.header("Court Bookings")
@@ -2373,7 +2371,7 @@ with tabs[4]:
             except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
 
-            # Construct WhatsApp share text with bold player names
+            # Construct WhatsApp share text with bold player names and suggested pairings
             weekday = pd.to_datetime(row['date']).strftime('%a')
             date_part = pd.to_datetime(row['date']).strftime('%d %b')
             full_date = f"{weekday} , {date_part} , {time_ampm}"
@@ -2384,7 +2382,13 @@ with tabs[4]:
             standby_text = f"\nSTD. BY : *{row['standby_player']}*" if 'standby_player' in row and row['standby_player'] else ""
             court_location = f"\nCourt location : {court_url}"
 
-            share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{court_location}"
+            # Create plain text version of pairing suggestion (strip HTML tags)
+            plain_suggestion = ""
+            if pairing_suggestion and "Error" not in pairing_suggestion:
+                plain_suggestion = re.sub(r'<.*?>', '', pairing_suggestion).replace('Suggested Pairing: ', 'Suggested Pairing: ').replace('Odds: ', 'Odds: ').strip()
+                plain_suggestion = f"\n\n{plain_suggestion}"
+
+            share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{court_location}{plain_suggestion}"
             encoded_text = urllib.parse.quote(share_text)
             whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
 
@@ -2575,6 +2579,7 @@ with tabs[4]:
                         # Increment key for next selectbox render
                         st.session_state.edit_booking_key += 1
                         st.rerun()
+
 
 
 
