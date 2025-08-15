@@ -317,6 +317,38 @@ div.st-emotion-cache-1jm692n h3 {
     text-align: center;
     margin: 2px;
 }
+/* Existing CSS from your code ... */
+
+/* Override font size for st.header (rendered as h1) */
+h1 {
+    font-size: 1em !important; /* Matches standard tab text (approx. 16px) */
+    font-family: 'Offside', sans-serif !important;
+    color: #fff500 !important; /* Optic yellow to match tab text */
+}
+
+/* Override font size for st.markdown paragraph text */
+div.stMarkdown p {
+    font-size: 1em !important; /* Matches standard tab text */
+    font-family: 'Offside', sans-serif !important;
+    color: #fff500 !important; /* Optic yellow to match tab text */
+}
+
+/* Override font size for st.markdown headers (e.g., #, ##, ###) */
+div.stMarkdown h1 {
+    font-size: 1em !important; /* Matches standard tab text */
+    font-family: 'Offside', sans-serif !important;
+    color: #fff500 !important;
+}
+div.stMarkdown h2 {
+    font-size: 1em !important; /* Matches standard tab text */
+    font-family: 'Offside', sans-serif !important;
+    color: #fff500 !important;
+}
+div.stMarkdown h3 {
+    font-size: 1em !important; /* Matches standard tab text */
+    font-family: 'Offside', sans-serif !important;
+    color: #fff500 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
