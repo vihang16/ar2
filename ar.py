@@ -1379,12 +1379,12 @@ tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings","Mini T
 tabs = st.tabs(tab_names)
 
 with tabs[0]:
-    st.header("Rankings")
+    st.header(f"Rankings as of {datetime.now().strftime('%d/%m')}")
     ranking_type = st.radio("Select Ranking View", ["Combined", "Doubles", "Singles", "Nerd Stuff", "Table View"], horizontal=True, key="ranking_type_selector")
     if ranking_type == "Doubles":
         filtered_matches = matches[matches['match_type'] == 'Doubles'].copy()
         rank_df, partner_stats = calculate_rankings(filtered_matches)
-        st.subheader(f"Rankings as of {datetime.now().strftime('%d/%m')}")
+        #st.subheader(f"Rankings as of {datetime.now().strftime('%d/%m')}")
         st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
         st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
         if rank_df.empty:
