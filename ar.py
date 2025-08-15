@@ -2244,7 +2244,7 @@ with tabs[4]:
     # New Booking Form (Expandable)
     #st.markdown("---")
     #st.subheader("Create New Booking")
-    with st.expander("Add New Booking", expanded=False, icon="➡️"):
+    #with st.expander("Add New Booking", expanded=False, icon="➡️"):
     st.subheader("Add New Booking")
     # Match type selector outside the form to trigger re-render
     match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_booking_match_type_{st.session_state.form_key_suffix}")
