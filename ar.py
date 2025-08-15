@@ -138,10 +138,10 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
 
 /* ✅ Header & subheader resize to ~125% of tab font size (14px → 17–18px) */
 h1 {
-    font-size: 18px !important;
+    font-size: 24px !important;
 }
 h2 {
-    font-size: 17px !important;
+    font-size: 22px !important;
 }
 h3 {
     font-size: 16px !important;
