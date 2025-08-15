@@ -2352,7 +2352,7 @@ with tabs[4]:
                             f"<span style='font-weight:bold;'>{team1_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
                             f"<span style='font-weight:bold;'>{team2_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
                         )
-                        plain_suggestion = f"\n\n*Suggested Pairing: {team1_players} ({team1_odds:.1f}%) vs {team2_players} ({team2_odds:.1f}%)*"
+                        plain_suggestion = f"\n\n*Suggested Pairing: {re.sub(r'<.*?>', '', team1_players)} ({team1_odds:.1f}%) vs {re.sub(r'<.*?>', '', team2_players)} ({team2_odds:.1f}%)*"
                     else:
                         pairing_suggestion = (
                             f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
@@ -2562,7 +2562,6 @@ with tabs[4]:
                             st.error(f"Failed to delete booking: {str(e)}")
                         st.session_state.edit_booking_key += 1
                         st.rerun()
-
 
 # ... End of Tab[4]-------------------------------------------------------------------------
 
