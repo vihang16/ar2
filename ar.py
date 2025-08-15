@@ -2185,7 +2185,8 @@ with tabs[3]:
     
     # Arabian Ranches courts (as a list of dicts for name and URL)
     ar_courts = [
-        {"name": "Alvorado 1 & 2", "url": "https://maps.google.com/?q=25.041792,55.259258"},
+        {"name": "Alvorado 1", "url": "https://maps.google.com/?q=25.041792,55.259258"},
+        {"name": "Alvorado 2", "url": "https://maps.google.com/?q=25.041792,55.259258"},
         {"name": "Palmera 2", "url": "https://maps.app.goo.gl/CHimjtqQeCfU1d3W6"},
         {"name": "Palmera 4", "url": "https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6"},
         {"name": "Saheel", "url": "https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8"},
@@ -2203,10 +2204,12 @@ with tabs[3]:
     mira_courts = [
         {"name": "Mira 2", "url": "https://maps.app.goo.gl/JeVmwiuRboCnzhnb9"},
         {"name": "Mira 4", "url": "https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A"},
-        {"name": "Mira 5 A & B", "url": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6"},
+        {"name": "Mira 5 A", "url": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6"},
+        {"name": "Mira 5 B", "url": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6"},
         {"name": "Mira Oasis 1", "url": "https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8"},
         {"name": "Mira Oasis 2", "url": "https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9"},
-        {"name": "Mira Oasis 3 A & B", "url": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9"},
+        {"name": "Mira Oasis 3 A", "url": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9"},
+        {"name": "Mira Oasis 3 B", "url": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9"},
         {"name": "Mira Oasis 3 C", "url": "https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8"},
     ]
     
