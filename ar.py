@@ -2384,11 +2384,9 @@ with tabs[4]:
             
             plain_suggestion = ""
             if pairing_suggestion and "Error" not in pairing_suggestion:
-                plain_suggestion = re.sub(r'<.*?>', '', pairing_suggestion).replace('Suggested Pairing: ', 'Suggested Pairing: ').replace('Odds: ', 'Odds: ').strip()
-                plain_suggestion = f"\n\n{plain_suggestion}"
-                for player in players:
-                    plain_suggestion = plain_suggestion.replace(player, f"*{player}*")
-
+                plain_suggestion = re.sub(r'<.*?>', '', pairing_suggestion).replace('Suggested Pairing: ', '').replace('Odds: ', '').strip()
+                plain_suggestion = f"\n\n*Suggested Pairing: {plain_suggestion}*"
+            
             share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{plain_suggestion}\nCourt location : {court_url}"
             encoded_text = urllib.parse.quote(share_text)
             whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
@@ -2567,7 +2565,6 @@ with tabs[4]:
                             st.error(f"Failed to delete booking: {str(e)}")
                         st.session_state.edit_booking_key += 1
                         st.rerun()
-
 
 
 
