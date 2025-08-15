@@ -1748,6 +1748,8 @@ with tabs[0]:
                 height: 90px;
                 border-radius: 50%;
                 border: 1px solid #fff500;
+                transition: transform 0.2s;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 245, 0, 0.6);
                 margin-bottom: 10px;
                 object-fit: cover;
             }
