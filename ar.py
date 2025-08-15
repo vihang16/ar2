@@ -1899,10 +1899,8 @@ with tabs[1]:
                     st.session_state.form_key_suffix += 1
                     st.rerun()
 
-    st.markdown("---")
-    # ... (previous code remains unchanged until the Match History section)
-
-    st.markdown("---")
+    #st.markdown("---")
+    #st.markdown("---")
     st.subheader("Match History")
 
     # Create columns for the filters
