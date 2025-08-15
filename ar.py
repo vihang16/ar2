@@ -1744,7 +1744,7 @@ with tabs[0]:
             .podium-item img {
                 width: 70px;
                 height: 70px;
-                border-radius: 50%;
+                border-radius: 20%;
                 border: 3px solid #fff500;
                 margin-bottom: 10px;
                 object-fit: cover;
