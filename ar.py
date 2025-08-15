@@ -2238,8 +2238,8 @@ with tabs[3]:
 
 with tabs[4]:
     load_bookings()
-    st.header("Court Bookings")
-    st.markdown("<small><i>Plan and manage court bookings for upcoming matches.</i></small>", unsafe_allow_html=True)
+    #st.header("Court Bookings")
+    #st.markdown("<small><i>Plan and manage court bookings for upcoming matches.</i></small>", unsafe_allow_html=True)
 
     # New Booking Form (Expandable)
     st.markdown("---")
