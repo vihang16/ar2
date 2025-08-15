@@ -1742,8 +1742,8 @@ with tabs[0]:
                 width: 32%; /* Ensure they fit side-by-side */
             }
             .podium-item img {
-                width: 70px;
-                height: 70px;
+                width: 100px;
+                height: 100px;
                 border-radius: 20%;
                 border: 3px solid #fff500;
                 margin-bottom: 10px;
