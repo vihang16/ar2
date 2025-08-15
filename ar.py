@@ -2246,7 +2246,7 @@ with tabs[4]:
     # New Booking Form (Expandable)
     st.markdown("---")
     st.subheader("Create New Booking")
-    with st.expander("Add New Booking", expanded=False):
+    with st.expander("Add New Booking", , expanded=False, icon="➡️"):
         with st.form(key=f"new_booking_form_{st.session_state.get('form_key_suffix', 0)}"):
             date = st.date_input("Booking Date *", min_value=datetime.today())
             hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
