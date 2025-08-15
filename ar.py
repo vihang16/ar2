@@ -2235,6 +2235,7 @@ with tabs[3]:
         
 #-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
 
+
 with tabs[4]:
     load_bookings()
     st.header("Court Bookings")
@@ -2243,7 +2244,7 @@ with tabs[4]:
     # New Booking Form (Expandable)
     st.markdown("---")
     st.subheader("Create New Booking")
-    with st.expander("Add New Booking", expanded=False, icon="➡️" ):
+    with st.expander("Add New Booking", expanded=False, icon="➡️"):
         with st.form(key=f"new_booking_form_{st.session_state.get('form_key_suffix', 0)}"):
             date = st.date_input("Booking Date *", min_value=datetime.today())
             hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
@@ -2312,14 +2313,10 @@ with tabs[4]:
     st.markdown("---")
     st.subheader("Upcoming Bookings")
     bookings_df = st.session_state.bookings_df.copy()
-    # Define court name to URL mapping from tab[3]
-    court_url_mapping = {
-        court["name"]: court["url"] for court in ar_courts + mira_courts
-    }
+    court_url_mapping = {court["name"]: court["url"] for court in ar_courts + mira_courts}
     if bookings_df.empty:
         st.info("No upcoming bookings found.")
     else:
-        # Ensure standby_player column exists and drop standby if present
         if 'standby_player' not in bookings_df.columns:
             bookings_df['standby_player'] = ""
         if 'standby' in bookings_df.columns:
@@ -2342,7 +2339,6 @@ with tabs[4]:
             date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
             time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
             
-            # Get court URL or default to a placeholder
             court_url = court_url_mapping.get(row['court_name'], "#")
             court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#fff500; text-decoration:none;'>{row['court_name']}</a>"
 
@@ -2377,7 +2373,6 @@ with tabs[4]:
             except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
 
-            # Construct WhatsApp share text with bold player names and suggested pairings
             weekday = pd.to_datetime(row['date']).strftime('%a')
             date_part = pd.to_datetime(row['date']).strftime('%d %b')
             full_date = f"{weekday} , {date_part} , {time_ampm}"
@@ -2387,14 +2382,10 @@ with tabs[4]:
                 players_list = "\n".join([f"{i+1}. *{p}*" for i, p in enumerate(players)])
             standby_text = f"\nSTD. BY : *{row['standby_player']}*" if 'standby_player' in row and row['standby_player'] else ""
             
-            # Create plain text version of pairing suggestion (strip HTML tags)
             plain_suggestion = ""
             if pairing_suggestion and "Error" not in pairing_suggestion:
-                # Replace HTML tags but keep player names in their original case for WhatsApp
-                plain_suggestion = re.sub(r'<span style=[\'"].*?[\'"]>(.*?)</span>', r'\1', pairing_suggestion)
-                plain_suggestion = re.sub(r'<.*?>', '', plain_suggestion).replace('Suggested Pairing: ', 'Suggested Pairing: ').replace('Odds: ', 'Odds: ').strip()
+                plain_suggestion = re.sub(r'<.*?>', '', pairing_suggestion).replace('Suggested Pairing: ', 'Suggested Pairing: ').replace('Odds: ', 'Odds: ').strip()
                 plain_suggestion = f"\n\n{plain_suggestion}"
-                # Add bold formatting for player names in plain text
                 for player in players:
                     plain_suggestion = plain_suggestion.replace(player, f"*{player}*")
 
@@ -2402,7 +2393,6 @@ with tabs[4]:
             encoded_text = urllib.parse.quote(share_text)
             whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
 
-            # Prepare booking text with clickable court name and WhatsApp icon
             booking_text = f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
                 <div><strong>Court:</strong> {court_name_html}</div>
@@ -2419,13 +2409,15 @@ with tabs[4]:
                 </div>
             """
 
-            # Prepare visuals (screenshot and thumbnails)
+            visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
             screenshot_url = row["screenshot_url"] if row["screenshot_url"] and isinstance(row["screenshot_url"], str) else None
+            if screenshot_url:
+                visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
+            visuals_html += '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
             booking_players = [row['player1'], row['player2'], row['player3'], row['player4'], row.get('standby_player', '')]
             players_df = st.session_state.players_df
             image_urls = []
             placeholder_initials = []
-
             for player_name in booking_players:
                 if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
                     player_data = players_df[players_df["name"] == player_name]
@@ -2435,12 +2427,6 @@ with tabs[4]:
                             image_urls.append((player_name, img_url))
                         else:
                             placeholder_initials.append((player_name, player_name[0].upper()))
-
-            # Fix thumbnail concatenation issue
-            visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
-            if screenshot_url:
-                visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
-            visuals_html += '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
             for player_name, img_url in image_urls:
                 visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
             for player_name, initial in placeholder_initials:
@@ -2452,7 +2438,6 @@ with tabs[4]:
                 st.markdown(booking_text, unsafe_allow_html=True)
             except Exception as e:
                 st.warning(f"Failed to render HTML for booking: {str(e)}")
-                # Fallback: Render text and images separately
                 st.markdown(f"""
                 **Court:** {court_name_html}  
                 **Date:** {date_str}  
@@ -2482,15 +2467,12 @@ with tabs[4]:
 
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
 
-    # Single "Manage Existing Booking" section
     st.markdown("---")
     st.subheader("✏️ Manage Existing Booking")
     
-    # Initialize edit_booking_key if not already set
     if 'edit_booking_key' not in st.session_state:
         st.session_state.edit_booking_key = 0
     
-    # Use a unique key for the selectbox
     unique_key = f"select_booking_to_edit_{st.session_state.edit_booking_key}"
     
     if bookings_df.empty:
@@ -2530,7 +2512,6 @@ with tabs[4]:
                     p3_edit = st.selectbox("Player 2 (optional)", [""] + available_players, index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0, key=f"edit_s1p2_{booking_id}")
                     p2_edit = ""
                     p4_edit = ""
-                # Ensure standby player selection initializes correctly
                 standby_initial_index = available_players.index(booking_row["standby_player"]) + 1 if "standby_player" in booking_row and row['standby_player'] in available_players else 0
                 standby_edit = st.selectbox("Standby Player (optional)", [""] + available_players, index=standby_initial_index, key=f"edit_standby_{booking_id}")
                 court_edit = st.selectbox("Court Name *", [""] + court_names, index=court_names.index(booking_row["court_name"]) + 1 if booking_row["court_name"] in court_names else 0, key=f"edit_court_{booking_id}")
@@ -2567,7 +2548,6 @@ with tabs[4]:
                                 }
                                 st.session_state.bookings_df.loc[booking_idx] = updated_booking
                                 try:
-                                    # Drop unexpected columns before saving
                                     expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
                                     bookings_to_save = st.session_state.bookings_df[expected_columns]
                                     save_bookings(bookings_to_save)
@@ -2575,7 +2555,6 @@ with tabs[4]:
                                     st.success("Booking updated successfully.")
                                 except Exception as e:
                                     st.error(f"Failed to save booking: {str(e)}")
-                                # Increment key for next selectbox render
                                 st.session_state.edit_booking_key += 1
                                 st.rerun()
                 with col_delete:
@@ -2586,10 +2565,8 @@ with tabs[4]:
                             st.success("Booking deleted.")
                         except Exception as e:
                             st.error(f"Failed to delete booking: {str(e)}")
-                        # Increment key for next selectbox render
                         st.session_state.edit_booking_key += 1
                         st.rerun()
-
 
 
 
