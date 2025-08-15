@@ -1420,7 +1420,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
 
 st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations", "Bookings","Mini Tourney"]
+tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings","Mini Tourney"]
 
 tabs = st.tabs(tab_names)
 
