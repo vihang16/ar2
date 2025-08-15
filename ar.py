@@ -2233,10 +2233,10 @@ with tabs[3]:
         display_courts("", mira_courts)
 
         
-#-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX--------------------------------------------
+#-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
 
 
-# ... (previous code remains unchanged until tab[4])
+
 
 with tabs[4]:
     load_bookings()
@@ -2246,7 +2246,7 @@ with tabs[4]:
     # New Booking Form (Expandable)
     st.markdown("---")
     st.subheader("Create New Booking")
-    with st.expander("Add New Booking", expanded=False, icon="➡️"):
+    with st.expander("Add New Booking", expanded=False, icon="➡️" ):
         with st.form(key=f"new_booking_form_{st.session_state.get('form_key_suffix', 0)}"):
             date = st.date_input("Booking Date *", min_value=datetime.today())
             hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
@@ -2373,15 +2373,15 @@ with tabs[4]:
             except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
 
-            # Construct WhatsApp share text
+            # Construct WhatsApp share text with bold player names
             weekday = pd.to_datetime(row['date']).strftime('%a')
             date_part = pd.to_datetime(row['date']).strftime('%d %b')
             full_date = f"{weekday} , {date_part} , {time_ampm}"
             court_name = row['court_name']
             players_list = ""
             if players:
-                players_list = "\n".join([f"{i+1}. {p}" for i, p in enumerate(players)])
-            standby_text = f"\nSTD. BY : {row['standby_player']}" if 'standby_player' in row and row['standby_player'] else ""
+                players_list = "\n".join([f"{i+1}. *{p}*" for i, p in enumerate(players)])
+            standby_text = f"\nSTD. BY : *{row['standby_player']}*" if 'standby_player' in row and row['standby_player'] else ""
             court_location = f"\nCourt location : {court_url}"
 
             share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{court_location}"
