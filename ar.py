@@ -42,7 +42,29 @@ st.markdown("""
 [data-testid="stHeader"] {
   background: linear-gradient(to top, #07314f, #035996) !important;
 }
+/* Override font size for st.markdown paragraph text */
+div.stMarkdown p {
+    font-size: 1em !important; /* Matches standard tab text */
+    font-family: 'Offside', sans-serif !important;
+    color: #fff500 !important; /* Optic yellow to match tab text */
+}
 
+/* Override font size for st.markdown headers (e.g., #, ##, ###) */
+div.stMarkdown h1 {
+    font-size: 1em !important; /* Matches standard tab text */
+    font-family: 'Offside', sans-serif !important;
+    color: #fff500 !important;
+}
+div.stMarkdown h2 {
+    font-size: 1em !important; /* Matches standard tab text */
+    font-family: 'Offside', sans-serif !important;
+    color: #fff500 !important;
+}
+div.stMarkdown h3 {
+    font-size: 1em !important; /* Matches standard tab text */
+    font-family: 'Offside', sans-serif !important;
+    color: #fff500 !important;
+}
 /* Standardize thumbnail styling across sections */
 .profile-image {
     width: 50px;
@@ -326,29 +348,7 @@ h1 {
     color: #fff500 !important; /* Optic yellow to match tab text */
 }
 
-/* Override font size for st.markdown paragraph text */
-div.stMarkdown p {
-    font-size: 1em !important; /* Matches standard tab text */
-    font-family: 'Offside', sans-serif !important;
-    color: #fff500 !important; /* Optic yellow to match tab text */
-}
 
-/* Override font size for st.markdown headers (e.g., #, ##, ###) */
-div.stMarkdown h1 {
-    font-size: 1em !important; /* Matches standard tab text */
-    font-family: 'Offside', sans-serif !important;
-    color: #fff500 !important;
-}
-div.stMarkdown h2 {
-    font-size: 1em !important; /* Matches standard tab text */
-    font-family: 'Offside', sans-serif !important;
-    color: #fff500 !important;
-}
-div.stMarkdown h3 {
-    font-size: 1em !important; /* Matches standard tab text */
-    font-family: 'Offside', sans-serif !important;
-    color: #fff500 !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
