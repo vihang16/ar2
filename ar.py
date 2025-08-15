@@ -2235,7 +2235,6 @@ with tabs[3]:
         
 #-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
 
-```python
 with tabs[4]:
     load_bookings()
     st.header("Court Bookings")
@@ -2590,7 +2589,6 @@ with tabs[4]:
                         # Increment key for next selectbox render
                         st.session_state.edit_booking_key += 1
                         st.rerun()
-```
 
 
 
