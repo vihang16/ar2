@@ -2388,7 +2388,7 @@ with tabs[4]:
                 plain_suggestion = re.sub(r'<.*?>', '', pairing_suggestion).replace('Suggested Pairing: ', 'Suggested Pairing: ').replace('Odds: ', 'Odds: ').strip()
                 plain_suggestion = f"\n\n{plain_suggestion}"
 
-            share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{court_location}{plain_suggestion}"
+            share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{plain_suggestion}{court_location}"
             encoded_text = urllib.parse.quote(share_text)
             whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
 
