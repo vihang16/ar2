@@ -1901,7 +1901,7 @@ with tabs[1]:
 
     #st.markdown("---")
     #st.markdown("---")
-    st.subheader("Match History")
+    #st.subheader("Match History")
 
     # Create columns for the filters
     col1_filter, col2_filter = st.columns(2)
