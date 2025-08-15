@@ -1947,6 +1947,9 @@ with tabs[1]:
                     st.rerun()
 
     st.markdown("---")
+    # ... (previous code remains unchanged until the Match History section)
+
+    st.markdown("---")
     st.subheader("Match History")
 
     # Create columns for the filters
@@ -1971,8 +1974,15 @@ with tabs[1]:
             (filtered_matches['team2_player2'] == player_search)
         ]
 
+    # Sort matches by date in ascending order for serial numbers (oldest first)
     filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
+    filtered_matches = filtered_matches.sort_values(by='date', ascending=True).reset_index(drop=True)
+    # Assign serial numbers starting from 1
+    filtered_matches['serial_number'] = filtered_matches.index + 1
+
+    # Re-sort for display in descending order (latest first)
     filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
+
     def format_match_players(row):
         if row["match_type"] == "Singles":
             p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
@@ -1990,6 +2000,7 @@ with tabs[1]:
                 return f"{p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
             else:
                 return f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
+
     def format_match_scores_and_date(row):
         score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
         score_text = ", ".join(score_parts_plain)
@@ -1999,24 +2010,31 @@ with tabs[1]:
         score_html = ", ".join(score_parts_html)
         date_str = row['date'].strftime('%d %b %y')
         return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
+
     if filtered_matches.empty:
         st.info("No matches found for the selected filters.")
     else:
         for index, row in filtered_matches.iterrows():
-            cols = st.columns([1, 8, 1])
-            if row["match_image_url"]:
-                with cols[0]:
+            # Create four columns: serial number, image, match details, and share button
+            cols = st.columns([1, 1, 7, 1])
+            with cols[0]:
+                # Display serial number
+                st.markdown(f"<span style='font-weight:bold; color:#fff500;'>{row['serial_number']}</span>", unsafe_allow_html=True)
+            with cols[1]:
+                if row["match_image_url"]:
                     try:
                         st.image(row["match_image_url"], width=50, caption="")
                     except Exception as e:
                         st.error(f"Error displaying match image: {str(e)}")
-            with cols[1]:
+            with cols[2]:
                 st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
                 st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
-            with cols[2]:
+            with cols[3]:
                 share_link = generate_whatsapp_link(row)
                 st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
+
+# ... (rest of the code remains unchanged)
 
     st.markdown("---")
     st.subheader("✏️ Manage Existing Match")
