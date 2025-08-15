@@ -2235,7 +2235,7 @@ with tabs[3]:
         
 #-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
 
-
+```python
 with tabs[4]:
     load_bookings()
     st.header("Court Bookings")
@@ -2357,17 +2357,24 @@ with tabs[4]:
                         team2_players = teams[1].replace('Team 2: ', '')
                         pairing_suggestion = (
                             f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
-                            f"{team1_players} (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
-                            f"{team2_players} (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
+                            f"<span style='font-weight:bold;'>{team1_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
+                            f"<span style='font-weight:bold;'>{team2_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
                         )
                     else:
-                        pairing_suggestion = f"<div><strong style='color:white;'>Suggested Pairing:</strong> {suggested_pairing}</div>"
+                        pairing_suggestion = (
+                            f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
+                            f"<span style='font-weight:bold;'>{suggested_pairing}</span></div>"
+                        )
                 elif row['match_type'] == "Singles" and len(players) == 2:
                     p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
                     if p1_odds is not None:
                         p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
                         p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
-                        pairing_suggestion = f"<div><strong style='color:white;'>Odds:</strong> {p1_styled} ({p1_odds:.1f}%) vs {p2_styled} ({p2_odds:.1f}%)</div>"
+                        pairing_suggestion = (
+                            f"<div><strong style='color:white;'>Odds:</strong> "
+                            f"<span style='font-weight:bold;'>{p1_styled}</span> ({p1_odds:.1f}%) vs "
+                            f"<span style='font-weight:bold;'>{p2_styled}</span> ({p2_odds:.1f}%)</div>"
+                        )
             except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
 
@@ -2380,15 +2387,19 @@ with tabs[4]:
             if players:
                 players_list = "\n".join([f"{i+1}. *{p}*" for i, p in enumerate(players)])
             standby_text = f"\nSTD. BY : *{row['standby_player']}*" if 'standby_player' in row and row['standby_player'] else ""
-            court_location = f"\nCourt location : {court_url}"
-
+            
             # Create plain text version of pairing suggestion (strip HTML tags)
             plain_suggestion = ""
             if pairing_suggestion and "Error" not in pairing_suggestion:
-                plain_suggestion = re.sub(r'<.*?>', '', pairing_suggestion).replace('Suggested Pairing: ', 'Suggested Pairing: ').replace('Odds: ', 'Odds: ').strip()
+                # Replace HTML tags but keep player names in their original case for WhatsApp
+                plain_suggestion = re.sub(r'<span style=[\'"].*?[\'"]>(.*?)</span>', r'\1', pairing_suggestion)
+                plain_suggestion = re.sub(r'<.*?>', '', plain_suggestion).replace('Suggested Pairing: ', 'Suggested Pairing: ').replace('Odds: ', 'Odds: ').strip()
                 plain_suggestion = f"\n\n{plain_suggestion}"
+                # Add bold formatting for player names in plain text
+                for player in players:
+                    plain_suggestion = plain_suggestion.replace(player, f"*{player}*")
 
-            share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{plain_suggestion}{court_location}"
+            share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{plain_suggestion}\nCourt location : {court_url}"
             encoded_text = urllib.parse.quote(share_text)
             whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
 
@@ -2579,6 +2590,7 @@ with tabs[4]:
                         # Increment key for next selectbox render
                         st.session_state.edit_booking_key += 1
                         st.rerun()
+```
 
 
 
