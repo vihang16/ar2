@@ -51,6 +51,7 @@ st.markdown("""
     margin-right: 10px;
     vertical-align: middle;
     transition: transform 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 245, 0, 0.6);
 }
 .profile-image:hover {
     transform: scale(1.1);
