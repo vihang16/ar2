@@ -20,6 +20,7 @@ from fpdf import FPDF
 import zipfile
 import io
 from datetime import datetime
+import urllib.parse
 
 
 # Set the page title
@@ -2234,82 +2235,80 @@ with tabs[3]:
         
 #-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX--------------------------------------------
 
+# ... (previous code remains unchanged until tab[4])
+
 with tabs[4]:
-    st.header("Bookings")
-    with st.expander("➕ Enter a Bookings", expanded=False, icon="➡️"):
-        st.subheader("Court Booking Form")
-        match_type_booking = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key=f"booking_match_type_{st.session_state.get('form_key_suffix', 0)}")
-        available_players = sorted([p for p in players_df["name"].dropna().tolist() if p != "Visitor"] + ["Visitor"]) if "name" in players_df.columns else ["Visitor"]
-        if not available_players:
-            st.warning("No players available. Please add players in the Player Profile tab.")
+    load_bookings()
+    st.header("Court Bookings")
+    st.markdown("<small><i>Plan and manage court bookings for upcoming matches.</i></small>", unsafe_allow_html=True)
+
+    # New Booking Form
+    st.markdown("---")
+    st.subheader("Create New Booking")
+    with st.form(key=f"new_booking_form_{st.session_state.get('form_key_suffix', 0)}"):
+        date = st.date_input("Booking Date *", min_value=datetime.today())
+        hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
+        time = st.selectbox("Booking Time *", hours)
+        match_type = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True)
+        available_players = sorted([p for p in st.session_state.players_df["name"].tolist() if p != "Visitor"])
+        court_names = [court["name"] for court in ar_courts + mira_courts]
+        if match_type == "Doubles":
+            col1, col2 = st.columns(2)
+            with col1:
+                p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key="t1p1")
+                p2 = st.selectbox("Player 2 (optional)", [""] + available_players, key="t1p2")
+            with col2:
+                p3 = st.selectbox("Player 3 (optional)", [""] + available_players, key="t2p1")
+                p4 = st.selectbox("Player 4 (optional)", [""] + available_players, key="t2p2")
         else:
-            with st.form(key=f"booking_form_{st.session_state.get('form_key_suffix', 0)}"):
-                if match_type_booking == "Doubles":
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        p1_booking = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"t1p1_booking_{st.session_state.get('form_key_suffix', 0)}")
-                        p2_booking = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"t1p2_booking_{st.session_state.get('form_key_suffix', 0)}")
-                    with col2:
-                        p3_booking = st.selectbox("Player 3 (optional)", [""] + available_players, key=f"t2p1_booking_{st.session_state.get('form_key_suffix', 0)}")
-                        p4_booking = st.selectbox("Player 4 (optional)", [""] + available_players, key=f"t2p2_booking_{st.session_state.get('form_key_suffix', 0)}")
+            p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key="s1p1")
+            p3 = st.selectbox("Player 2 (optional)", [""] + available_players, key="s1p2")
+            p2 = ""
+            p4 = ""
+        standby = st.selectbox("Standby Player (optional)", [""] + available_players, key="standby")
+        court_name = st.selectbox("Court Name *", [""] + court_names)
+        screenshot = st.file_uploader("Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"])
+        st.markdown("*Required fields", unsafe_allow_html=True)
+        submit_booking = st.form_submit_button("Submit Booking")
+        if submit_booking:
+            if not court_name:
+                st.error("Court name is required.")
+            elif not date or not time:
+                st.error("Booking date and time are required.")
+            else:
+                selected_players = [p for p in [p1, p2, p3, p4, standby] if p]
+                if match_type == "Doubles" and len(set(selected_players)) != len(selected_players):
+                    st.error("Please select different players for each position.")
                 else:
-                    p1_booking = st.selectbox("Player 1 (optional)", [""] + available_players, key=f"s1p1_booking_{st.session_state.get('form_key_suffix', 0)}")
-                    p3_booking = st.selectbox("Player 2 (optional)", [""] + available_players, key=f"s1p2_booking_{st.session_state.get('form_key_suffix', 0)}")
-                    p2_booking = ""
-                    p4_booking = ""
-                standby_booking = st.selectbox("Standby Player (optional)", [""] + available_players, key=f"standby_booking_{st.session_state.get('form_key_suffix', 0)}")
-                court_name = st.selectbox("Court Name *", [""] + court_names, key=f"court_booking_{st.session_state.get('form_key_suffix', 0)}")
-                booking_date = st.date_input("Booking Date *", value=datetime.now().date(), key=f"date_booking_{st.session_state.get('form_key_suffix', 0)}")
-                
-                # Generate time slots in AM/PM format
-                hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
-                
-                booking_time = st.selectbox("Booking Time *", hours, key=f"time_booking_{st.session_state.get('form_key_suffix', 0)}")
-                screenshot = st.file_uploader("Upload Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"screenshot_booking_{st.session_state.get('form_key_suffix', 0)}")
-                st.markdown("*Required fields", unsafe_allow_html=True)
-                submit_booking = st.form_submit_button("Submit Booking")
-                if submit_booking:
-                    if not court_name:
-                        st.error("Court name is required.")
-                    elif not booking_date or not booking_time:
-                        st.error("Booking date and time are required.")
-                    else:
-                        # Convert AM/PM time back to 24-hour format for consistent storage
-                        time_24hr = datetime.strptime(booking_time, "%I:%M %p").strftime("%H:%M")
-                        
-                        selected_players = [p for p in [p1_booking, p2_booking, p3_booking, p4_booking, standby_booking] if p]
-                        if match_type_booking == "Doubles" and len(set(selected_players)) != len(selected_players):
-                            st.error("Please select different players for each position.")
-                        else:
-                            booking_id = generate_booking_id(st.session_state.bookings_df, booking_date)
-                            screenshot_url = ""
-                            if screenshot:
-                                screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking")
-                            new_booking = {
-                                "booking_id": booking_id,
-                                "date": booking_date,
-                                "time": time_24hr,
-                                "match_type": match_type_booking,
-                                "court_name": court_name,
-                                "player1": p1_booking,
-                                "player2": p2_booking,
-                                "player3": p3_booking,
-                                "player4": p4_booking,
-                                "standby_player": standby_booking if standby_booking else "",
-                                "screenshot_url": screenshot_url
-                            }
-                            bookings_to_save = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
-                            try:
-                                # Drop unexpected columns before saving
-                                expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
-                                bookings_to_save = bookings_to_save[expected_columns]
-                                save_bookings(bookings_to_save)
-                                load_bookings()
-                                st.success("Booking submitted.")
-                            except Exception as e:
-                                st.error(f"Failed to save booking: {str(e)}")
-                            st.session_state.form_key_suffix = st.session_state.get('form_key_suffix', 0) + 1
-                            st.rerun()
+                    booking_id = str(uuid.uuid4())
+                    screenshot_url = ""
+                    if screenshot:
+                        screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking")
+                    time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
+                    new_booking = pd.DataFrame([{
+                        "booking_id": booking_id,
+                        "date": date,
+                        "time": time_24hr,
+                        "match_type": match_type,
+                        "court_name": court_name,
+                        "player1": p1,
+                        "player2": p2,
+                        "player3": p3,
+                        "player4": p4,
+                        "standby_player": standby if standby else "",
+                        "screenshot_url": screenshot_url
+                    }])
+                    try:
+                        st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, new_booking], ignore_index=True)
+                        expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+                        bookings_to_save = st.session_state.bookings_df[expected_columns]
+                        save_bookings(bookings_to_save)
+                        load_bookings()
+                        st.success("Booking submitted.")
+                    except Exception as e:
+                        st.error(f"Failed to save booking: {str(e)}")
+                    st.session_state.form_key_suffix = st.session_state.get('form_key_suffix', 0) + 1
+                    st.rerun()
 
     st.markdown("---")
     st.subheader("Upcoming Bookings")
@@ -2372,7 +2371,22 @@ with tabs[4]:
             except Exception as e:
                 pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
 
-            # Prepare booking text with clickable court name
+            # Construct WhatsApp share text
+            weekday = pd.to_datetime(row['date']).strftime('%a')
+            date_part = pd.to_datetime(row['date']).strftime('%d %b')
+            full_date = f"{weekday} , {date_part} , {time_ampm}"
+            court_name = row['court_name']
+            players_list = ""
+            if players:
+                players_list = "\n".join([f"{i+1}. {p}" for i, p in enumerate(players)])
+            standby_text = f"\nSTD. BY : {row['standby_player']}" if 'standby_player' in row and row['standby_player'] else ""
+            court_location = f"\nCourt location : {court_url}"
+
+            share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{court_location}"
+            encoded_text = urllib.parse.quote(share_text)
+            whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
+
+            # Prepare booking text with clickable court name and WhatsApp button
             booking_text = f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
                 <div><strong>Court:</strong> {court_name_html}</div>
@@ -2382,6 +2396,12 @@ with tabs[4]:
                 <div><strong>Players:</strong> {players_str}</div>
                 <div><strong>Standby Player:</strong> {standby_str}</div>
                 {pairing_suggestion}
+                <div style="margin-top: 10px;">
+                    <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp">
+                        Share on WhatsApp
+                    </a>
+                </div>
             """
 
             # Prepare visuals (screenshot and thumbnails)
@@ -2552,7 +2572,13 @@ with tabs[4]:
                             st.error(f"Failed to delete booking: {str(e)}")
                         # Increment key for next selectbox render
                         st.session_state.edit_booking_key += 1
-                        st.rerun()            
+                        st.rerun()
+
+# ... (rest of the code remains unchanged)
+
+
+
+
 
 #--MINI TOURNEY -----------------------
 with tabs[5]:
