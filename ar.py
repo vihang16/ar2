@@ -30,20 +30,18 @@ st.set_page_config(page_title="AR Tennis")
 st.markdown("""
 <style>
 .stApp {
-  background: linear-gradient(to bottom, #07314f, #031827); /* New gradient background */
+  background: linear-gradient(to bottom, #07314f, #031827);
   background-size: cover;
   background-repeat: repeat;
   background-position: center;
   background-attachment: fixed;
-  background-color: #031827; /* Fallback background color */
+  background-color: #031827;
 }
 
-/* Apply the reversed gradient to the header/menu bar */
 [data-testid="stHeader"] {
   background: linear-gradient(to top, #07314f, #035996) !important;
 }
 
-/* Standardize thumbnail styling across sections */
 .profile-image {
     width: 50px;
     height: 50px;
@@ -79,7 +77,7 @@ st.markdown("""
 }
 .whatsapp-share {
     background-color: #25D366;
-    color: white !important; /* Ensure text is white */
+    color: white !important;
     padding: 5px 10px;
     border-radius: 5px;
     text-decoration: none;
@@ -94,12 +92,10 @@ st.markdown("""
     opacity: 0.9;
 }
 
-/* End of Birthday Banner Styling */
-
 /* Card styling for court locations */
 .court-card {
-    background: linear-gradient(to bottom, #031827, #07314f); /* Matches your app's gradient */
-    border: 1px solid #fff500; /* Optic yellow border */
+    background: linear-gradient(to bottom, #031827, #07314f);
+    border: 1px solid #fff500;
     border-radius: 10px;
     padding: 15px;
     margin: 10px 0;
@@ -109,15 +105,15 @@ st.markdown("""
 }
 .court-card:hover {
     transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(255, 245, 0, 0.3); /* Yellow glow on hover */
+    box-shadow: 0 6px 12px rgba(255, 245, 0, 0.3);
 }
 .court-card h4 {
-    color: #fff500; /* Optic yellow for court names */
+    color: #fff500;
     margin-bottom: 10px;
 }
 .court-card a {
-    background-color: #fff500; /* Yellow button */
-    color: #031827; /* Dark text for contrast */
+    background-color: #fff500;
+    color: #031827;
     padding: 8px 16px;
     border-radius: 5px;
     text-decoration: none;
@@ -127,21 +123,31 @@ st.markdown("""
     transition: background-color 0.2s;
 }
 .court-card a:hover {
-    background-color: #ffd700; /* Slightly darker yellow on hover */
+    background-color: #ffd700;
 }
 .court-icon {
     width: 50px;
     height: 50px;
     margin-bottom: 10px;
 }
-/* End of Card styling for court locations */
-
 
 @import url('https://fonts.googleapis.com/css2?family=Offside&display=swap');
 html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     font-family: 'Offside', sans-serif !important;
 }
-/* Other styles */
+
+/* ✅ Header & subheader resize to ~125% of tab font size (14px → 17–18px) */
+h1 {
+    font-size: 18px !important;
+}
+h2 {
+    font-size: 17px !important;
+}
+h3 {
+    font-size: 16px !important;
+}
+
+/* Rankings table container */
 .rankings-table-container {
     width: 100%;
     background: #ffffff;
@@ -155,11 +161,9 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     overflow-y: auto;
 }
 
-/* Card layout for all screen sizes */
 .ranking-header-row {
     display: none;
 }
-/* Card layout for all screen sizes */
 .ranking-row {
     display: block;
     padding: 10px;
@@ -167,14 +171,13 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     border: 1px solid #696969;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    background-color: rgba(255, 255, 255, 0.05); /* Light grey background to match bookings */
-    overflow: visible; /* Prevent clipping of content */
+    background-color: rgba(255, 255, 255, 0.05);
+    overflow: visible;
 }
 .ranking-row:last-child {
     margin-bottom: 0;
 }
 
-/* Adjust individual columns for card layout */
 .rank-col, .profile-col, .player-col, .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .cumulative-game-diff-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
     width: 100%;
     text-align: left;
@@ -205,7 +208,6 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
     vertical-align: middle;
 }
 
-/* Group Profile, Rank and Player together in a flex container */
 .rank-profile-player-group {
     display: flex;
     align-items: center;
@@ -220,20 +222,6 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
      margin-right: 10px;
 }
 
-/* Styling for bookings */
-.booking-row {
-    display: block;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #696969;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-.booking-row:last-child {
-    margin-bottom: 0;
-}
-
-/* Add labels for stats and apply new color to labels only */
 .points-col::before { content: "Points: "; font-weight: bold; color: #bbbbbb; }
 .win-percent-col::before { content: "Win %: "; font-weight: bold; color: #bbbbbb; }
 .matches-col::before { content: "Matches: "; font-weight: bold; color: #bbbbbb; }
@@ -245,44 +233,10 @@ html, body, [class*="st-"], h1, h2, h3, h4, h5, h6 {
 .trend-col::before { content: "Recent Trend: "; font-weight: bold; color: #bbbbbb; }
 .birthday-col::before { content: "Birthday: "; font-weight: bold; color: #bbbbbb; }
 
-/* Ensure Partners and Best Partner columns are visible */
-.partners-col, .best-partner-col {
-    display: block !important;
-    visibility: visible !important;
-    width: 100%;
-    text-align: left;
-    padding: 2px 0;
-    font-size: 1em;
-    margin-bottom: 5px;
-    word-break: break-word;
-    color: #fff500; /* Ensure text is optic yellow */
-}
-
-/* Add specific styling for longer content to prevent overflow */
-.partners-col {
-    max-height: 100px; /* Allow scrolling for long partner lists */
-    overflow-y: auto;
-}
-
-/* Ensure no conflicting display rules */
-.ranking-row {
-    display: block;
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #696969;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    overflow: visible; /* Prevent clipping of content */
-}
-
-/* ... (existing styles) ... */
-
-/* Ensure the actual values are yellow. Applies to the text content within the div, not the ::before. */
 .points-col, .win-percent-col, .matches-col, .wins-col, .losses-col, .games-won-col, .game-diff-avg-col, .cumulative-game-diff-col, .trend-col, .birthday-col, .partners-col, .best-partner-col {
     color: #fff500;
 }
 
-/* Remove extra space below the subheader for "Rankings as of dd/mm" */
 div.st-emotion-cache-1jm692n {
     margin-bottom: 0px !important;
     padding-bottom: 0px !important;
@@ -293,7 +247,6 @@ div.st-emotion-cache-1jm692n h3 {
     line-height: 1 !important;
 }
 
-/* Ensure no margin/padding on the immediate children of the rankings table container */
 .rankings-table-container > div {
     margin-top: 0 !important;
     padding-top: 0 !important;
@@ -303,11 +256,10 @@ div.st-emotion-cache-1jm692n h3 {
     padding-top: 0 !important;
 }
 
-/* Streamlit tabs for mobile responsiveness */
 .stTabs [data-baseweb="tab-list"] {
-    flex-wrap: nowrap; /* Prevents tabs from wrapping to the next line */
-    overflow-x: auto;  /* Adds a horizontal scrollbar if tabs overflow */
-    gap: 10px;         /* Optional: Adjust gap for better spacing */
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 10px;
 }
 
 .stTabs [data-baseweb="tab"] {
@@ -318,6 +270,7 @@ div.st-emotion-cache-1jm692n h3 {
     margin: 2px;
 }
 </style>
+
 """, unsafe_allow_html=True)
 
 # Supabase setup
