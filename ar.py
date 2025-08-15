@@ -1257,1464 +1257,1121 @@ def delete_booking_from_db(booking_id):
     try:
         supabase.table(bookings_table_name).delete().eq("booking_id", booking_id).execute()
         st.session_state.bookings_df = st.session_state.bookings_df[st.session_state.bookings_df["booking_id"] != booking_id].reset_index(drop=True)
-        save_bookings(st.session_state.bookings_df)
     except Exception as e:
         st.error(f"Error deleting booking from database: {str(e)}")
 
-def display_rankings_table(rank_df, title):
-    if rank_df.empty:
-        st.info(f"No {title} ranking data available.")
-        return
-    display_df = rank_df[["Rank", "Player", "Points", "Win %", "Matches", "Wins", "Losses", "Games Won", "Game Diff Avg", "Recent Trend"]].copy()
-    display_df["Points"] = display_df["Points"].map("{:.1f}".format)
-    display_df["Win %"] = display_df["Win %"].map("{:.1f}%".format)
-    display_df["Game Diff Avg"] = display_df["Game Diff Avg"].map("{:.2f}".format)
-    display_df["Matches"] = display_df["Matches"].astype(int)
-    display_df["Wins"] = display_df["Wins"].astype(int)
-    display_df["Losses"] = display_df["Losses"].astype(int)
-    display_df["Games Won"] = display_df["Games Won"].astype(int)
-    st.subheader(f"{title} Rankings")
-    st.dataframe(display_df, hide_index=True, height=300)
 
-def display_match_table(df, title):
-    if df.empty:
-        st.info(f"No {title} match data available.")
-        return
-
-    table_df = df.copy()
-
-    # Create a formatted Match column
-    def format_match_info(row):
-        scores = [s for s in [row['set1'], row['set2'], row['set3']] if s]
-        scores_str = ", ".join(scores)
-
-        if row['match_type'] == 'Doubles':
-            players = f"{row['team1_player1']} & {row['team1_player2']} vs. {row['team2_player1']} & {row['team2_player2']}"
-        else:
-            players = f"{row['team1_player1']} vs. {row['team2_player1']}"
-
-        return f"{players} ({scores_str})"
-
-    table_df['Match Details'] = table_df.apply(format_match_info, axis=1)
-
-    # Select and rename columns for display
-    display_df = table_df[['date', 'Match Details', 'match_image_url']].copy()
-    display_df.rename(columns={
-        'date': 'Date',
-        'match_image_url': 'Image URL'
-    }, inplace=True)
-
-    # Format the date column as dd MMM yy
-    display_df['Date'] = pd.to_datetime(display_df['Date']).dt.strftime('%d %b %y')
-
-    st.dataframe(display_df, height=300)
-
-def generate_whatsapp_link(row):
-    # Determine the winner and loser(s) based on the match type and winner
-    if row["match_type"] == "Singles":
-        if row["winner"] == "Team 1":
-            winner_str = f"{row['team1_player1']}"
-            loser_str = f"{row['team2_player1']}"
-        else:
-            winner_str = f"{row['team2_player1']}"
-            loser_str = f"{row['team1_player1']}"
-    else: # Doubles
-        if row["winner"] == "Team 1":
-            winner_str = f"{row['team1_player1']} & {row['team1_player2']}"
-            loser_str = f"{row['team2_player1']} & {row['team2_player2']}"
-        else:
-            winner_str = f"{row['team2_player1']} & {row['team2_player2']}"
-            loser_str = f"{row['team1_player1']} & {row['team1_player2']}"
-
-    # Format scores with bolding and date
-    scores_list = [f'*{s.replace("-", ":")}*' for s in [row['set1'], row['set2'], row['set3']] if s]
-    scores_str = " ".join(scores_list)
-    date_str = row['date'].strftime('%d %b %y')
-
-    # Create the text to be shared
-    share_text = f"*{winner_str} def. {loser_str}*\nSet scores {scores_str} on {date_str}"
-
-    # URL-encode the text
-    encoded_text = urllib.parse.quote(share_text)
-
-    return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
-
-
-# Birthday Functions added
-
-
-def check_birthdays(players_df):
-    """Checks for players whose birthday is today in various formats like dd-mm, d-m, dd MMM, dd MMM yyyy, etc."""
-    today = datetime.now()
-    birthday_players = []
-
-    if 'birthday' in players_df.columns and not players_df.empty:
-        valid_birthdays_df = players_df.dropna(subset=['birthday']).copy()
-
-        for _, row in valid_birthdays_df.iterrows():
-            raw_bday = str(row['birthday']).strip()
-            if not raw_bday:
-                continue
-
-            try:
-                # Parse with dateutil to support both numeric and text month formats
-                bday_parsed = parser.parse(raw_bday, dayfirst=True)
-                if bday_parsed.day == today.day and bday_parsed.month == today.month:
-                    birthday_str = bday_parsed.strftime("%d %b")
-                    birthday_players.append((row['name'], birthday_str))
-            except (ValueError, TypeError):
-                continue
-
-    return birthday_players
-
-
-
-def display_birthday_message(birthday_players):
-    """Displays a prominent birthday banner for each player in the list."""
-    for player_name, birthday_str in birthday_players:
-        message = f"Happy Birthday {player_name}! "
-        whatsapp_message = f"*{message}* 🎂🎈"
-        encoded_message = urllib.parse.quote(whatsapp_message)
-        whatsapp_link = f"https://wa.me/?text={encoded_message}"
-
-        st.markdown(f"""
-        <div class="birthday-banner">
-            <span>🎂🎈 {message} 🎈🎂</span>
-            <a href="{whatsapp_link}" target="_blank" class="whatsapp-share">
-                <img src="https://img.icons8.com/color/48/000000/whatsapp.png" alt="WhatsApp Icon">
-            </a>
-        </div>
-        """, unsafe_allow_html=True)
-
-    
-
-# --- Main App Logic ---
+# Load data on app start
 load_players()
 load_matches()
 load_bookings()
 
-# Check for and display birthday messages
-todays_birthdays = check_birthdays(st.session_state.players_df)
-if todays_birthdays:
-    display_birthday_message(todays_birthdays)
+# Get unique players from players_df, excluding "Visitor"
+available_players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in st.session_state.players_df.columns else []
 
+# Calculate rankings for combined, doubles, and singles
+matches_combined = st.session_state.matches_df.copy()
+rank_df_combined, partner_stats_combined = calculate_rankings(matches_combined)
 
-court_names = [
-    "Alvorado 1","Alvorado 2", "Palmera 2", "Palmera 4", "Saheel", "Hattan",
-    "MLC Mirador La Colleccion", "Al Mahra", "Mirador", "Reem 1", "Reem 2",
-    "Reem 3", "Alma", "Mira 2", "Mira 4", "Mira 5 A", "Mira 5 B", "Mira Oasis 1",
-    "Mira Oasis 2", "Mira Oasis 3 A","Mira Oasis 3 B", "Mira Oasis 3 C"
-]
+matches_doubles = st.session_state.matches_df[st.session_state.matches_df["match_type"] == "Doubles"].copy()
+rank_df_doubles, partner_stats_doubles = calculate_rankings(matches_doubles)
 
-players_df = st.session_state.players_df
-matches = st.session_state.matches_df
-players = sorted([p for p in players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in players_df.columns else []
+matches_singles = st.session_state.matches_df[st.session_state.matches_df["match_type"] == "Singles"].copy()
+rank_df_singles, partner_stats_singles = calculate_rankings(matches_singles)
 
-if not matches.empty and ("match_id" not in matches.columns or matches["match_id"].isnull().any()):
-    matches['date'] = pd.to_datetime(matches['date'], errors='coerce')
-    for i in matches.index:
-        if pd.isna(matches.at[i, "match_id"]):
-            match_date_for_id = matches.at[i, "date"] if pd.notna(matches.at[i, "date"]) else datetime.now()
-            matches.at[i, "match_id"] = generate_match_id(matches, match_date_for_id)
-    save_matches(matches)
+# Sidebar for navigation or additional controls if needed
+st.sidebar.title("Navigation")
+selected_tab = st.sidebar.radio("Go to", ["Home", "Matches", "Player Profile", "Court Locations", "Court Bookings", "Mini Tournaments"])
 
-st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
+# Map selected_tab to tab index for consistency with original code
+tab_mapping = {
+    "Home": 0,
+    "Matches": 1,
+    "Player Profile": 2,
+    "Court Locations": 3,
+    "Court Bookings": 4,
+    "Mini Tournaments": 5
+}
+tab_index = tab_mapping[selected_tab]
 
-tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings","Mini Tourney"]
+# Use st.tabs but hide the tab bar since we're using sidebar
+tabs = st.tabs(["Home", "Matches", "Player Profile", "Court Locations", "Court Bookings", "Mini Tournaments"])
 
-tabs = st.tabs(tab_names)
-
-with tabs[0]:
-    st.header("Rankings")
-    ranking_type = st.radio("Select Ranking View", ["Combined", "Doubles", "Singles", "Nerd Stuff", "Table View"], horizontal=True, key="ranking_type_selector")
-    if ranking_type == "Doubles":
-        filtered_matches = matches[matches['match_type'] == 'Doubles'].copy()
-        rank_df, partner_stats = calculate_rankings(filtered_matches)
-        st.subheader(f"Rankings as of {datetime.now().strftime('%d/%m')}")
-        st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
-        st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
-        if rank_df.empty:
-            st.info("No ranking data available for this view.")
-        else:
-            for index, row in rank_df.iterrows():
-                profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
-                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-                st.markdown(f"""
-                <div class="ranking-row">
-                    <div class="rank-profile-player-group">
-                        <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">{profile_html}</div>
-                        <div class="player-col">{player_styled}</div>
-                    </div>
-                    <div class="points-col">{points_value_styled}</div>
-                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                    <div class="matches-col">{int(row["Matches"])}</div>
-                    <div class="wins-col">{int(row["Wins"])}</div>
-                    <div class="losses-col">{int(row["Losses"])}</div>
-                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                    <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col">{trend_value_styled}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.subheader("Player Insights")
-        selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_doubles")
-        if selected_player_rankings:
-            display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_stats, key_prefix="rankings_doubles_")
-        else:
-            st.info("Player insights will be available once a player is selected.")
-    elif ranking_type == "Singles":
-        filtered_matches = matches[matches['match_type'] == 'Singles'].copy()
-        rank_df, partner_stats = calculate_rankings(filtered_matches)
-        current_date_formatted = datetime.now().strftime("%d/%m")
-        st.subheader(f"Rankings as of {current_date_formatted}")
-        st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
-        st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
-        if rank_df.empty:
-            st.info("No ranking data available for this view.")
-        else:
-            for index, row in rank_df.iterrows():
-                profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
-                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-                st.markdown(f"""
-                <div class="ranking-row">
-                    <div class="rank-profile-player-group">
-                        <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">{profile_html}</div>
-                        <div class="player-col">{player_styled}</div>
-                    </div>
-                    <div class="points-col">{points_value_styled}</div>
-                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                    <div class="matches-col">{int(row["Matches"])}</div>
-                    <div class="wins-col">{int(row["Wins"])}</div>
-                    <div class="losses-col">{int(row["Losses"])}</div>
-                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                    <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col">{trend_value_styled}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.subheader("Player Insights")
-        selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_singles")
-        if selected_player_rankings:
-            display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_stats, key_prefix="rankings_singles_")
-        else:
-            st.info("Player insights will be available once a player is selected.")
-    elif ranking_type == "Nerd Stuff":
-        if matches.empty or players_df.empty:
-            st.info("No match data available to generate interesting stats.")
-        else:
-            rank_df, partner_stats = calculate_rankings(matches)
-
-            # Most Effective Partnership
-            st.markdown("### 🤝 Most Effective Partnership")
-            best_partner = None
-            max_value = -1
-            for player, partners in partner_stats.items():
-                if player == "Visitor":
-                    continue
-                for partner, stats in partners.items():
-                    if partner == "Visitor" or player < partner:  # Avoid double counting
-                        win_rate = stats['wins'] / stats['matches'] if stats['matches'] > 0 else 0
-                        avg_game_diff = stats['game_diff_sum'] / stats['matches'] if stats['matches'] > 0 else 0
-                        score = win_rate + (avg_game_diff / 10)  # Adjust weight of game diff
-                        if score > max_value:
-                            max_value = score
-                            best_partner = (player, partner, stats)
-
-            if best_partner:
-                p1, p2, stats = best_partner
-                p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{p1}</span>"
-                p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{p2}</span>"
-                win_rate = (stats['wins'] / stats['matches'] * 100) if stats['matches'] > 0 else 0
-                st.markdown(f"The most effective partnership is {p1_styled} and {p2_styled} with **{stats['wins']}** wins, **{stats['losses']}** losses, and a total game difference of **{stats['game_diff_sum']:.2f}** (win rate: {win_rate:.1f}%).", unsafe_allow_html=True)
-            else:
-                st.info("No doubles matches have been played to determine the most effective partnership.")
-
-            st.markdown("---")
-
-            # Best Player to Partner With
-            st.markdown("### 🥇 Best Player to Partner With")
-            player_stats = defaultdict(lambda: {'wins': 0, 'gd_sum': 0, 'partners': set()})
-            for _, row in matches.iterrows():
-                if row['match_type'] == 'Doubles':
-                    t1 = [row['team1_player1'], row['team1_player2']]
-                    t2 = [row['team2_player1'], row['team2_player2']]
-
-                    match_gd_sum = 0
-                    set_count = 0
-                    for set_score in [row['set1'], row['set2'], row['set3']]:
-                        if set_score and '-' in set_score:
-                            try:
-                                team1_games, team2_games = map(int, set_score.split('-'))
-                                match_gd_sum += team1_games - team2_games
-                                set_count += 1
-                            except ValueError:
-                                continue
-
-                    if set_count > 0:
-                        if row["winner"] == "Team 1":
-                            for p in t1:
-                                if p != "Visitor":
-                                    player_stats[p]['wins'] += 1
-                                    player_stats[p]['gd_sum'] += match_gd_sum
-                                    for partner in t1:
-                                        if partner != p and partner != "Visitor":
-                                            player_stats[p]['partners'].add(partner)
-                        elif row["winner"] == "Team 2":
-                            for p in t2:
-                                if p != "Visitor":
-                                    player_stats[p]['wins'] += 1
-                                    player_stats[p]['gd_sum'] += match_gd_sum
-                                    for partner in t2:
-                                        if partner != p and partner != "Visitor":
-                                            player_stats[p]['partners'].add(partner)
-
-            if player_stats:
-                best_partner_candidate = None
-                max_score = -1
-
-                wins_list = [stats['wins'] for stats in player_stats.values()]
-                gd_list = [stats['gd_sum'] for stats in player_stats.values()]
-                partners_list = [len(stats['partners']) for stats in player_stats.values()]
-
-                max_wins = max(wins_list) if wins_list else 1
-                max_gd = max(gd_list) if gd_list else 1
-                max_partners = max(partners_list) if partners_list else 1
-
-                for player, stats in player_stats.items():
-                    # Normalize scores and create a composite score
-                    normalized_wins = stats['wins'] / max_wins
-                    normalized_gd = stats['gd_sum'] / max_gd
-                    normalized_partners = len(stats['partners']) / max_partners
-
-                    composite_score = normalized_wins + normalized_gd + normalized_partners
-
-                    if composite_score > max_score:
-                        max_score = composite_score
-                        best_partner_candidate = (player, stats)
-
-                if best_partner_candidate:
-                    player_name, stats = best_partner_candidate
-                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{player_name}</span>"
-                    st.markdown(f"The best player to partner with is {player_styled} based on their high number of wins, game difference sum, and variety of partners. They have:", unsafe_allow_html=True)
-                    st.markdown(f"- **Total Wins**: {stats['wins']}")
-                    st.markdown(f"- **Total Game Difference**: {stats['gd_sum']:.2f}")
-                    st.markdown(f"- **Unique Partners Played With**: {len(stats['partners'])}")
-                else:
-                    st.info("Not enough data to determine the best player to partner with.")
-            else:
-                st.info("No doubles matches have been recorded yet.")
-
-            st.markdown("---")
-
-            # Most Frequent Player
-            st.markdown("### 🏟️ Most Frequent Player")
-            if not rank_df.empty:
-                most_frequent_player = rank_df.sort_values(by="Matches", ascending=False).iloc[0]
-                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{most_frequent_player['Player']}</span>"
-                st.markdown(f"{player_styled} has played the most matches, with a total of **{int(most_frequent_player['Matches'])}** matches played.", unsafe_allow_html=True)
-            else:
-                st.info("No match data available to determine the most frequent player.")
-
-            st.markdown("---")
-
-            # Player with highest Game Difference
-            st.markdown("### 📈 Player with highest Game Difference")
-            cumulative_game_diff = defaultdict(int)
-            for _, row in matches.iterrows():
-                t1 = [row['team1_player1'], row['team1_player2']] if row['match_type'] == 'Doubles' else [row['team1_player1']]
-                t2 = [row['team2_player1'], row['team2_player2']] if row['match_type'] == 'Doubles' else [row['team2_player1']]
-                for set_score in [row['set1'], row['set2'], row['set3']]:
-                    if set_score and '-' in set_score:
-                        try:
-                            team1_games, team2_games = map(int, set_score.split('-'))
-                            set_gd = team1_games - team2_games
-                            for p in t1:
-                                if p != "Visitor":
-                                    cumulative_game_diff[p] += set_gd
-                            for p in t2:
-                                if p != "Visitor":
-                                    cumulative_game_diff[p] -= set_gd
-                        except ValueError:
-                            continue
-
-            if cumulative_game_diff:
-                highest_gd_player, highest_gd_value = max(cumulative_game_diff.items(), key=lambda item: item[1])
-                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{highest_gd_player}</span>"
-                st.markdown(f"{player_styled} has the highest cumulative game difference: <span style='font-weight:bold; color:#fff500;'>{highest_gd_value}</span>.", unsafe_allow_html=True)
-            else:
-                st.info("No match data available to calculate game difference.")
-
-            st.markdown("---")
-
-            # Player with the most wins
-            st.markdown(f"### 👑 Player with the Most Wins")
-            most_wins_player = rank_df.sort_values(by="Wins", ascending=False).iloc[0]
-            player_styled = f"<span style='font-weight:bold; color:#fff500;'>{most_wins_player['Player']}</span>"
-            st.markdown(f"{player_styled} holds the record for most wins with **{int(most_wins_player['Wins'])}** wins.", unsafe_allow_html=True)
-
-            st.markdown("---") 
-
-            # Player with the highest win percentage (minimum 5 matches)
-            st.markdown(f"### 🔥 Highest Win Percentage (Min. 5 Matches)")
-            eligible_players = rank_df[rank_df['Matches'] >= 5].sort_values(by="Win %", ascending=False)
-            if not eligible_players.empty:
-                highest_win_percent_player = eligible_players.iloc[0]
-                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{highest_win_percent_player['Player']}</span>"
-                st.markdown(f"{player_styled} has the highest win percentage at **{highest_win_percent_player['Win %']:.2f}%**.", unsafe_allow_html=True)
-            else:
-                st.info("No players have played enough matches to calculate a meaningful win percentage.")
-
-            st.markdown("---")
-            st.markdown(f"### 🗓️ Community Activity : Last 7 Days ")    
-
-            if 'matches_df' in st.session_state and not st.session_state.matches_df.empty:
-                display_community_stats(st.session_state.matches_df)
-
-            st.markdown("---")
-            st.markdown("### 📊 Player Performance Overview")
-            nerd_chart = create_nerd_stats_chart(rank_df)
-            if nerd_chart:
-                st.plotly_chart(nerd_chart, use_container_width=True)
-            else:
-                st.info("Not enough data to generate the performance chart.")
-            # --- End of Inserted Chart Section ---
-            # --- Start of new chart integration ---
-            st.markdown("---")
-            st.markdown("### 🤝 Partnership Performance Analyzer")
-
-            # Get a list of players who have played doubles
-            doubles_players = []
-            if partner_stats:
-                doubles_players = sorted([p for p in partner_stats.keys() if p != "Visitor"])
-
-            if not doubles_players:
-                st.info("No doubles match data available to analyze partnerships.")
-            else:
-                selected_player_for_partners = st.selectbox(
-                    "Select a player to see their partnership stats:",
-                    doubles_players
-                )
-
-                if selected_player_for_partners:
-                    partnership_chart = create_partnership_chart(selected_player_for_partners, partner_stats, players_df)
-                    if partnership_chart:
-                        st.plotly_chart(partnership_chart, use_container_width=True)
-                    else:
-                        st.info(f"{selected_player_for_partners} has no partnership data to display.")
-
-            # --- End of new chart integration ---
-
-            st.markdown("---")
-            with st.expander("Process being used for Rankings" , expanded=False, icon="➡️"):
-                st.markdown("""
-                ### Ranking System Overview
-                - **Points**: Players earn 3 points for a win, 1 point for a loss, and 1.5 points for a tie.
-                - **Win Percentage**: Calculated as (Wins / Matches Played) * 100.
-                - **Game Difference Average**: The average difference in games won vs. lost per match.
-                - **Games Won**: Total games won across all sets.
-                - **Ranking Criteria**: Players are ranked by Points (highest first), then by Win Percentage, Game Difference Average, Games Won, and finally alphabetically by name.
-                - **Matches Included**: All matches, including those with a 'Visitor', contribute to AR players' stats, but 'Visitor' is excluded from rankings and insights.
-
-                Detailed Ranking Logic at https://github.com/mahadevbk/ar2/blob/main/ar_ranking_logic.pdf
-                
-                """)
-    elif ranking_type == "Table View":
-        # Calculate combined rankings
-        rank_df_combined, _ = calculate_rankings(matches)
-        display_rankings_table(rank_df_combined, "Combined")
+# Render only the selected tab's content
+with tabs[tab_index]:
+    if tab_index == 0:
+        st.header("AR Tennis League")
         
-        # Calculate doubles rankings
-        doubles_matches = matches[matches['match_type'] == 'Doubles']
-        rank_df_doubles, _ = calculate_rankings(doubles_matches)
-        display_rankings_table(rank_df_doubles, "Doubles")
-        
-        # Calculate singles rankings
-        singles_matches = matches[matches['match_type'] == 'Singles']
-        rank_df_singles, _ = calculate_rankings(singles_matches)
-        display_rankings_table(rank_df_singles, "Singles")
-        
-        # Add PDF download button
-        st.markdown("---")
-        st.subheader("Download Rankings as PDF")
-        if st.button("Download All Rankings", key="download_rankings_pdf"):
-            try:
-                pdf_data = generate_pdf_reportlab(rank_df_combined, rank_df_doubles, rank_df_singles)
-                st.download_button(
-                    label="Download PDF",
-                    data=pdf_data,
-                    file_name="AR_Tennis_League_Rankings.pdf",
-                    mime="application/pdf",
-                    key="download_pdf_button"
-                )
-            except Exception as e:
-                st.error(f"Error generating PDF: {str(e)}")
-    else:  # Combined view
-        filtered_matches = matches.copy()
-        rank_df, partner_stats = calculate_rankings(filtered_matches)
-        current_date_formatted = datetime.now().strftime("%d/%m")
-        st.subheader(f"Rankings as of {current_date_formatted}")
-
-        # --- START: New Top 3 Players Display ---
-        if not rank_df.empty and len(rank_df) >= 3:
-            top_3_players = rank_df.head(3)
-            
-            # Custom CSS for the podium display
-            st.markdown("""
-            <style>
-            .podium-container {
-                display: flex;
-                flex-direction: row;
-                justify-content: space-around;
-                align-items: flex-end;
-                width: 100%;
-                margin: 20px 0;
-                padding: 10px 0;
-                height: 220px;
-                border-bottom: 2px solid #fff500;
-            }
-            .podium-item {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                color: white;
-                width: 32%; /* Ensure they fit side-by-side */
-            }
-            .podium-item img {
-                width: 70px;
-                height: 70px;
-                border-radius: 50%;
-                border: 3px solid #fff500;
-                margin-bottom: 10px;
-                object-fit: cover;
-            }
-            .podium-name {
-                font-weight: bold;
-                font-size: 1.1em;
-                color: #fff500;
-            }
-            .podium-rank {
-                font-size: 1.5em;
-                font-weight: bold;
-                color: white;
-            }
-            /* Use flexbox order to arrange 2nd, 1st, 3rd */
-            .podium-item.rank-1 { order: 2; align-self: flex-start; } /* Center and Top */
-            .podium-item.rank-2 { order: 1; } /* Left */
-            .podium-item.rank-3 { order: 3; } /* Right */
-            </style>
-            """, unsafe_allow_html=True)
-
-            # Extract player data
-            p1 = top_3_players.iloc[0]
-            p2 = top_3_players.iloc[1]
-            p3 = top_3_players.iloc[2]
-            
-            # Create the HTML structure
-            podium_html = f"""
-            <div class="podium-container">
-                <div class="podium-item rank-2">
-                    <img src="{p2['Profile']}" alt="{p2['Player']}">
-                    <div class="podium-rank">🥈 {p2['Rank'].replace('🏆 ', '')}</div>
-                    <div class="podium-name">{p2['Player']}</div>
-                </div>
-                <div class="podium-item rank-1">
-                    <img src="{p1['Profile']}" alt="{p1['Player']}">
-                    <div class="podium-rank">🥇 {p1['Rank'].replace('🏆 ', '')}</div>
-                    <div class="podium-name">{p1['Player']}</div>
-                </div>
-                <div class="podium-item rank-3">
-                    <img src="{p3['Profile']}" alt="{p3['Player']}">
-                    <div class="podium-rank">🥉 {p3['Rank'].replace('🏆 ', '')}</div>
-                    <div class="podium-name">{p3['Player']}</div>
-                </div>
-            </div>
-            """
-            st.markdown(podium_html, unsafe_allow_html=True)
-        # --- END: New Top 3 Players Display ---
-        
-        st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
-        st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
-        if rank_df.empty:
-            st.info("No ranking data available for this view.")
-        else:
-            for index, row in rank_df.iterrows():
-                profile_html = f'<a href="{row["Profile"]}" target="_blank"><img src="{row["Profile"]}" class="profile-image" alt="Profile"></a>' if row["Profile"] else ''
-                player_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Player']}</span>"
-                # matches styled 
-                matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(row['Matches'])} (Doubles: {int(row['Doubles Matches'])}, Singles: {int(row['Singles Matches'])})</span>"
-                points_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Points']:.1f}</span>"
-                trend_value_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['Recent Trend']}</span>"
-                st.markdown(f"""
-                <div class="ranking-row">
-                    <div class="rank-profile-player-group">
-                        <div class="rank-col">{row["Rank"]}</div>
-                        <div class="profile-col">{profile_html}</div>
-                        <div class="player-col">{player_styled}</div>
-                    </div>
-                    <div class="points-col">{points_value_styled}</div>
-                    <div class="win-percent-col">{row["Win %"]:.1f}%</div>
-                    <div class="matches-col">{matches_styled}</div>
-                    <div class="wins-col">{int(row["Wins"])}</div>
-                    <div class="losses-col">{int(row["Losses"])}</div>
-                    <div class="game-diff-avg-col">{row["Game Diff Avg"]:.2f}</div>
-                    <div class="games-won-col">{int(row["Games Won"])}</div>
-                    <div class="trend-col">{trend_value_styled}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.subheader("Player Insights")
-        selected_player_rankings = st.selectbox("Select a player for insights", [""] + players, index=0, key="insights_player_rankings_combined")
-        if selected_player_rankings:
-            display_player_insights(selected_player_rankings, players_df, filtered_matches, rank_df, partner_stats, key_prefix="rankings_combined_")
-        else:
-            st.info("Player insights will be available once a player is selected.")
-
-with tabs[1]:
-    st.header("Matches")
-    with st.expander("➕ Post New Match Result", expanded=False, icon="➡️"):
-        st.subheader("Enter Match Result")
-        match_type_new = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key=f"post_match_type_new_{st.session_state.form_key_suffix}")
-        available_players = sorted(players.copy() + ["Visitor"] if players else ["Visitor"])
-        if not available_players:
-            st.warning("No players available. Please add players in the Player Profile tab.")
-        else:
-            with st.form(key=f"new_match_form_{st.session_state.form_key_suffix}"):
-                if match_type_new == "Doubles":
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        p1_new = st.selectbox("Team 1 - Player 1", [""] + available_players, key=f"t1p1_new_post_{st.session_state.form_key_suffix}")
-                        p2_new = st.selectbox("Team 1 - Player 2", [""] + available_players, key=f"t1p2_new_post_{st.session_state.form_key_suffix}")
-                    with col2:
-                        p3_new = st.selectbox("Team 2 - Player 1", [""] + available_players, key=f"t2p1_new_post_{st.session_state.form_key_suffix}")
-                        p4_new = st.selectbox("Team 2 - Player 2", [""] + available_players, key=f"t2p2_new_post_{st.session_state.form_key_suffix}")
-                else:
-                    p1_new = st.selectbox("Player 1", [""] + available_players, key=f"s1p1_new_post_{st.session_state.form_key_suffix}")
-                    p3_new = st.selectbox("Player 2", [""] + available_players, key=f"s1p2_new_post_{st.session_state.form_key_suffix}")
-                    p2_new = ""
-                    p4_new = ""
-                set1_new = st.selectbox("Set 1 *", tennis_scores(), index=4, key=f"set1_new_post_{st.session_state.form_key_suffix}")
-                set2_new = st.selectbox("Set 2 *" if match_type_new == "Doubles" else "Set 2 (optional)", [""] + tennis_scores(), key=f"set2_new_post_{st.session_state.form_key_suffix}")
-                set3_new = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), key=f"set3_new_post_{st.session_state.form_key_suffix}")
-                winner_new = st.radio("Winner", ["Team 1", "Team 2", "Tie"], key=f"winner_new_post_{st.session_state.form_key_suffix}")
-                match_image_new = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"match_image_new_post_{st.session_state.form_key_suffix}")
-                st.markdown("*Required fields", unsafe_allow_html=True)
-                submit_button = st.form_submit_button("Submit Match")
-            if submit_button:
-                selected_players = [p1_new, p2_new, p3_new, p4_new] if match_type_new == "Doubles" else [p1_new, p3_new]
-                if "" in selected_players:
-                    st.error("Please select all players.")
-                elif len(selected_players) != len(set(selected_players)):
-                    st.error("Please select different players for each position.")
-                elif not set1_new:
-                    st.error("Set 1 score is required.")
-                elif match_type_new == "Doubles" and not set2_new:
-                    st.error("Set 2 score is required for doubles matches.")
-                else:
-                    new_match_date = datetime.now()
-                    match_id_new = generate_match_id(st.session_state.matches_df, new_match_date)
-                    image_url_new = ""
-                    if match_image_new:
-                        image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image_type="match")
-                    new_match_entry = {
-                        "match_id": match_id_new,
-                        "date": new_match_date,
-                        "match_type": match_type_new,
-                        "team1_player1": p1_new,
-                        "team1_player2": p2_new,
-                        "team2_player1": p3_new,
-                        "team2_player2": p4_new,
-                        "set1": set1_new,
-                        "set2": set2_new,
-                        "set3": set3_new,
-                        "winner": winner_new,
-                        "match_image_url": image_url_new
-                    }
-                    matches_to_save = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match_entry])], ignore_index=True)
-                    save_matches(matches_to_save)
-                    load_matches()  # Reload data from DB
-                    st.success("Match submitted.")
-                    st.session_state.form_key_suffix += 1
-                    st.rerun()
-
-    st.markdown("---")
-    st.subheader("Match History")
-
-    # Create columns for the filters
-    col1_filter, col2_filter = st.columns(2)
-    with col1_filter:
-        match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True, key="match_history_filter")
-    with col2_filter:
-        player_search = st.selectbox("Filter by Player", ["All Players"] + players, key="player_search_filter")
-
-    filtered_matches = st.session_state.matches_df.copy()
-
-    # Apply type filter first
-    if match_filter != "All":
-        filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
-
-    # Apply player search filter on the result
-    if player_search != "All Players":
-        filtered_matches = filtered_matches[
-            (filtered_matches['team1_player1'] == player_search) |
-            (filtered_matches['team1_player2'] == player_search) |
-            (filtered_matches['team2_player1'] == player_search) |
-            (filtered_matches['team2_player2'] == player_search)
+        # Birthday Banner Section
+        today = datetime.today()
+        today_day_month = today.strftime("%d-%m")
+        players_with_birthday = st.session_state.players_df[
+            st.session_state.players_df["birthday"].str.strip().str.match(r'^\d{2}-\d{2}$') & 
+            (st.session_state.players_df["birthday"] == today_day_month)
         ]
-
-    filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
-    filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
-    def format_match_players(row):
-        if row["match_type"] == "Singles":
-            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
-            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
-            if row["winner"] == "Team 1":
-                return f"{p1_styled} def. {p2_styled}"
-            else:
-                return f"{p2_styled} def. {p1_styled}"
-        else:
-            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
-            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player2']}</span>"
-            p3_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
-            p4_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player2']}</span>"
-            if row["winner"] == "Team 1":
-                return f"{p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
-            else:
-                return f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
-    def format_match_scores_and_date(row):
-        score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
-        score_text = ", ".join(score_parts_plain)
-        target_width = 30
-        padding_spaces = " " * (target_width - len(score_text))
-        score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
-        score_html = ", ".join(score_parts_html)
-        date_str = row['date'].strftime('%d %b %y')
-        return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
-    if filtered_matches.empty:
-        st.info("No matches found for the selected filters.")
-    else:
-        for index, row in filtered_matches.iterrows():
-            cols = st.columns([1, 8, 1])
-            if row["match_image_url"]:
-                with cols[0]:
-                    try:
-                        st.image(row["match_image_url"], width=50, caption="")
-                    except Exception as e:
-                        st.error(f"Error displaying match image: {str(e)}")
-            with cols[1]:
-                st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
-                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
-            with cols[2]:
-                share_link = generate_whatsapp_link(row)
-                st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
-            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.subheader("✏️ Manage Existing Match")
-    clean_match_options = []
-    for _, row in filtered_matches.iterrows():
-        score_plain = f"{row['set1']}"
-        if row['set2']:
-            score_plain += f", {row['set2']}"
-        if row['set3']:
-            score_plain += f", {row['set3']}"
-        date_plain = row['date'].strftime('%d %b %y %H:%M')
-        if row["match_type"] == "Singles":
-            desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
-        else:
-            desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
-        clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
-    # Use a unique key to avoid conflicts
-    selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_1")
-    if selected_match_to_edit:
-        selected_id = selected_match_to_edit.split(" | ")[-1]
-        row = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].iloc[0]
-        idx = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].index[0]
-        current_date_dt = pd.to_datetime(row["date"])
-        all_scores = [""] + tennis_scores()
-        set1_index = all_scores.index(row["set1"]) if row["set1"] in all_scores else 0
-        set2_index = all_scores.index(row["set2"]) if row["set2"] in all_scores else 0
-        set3_index = all_scores.index(row["set3"]) if row["set3"] in all_scores else 0
-        with st.expander("Edit Match Details"):
-            date_edit = st.date_input("Match Date", value=current_date_dt.date(), key=f"edit_date_{selected_id}")
-            time_edit = st.time_input("Match Time", value=current_date_dt.time(), key=f"edit_time_{selected_id}")
-            match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
-            p1_edit = st.selectbox("Team 1 - Player 1", [""] + available_players, index=available_players.index(row["team1_player1"]) + 1 if row["team1_player1"] in available_players else 0, key=f"edit_t1p1_{selected_id}")
-            p2_edit = st.selectbox("Team 1 - Player 2", [""] + available_players, index=available_players.index(row["team1_player2"]) + 1 if row["team1_player2"] in available_players else 0, key=f"edit_t1p2_{selected_id}")
-            p3_edit = st.selectbox("Team 2 - Player 1", [""] + available_players, index=available_players.index(row["team2_player1"]) + 1 if row["team2_player1"] in available_players else 0, key=f"edit_t2p1_{selected_id}")
-            p4_edit = st.selectbox("Team 2 - Player 2", [""] + available_players, index=available_players.index(row["team2_player2"]) + 1 if row["team2_player2"] in available_players else 0, key=f"edit_t2p2_{selected_id}")
-            set1_edit = st.selectbox("Set 1", all_scores, index=set1_index, key=f"edit_set1_{selected_id}")
-            set2_edit = st.selectbox("Set 2 (optional)", all_scores, index=set2_index, key=f"edit_set2_{selected_id}")
-            set3_edit = st.selectbox("Set 3 (optional)", all_scores, index=set3_index, key=f"edit_set3_{selected_id}")
-            winner_edit = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
-            match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
-            if st.button("Save Changes", key=f"save_match_changes_{selected_id}"):
-                image_url_edit = row["match_image_url"]
-                if match_image_edit:
-                    image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
-                combined_datetime = datetime.combine(date_edit, time_edit)
-                st.session_state.matches_df.loc[idx] = {
-                    "match_id": selected_id,
-                    "date": combined_datetime,
-                    "match_type": match_type_edit,
-                    "team1_player1": p1_edit,
-                    "team1_player2": p2_edit,
-                    "team2_player1": p3_edit,
-                    "team2_player2": p4_edit,
-                    "set1": set1_edit,
-                    "set2": set2_edit,
-                    "set3": set3_edit,
-                    "winner": winner_edit,
-                    "match_image_url": image_url_edit
-                }
-                save_matches(st.session_state.matches_df)
-                load_matches()
-                st.success("Match updated.")
-                st.rerun()
-            if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
-                delete_match_from_db(selected_id)
-                load_matches()
-                st.success("Match deleted.")
-                st.rerun()
-
-
-# Player Profile tab
-with tabs[2]:
-    st.header("Player Profile")
-    st.subheader("Manage & Edit Player Profiles")
-    with st.expander("Add, Edit or Remove Player", expanded=False, icon="➡️"):
-        st.markdown("##### Add New Player")
-        new_player = st.text_input("Player Name", key="new_player_input").strip()
-        if st.button("Add Player", key="add_player_button"):
-            if new_player:
-                if new_player.lower() == "visitor":
-                    st.warning("The name 'Visitor' is reserved and cannot be added.")
-                elif new_player in st.session_state.players_df["name"].tolist():
-                    st.warning(f"{new_player} already exists.")
+        if not players_with_birthday.empty:
+            for _, player in players_with_birthday.iterrows():
+                player_name = player["name"]
+                profile_image = player.get("profile_image_url", "")
+                if profile_image:
+                    profile_html = f'<a href="{profile_image}" target="_blank"><img src="{profile_image}" class="profile-image" alt="Profile"></a>'
                 else:
-                    new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
-                    st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_data])], ignore_index=True)
-                    save_players(st.session_state.players_df)
-                    load_players()
-                    st.success(f"{new_player} added.")
-                    st.rerun()
-            else:
-                st.warning("Please enter a player name to add.")
-        st.markdown("---")
-        st.markdown("##### Edit or Remove Existing Player")
-        players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in st.session_state.players_df.columns else []
-        if not players:
-            st.info("No players available. Add a new player to begin.")
-        else:
-            selected_player_manage = st.selectbox("Select Player", [""] + players, key="manage_player_select")
-            if selected_player_manage:
-                player_data = st.session_state.players_df[st.session_state.players_df["name"] == selected_player_manage].iloc[0]
-                current_image = player_data.get("profile_image_url", "")
-                current_birthday = player_data.get("birthday", "")
-                st.markdown(f"**Current Profile for {selected_player_manage}**")
-                if current_image:
-                    st.image(current_image, width=100)
-                else:
-                    st.write("No profile image set.")
-                profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
-                default_day = 1
-                default_month = 1
-                if current_birthday and isinstance(current_birthday, str) and re.match(r'^\d{2}-\d{2}$', current_birthday):
-                    try:
-                        day_str, month_str = current_birthday.split("-")
-                        default_day = int(day_str)
-                        default_month = int(month_str)
-                    except (ValueError, IndexError):
-                        pass
-                birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player_manage}")
-                birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player_manage}")
-                col_save, col_delete = st.columns(2)
-                with col_save:
-                    if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player_manage}"):
-                        image_url = current_image
-                        if profile_image:
-                            image_url = upload_image_to_supabase(profile_image, f"profile_{selected_player_manage}_{uuid.uuid4().hex[:6]}", image_type="profile")
-                        st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "profile_image_url"] = image_url
-                        st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
-                        save_players(st.session_state.players_df)
-                        load_players()
-                        st.success(f"Profile for {selected_player_manage} updated.")
-                        st.rerun()
-                with col_delete:
-                    if st.button("Remove Player", key=f"remove_player_{selected_player_manage}"):
-                        if selected_player_manage.lower() == "visitor":
-                            st.warning("The 'Visitor' player cannot be removed.")
-                        else:
-                            # Check for associated matches
-                            if st.session_state.matches_df[
-                                (st.session_state.matches_df["team1_player1"] == selected_player_manage) |
-                                (st.session_state.matches_df["team1_player2"] == selected_player_manage) |
-                                (st.session_state.matches_df["team2_player1"] == selected_player_manage) |
-                                (st.session_state.matches_df["team2_player2"] == selected_player_manage)
-                            ].shape[0] > 0:
-                                st.warning(f"Cannot delete {selected_player_manage} because they have associated matches. Delete their matches first.")
-                            else:
-                                delete_player_from_db(selected_player_manage)
-                                st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
-                                save_players(st.session_state.players_df)
-                                load_players()
-                                st.success(f"{selected_player_manage} removed.")
-                                st.rerun()
-    st.markdown("---")
-    st.subheader("Player Insights")
-    rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df)
-    if players:
-        display_player_insights(players, st.session_state.players_df, st.session_state.matches_df, rank_df_combined, partner_stats_combined, key_prefix="profile_")
-    else:
-        st.info("No players available for insights. Please add players above.")
-
-with tabs[3]:
-    st.header("Court Locations")
-    
-    # Icon URL (use a free tennis court icon; you can host it or use an external link)
-    court_icon_url = "https://img.icons8.com/color/48/000000/tennis.png"  # Example from Icons8; replace if needed
-    
-    # Arabian Ranches courts (as a list of dicts for name and URL)
-    ar_courts = [
-        {"name": "Alvorado 1 & 2", "url": "https://maps.google.com/?q=25.041792,55.259258"},
-        {"name": "Palmera 2", "url": "https://maps.app.goo.gl/CHimjtqQeCfU1d3W6"},
-        {"name": "Palmera 4", "url": "https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6"},
-        {"name": "Saheel", "url": "https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8"},
-        {"name": "Hattan", "url": "https://maps.app.goo.gl/fjGpeNzncyG1o34c7"},
-        {"name": "MLC Mirador La Colleccion", "url": "https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6"},
-        {"name": "Al Mahra", "url": "https://maps.app.goo.gl/zVivadvUsD6yyL2Y9"},
-        {"name": "Mirador", "url": "https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8"},
-        {"name": "Reem 1", "url": "https://maps.app.goo.gl/qKswqmb9Lqsni5RD7"},
-        {"name": "Reem 2", "url": "https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5"},
-        {"name": "Reem 3", "url": "https://maps.app.goo.gl/o8z9pHo8tSqTbEL39"},
-        {"name": "Alma", "url": "https://maps.app.goo.gl/BZNfScABbzb3osJ18"},
-    ]
-    
-    # Mira & Mira Oasis courts
-    mira_courts = [
-        {"name": "Mira 2", "url": "https://maps.app.goo.gl/JeVmwiuRboCnzhnb9"},
-        {"name": "Mira 4", "url": "https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A"},
-        {"name": "Mira 5 A & B", "url": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6"},
-        {"name": "Mira Oasis 1", "url": "https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8"},
-        {"name": "Mira Oasis 2", "url": "https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9"},
-        {"name": "Mira Oasis 3 A & B", "url": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9"},
-        {"name": "Mira Oasis 3 C", "url": "https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8"},
-    ]
-    
-    # Function to display courts in a grid
-    def display_courts(section_title, courts_list):
-        st.subheader(section_title)
-        num_cols = 3 if len(courts_list) > 6 else 2  # Responsive: 2-3 columns based on list length
-        for i in range(0, len(courts_list), num_cols):
-            cols = st.columns(num_cols)
-            for j, court in enumerate(courts_list[i:i+num_cols]):
-                with cols[j]:
-                    st.markdown(f"""
-                    <div class="court-card">
-                        <img src="{court_icon_url}" class="court-icon" alt="Tennis Court Icon">
-                        <h4>{court['name']}</h4>
-                        <a href="{court['url']}" target="_blank">View on Map</a>
-                    </div>
-                    """, unsafe_allow_html=True)
-    
-    # Display sections
-    with st.expander("Arabian Ranches Tennis Courts", expanded=False, icon="➡️"):
-        display_courts("", ar_courts)  # No extra title inside expander
-    with st.expander("Mira & Mira Oasis Tennis Courts", expanded=False, icon="➡️"):
-        display_courts("", mira_courts)
-
-        
-#-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
-
-
-with tabs[4]:
-    load_bookings()
-    #st.header("Court Bookings")
-    #st.markdown("<small><i>Plan and manage court bookings for upcoming matches.</i></small>", unsafe_allow_html=True)
-
-    # New Booking Form (Expandable)
-    #st.markdown("---")
-    st.subheader("Create New Booking")
-    with st.expander("Add New Booking", expanded=False, icon="➡️"):
-        with st.form(key=f"new_booking_form_{st.session_state.get('form_key_suffix', 0)}"):
-            date = st.date_input("Booking Date *", min_value=datetime.today())
-            hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
-            time = st.selectbox("Booking Time *", hours)
-            match_type = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True)
-            available_players = sorted([p for p in st.session_state.players_df["name"].tolist() if p != "Visitor"])
-            court_names = [court["name"] for court in ar_courts + mira_courts]
-            if match_type == "Doubles":
-                col1, col2 = st.columns(2)
-                with col1:
-                    p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key="t1p1")
-                    p2 = st.selectbox("Player 2 (optional)", [""] + available_players, key="t1p2")
-                with col2:
-                    p3 = st.selectbox("Player 3 (optional)", [""] + available_players, key="t2p1")
-                    p4 = st.selectbox("Player 4 (optional)", [""] + available_players, key="t2p2")
-            else:
-                p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key="s1p1")
-                p3 = st.selectbox("Player 2 (optional)", [""] + available_players, key="s1p2")
-                p2 = ""
-                p4 = ""
-            standby = st.selectbox("Standby Player (optional)", [""] + available_players, key="standby")
-            court_name = st.selectbox("Court Name *", [""] + court_names)
-            screenshot = st.file_uploader("Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"])
-            st.markdown("*Required fields", unsafe_allow_html=True)
-            submit_booking = st.form_submit_button("Submit Booking")
-            if submit_booking:
-                if not court_name:
-                    st.error("Court name is required.")
-                elif not date or not time:
-                    st.error("Booking date and time are required.")
-                else:
-                    selected_players = [p for p in [p1, p2, p3, p4, standby] if p]
-                    if match_type == "Doubles" and len(set(selected_players)) != len(selected_players):
-                        st.error("Please select different players for each position.")
-                    else:
-                        booking_id = str(uuid.uuid4())
-                        screenshot_url = ""
-                        if screenshot:
-                            screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking")
-                        time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
-                        new_booking = pd.DataFrame([{
-                            "booking_id": booking_id,
-                            "date": date,
-                            "time": time_24hr,
-                            "match_type": match_type,
-                            "court_name": court_name,
-                            "player1": p1,
-                            "player2": p2,
-                            "player3": p3,
-                            "player4": p4,
-                            "standby_player": standby if standby else "",
-                            "screenshot_url": screenshot_url
-                        }])
-                        try:
-                            st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, new_booking], ignore_index=True)
-                            expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
-                            bookings_to_save = st.session_state.bookings_df[expected_columns]
-                            save_bookings(bookings_to_save)
-                            load_bookings()
-                            st.success("Booking submitted.")
-                        except Exception as e:
-                            st.error(f"Failed to save booking: {str(e)}")
-                        st.session_state.form_key_suffix = st.session_state.get('form_key_suffix', 0) + 1
-                        st.rerun()
-
-    st.markdown("---")
-    st.subheader("Upcoming Bookings")
-    bookings_df = st.session_state.bookings_df.copy()
-    court_url_mapping = {court["name"]: court["url"] for court in ar_courts + mira_courts}
-    if bookings_df.empty:
-        st.info("No upcoming bookings found.")
-    else:
-        if 'standby_player' not in bookings_df.columns:
-            bookings_df['standby_player'] = ""
-        if 'standby' in bookings_df.columns:
-            bookings_df = bookings_df.drop(columns=['standby'])
-        if 'players' in bookings_df.columns:
-            bookings_df = bookings_df.drop(columns=['players'])
-        
-        bookings_df['datetime'] = pd.to_datetime(bookings_df['date'] + ' ' + bookings_df['time'], errors='coerce')
-        bookings_df = bookings_df.sort_values(by='datetime', ascending=True).reset_index(drop=True)
-        try:
-            rank_df, _ = calculate_rankings(st.session_state.matches_df)
-        except Exception as e:
-            rank_df = pd.DataFrame()
-            st.warning(f"Unable to load rankings for pairing suggestions: {str(e)}")
-
-        for _, row in bookings_df.iterrows():
-            players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
-            players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
-            standby_str = f"<span style='font-weight:bold; color:#fff500;'>{row['standby_player']}</span>" if 'standby_player' in row and row['standby_player'] else "None"
-            date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
-            time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
-            
-            court_url = court_url_mapping.get(row['court_name'], "#")
-            court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#fff500; text-decoration:none;'>{row['court_name']}</a>"
-
-            pairing_suggestion = ""
-            try:
-                if row['match_type'] == "Doubles" and len(players) == 4:
-                    suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
-                    if team1_odds is not None and team2_odds is not None:
-                        teams = suggested_pairing.split(' vs ')
-                        team1_players = teams[0].replace('Team 1: ', '')
-                        team2_players = teams[1].replace('Team 2: ', '')
-                        pairing_suggestion = (
-                            f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
-                            f"<span style='font-weight:bold;'>{team1_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
-                            f"<span style='font-weight:bold;'>{team2_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
-                        )
-                    else:
-                        pairing_suggestion = (
-                            f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
-                            f"<span style='font-weight:bold;'>{suggested_pairing}</span></div>"
-                        )
-                elif row['match_type'] == "Singles" and len(players) == 2:
-                    p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
-                    if p1_odds is not None:
-                        p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
-                        p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
-                        pairing_suggestion = (
-                            f"<div><strong style='color:white;'>Odds:</strong> "
-                            f"<span style='font-weight:bold;'>{p1_styled}</span> ({p1_odds:.1f}%) vs "
-                            f"<span style='font-weight:bold;'>{p2_styled}</span> ({p2_odds:.1f}%)</div>"
-                        )
-            except Exception as e:
-                pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
-
-            weekday = pd.to_datetime(row['date']).strftime('%a')
-            date_part = pd.to_datetime(row['date']).strftime('%d %b')
-            full_date = f"{weekday} , {date_part} , {time_ampm}"
-            court_name = row['court_name']
-            players_list = ""
-            if players:
-                players_list = "\n".join([f"{i+1}. *{p}*" for i, p in enumerate(players)])
-            standby_text = f"\nSTD. BY : *{row['standby_player']}*" if 'standby_player' in row and row['standby_player'] else ""
-            
-            plain_suggestion = ""
-            if pairing_suggestion and "Error" not in pairing_suggestion:
-                plain_suggestion = re.sub(r'<.*?>', '', pairing_suggestion).replace('Suggested Pairing: ', '').replace('Odds: ', '').strip()
-                plain_suggestion = f"\n\n*Suggested Pairing: {plain_suggestion}*"
-            
-            share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{plain_suggestion}\nCourt location : {court_url}"
-            encoded_text = urllib.parse.quote(share_text)
-            whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
-
-            booking_text = f"""
-            <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                <div><strong>Court:</strong> {court_name_html}</div>
-                <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
-                <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
-                <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
-                <div><strong>Players:</strong> {players_str}</div>
-                <div><strong>Standby Player:</strong> {standby_str}</div>
-                {pairing_suggestion}
-                <div style="margin-top: 10px;">
+                    profile_html = ''
+                share_text = f"Happy Birthday to {player_name}! 🎉🥳"
+                encoded_text = urllib.parse.quote(share_text)
+                whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
+                st.markdown(f"""
+                <div class="birthday-banner">
+                    {profile_html}
+                    Happy Birthday, {player_name}! 🎉🥳
                     <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp">
+                        Share
                     </a>
                 </div>
-            """
-
-            visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
-            screenshot_url = row["screenshot_url"] if row["screenshot_url"] and isinstance(row["screenshot_url"], str) else None
-            if screenshot_url:
-                visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
-            visuals_html += '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
-            booking_players = [row['player1'], row['player2'], row['player3'], row['player4'], row.get('standby_player', '')]
-            players_df = st.session_state.players_df
-            image_urls = []
-            placeholder_initials = []
-            for player_name in booking_players:
-                if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
-                    player_data = players_df[players_df["name"] == player_name]
-                    if not player_data.empty:
-                        img_url = player_data.iloc[0].get("profile_image_url")
-                        if img_url and isinstance(img_url, str) and img_url.strip():
-                            image_urls.append((player_name, img_url))
-                        else:
-                            placeholder_initials.append((player_name, player_name[0].upper()))
-            for player_name, img_url in image_urls:
-                visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
-            for player_name, initial in placeholder_initials:
-                visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
-            visuals_html += '</div></div>'
-            booking_text += visuals_html + '</div>'
-
-            try:
-                st.markdown(booking_text, unsafe_allow_html=True)
-            except Exception as e:
-                st.warning(f"Failed to render HTML for booking: {str(e)}")
-                st.markdown(f"""
-                **Court:** {court_name_html}  
-                **Date:** {date_str}  
-                **Time:** {time_ampm}  
-                **Match Type:** {row['match_type']}  
-                **Players:** {', '.join(players)}  
-                **Standby Player:** {row.get('standby_player', 'None')}  
-                {pairing_suggestion.replace('<div><strong style="color:white;">', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style="font-weight:bold; color:#fff500;">', '').replace('</span>', '')}
-                <a href="{whatsapp_link}" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:24px; vertical-align:middle; margin-top:10px;" alt="WhatsApp"></a>
                 """, unsafe_allow_html=True)
-                if screenshot_url:
-                    st.markdown(f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; cursor:pointer;" title="Click to view full-size"></a>', unsafe_allow_html=True)
-                if image_urls or placeholder_initials:
-                    cols = st.columns(len(image_urls) + len(placeholder_initials))
-                    col_idx = 0
-                    for player_name, img_url in image_urls:
-                        with cols[col_idx]:
-                            st.image(img_url, width=50, caption=player_name)
-                        col_idx += 1
-                    for player_name, initial in placeholder_initials:
-                        with cols[col_idx]:
-                            st.markdown(f"""
-                            <div style='width: 50px; height: 50px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;'>{initial}</div>
-                            <div style='text-align: center;'>{player_name}</div>
-                            """, unsafe_allow_html=True)
-                        col_idx += 1
 
-            st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
+        st.subheader(f"Rankings as of {datetime.now().strftime('%d/%m')}")
+        rank_tab_combined, rank_tab_doubles, rank_tab_singles = st.tabs(["Combined Rankings", "Doubles Rankings", "Singles Rankings"])
 
-    st.markdown("---")
-    st.subheader("✏️ Manage Existing Booking")
-    
-    if 'edit_booking_key' not in st.session_state:
-        st.session_state.edit_booking_key = 0
-    
-    unique_key = f"select_booking_to_edit_{st.session_state.edit_booking_key}"
-    
-    if bookings_df.empty:
-        st.info("No bookings available to manage.")
-    else:
-        booking_options = []
-        for _, row in bookings_df.iterrows():
-            date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
-            time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
-            players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
-            players_str = ", ".join(players) if players else "No players"
-            standby_str = row.get('standby_player', "None")
-            desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str} | Standby: {standby_str}"
-            booking_options.append(f"{desc} | Booking ID: {row['booking_id']}")
-        selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key=unique_key)
-        if selected_booking:
-            booking_id = selected_booking.split(" | Booking ID: ")[-1]
-            booking_row = bookings_df[bookings_df["booking_id"] == booking_id].iloc[0]
-            booking_idx = bookings_df[bookings_df["booking_id"] == booking_id].index[0]
-            with st.expander("Edit Booking Details", expanded=True):
-                date_edit = st.date_input("Booking Date *", value=pd.to_datetime(booking_row["date"]).date(), key=f"edit_booking_date_{booking_id}")
-                hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
-                current_time_ampm = datetime.strptime(booking_row["time"], "%H:%M").strftime("%-I:%M %p")
-                time_index = hours.index(current_time_ampm) if current_time_ampm in hours else 0
-                time_edit = st.selectbox("Booking Time *", hours, index=time_index, key=f"edit_booking_time_{booking_id}")
-                match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if booking_row["match_type"] == "Doubles" else 1, key=f"edit_booking_match_type_{booking_id}")
-                if match_type_edit == "Doubles":
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players, index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0, key=f"edit_t1p1_{booking_id}")
-                        p2_edit = st.selectbox("Player 2 (optional)", [""] + available_players, index=available_players.index(booking_row["player2"]) + 1 if booking_row["player2"] in available_players else 0, key=f"edit_t1p2_{booking_id}")
-                    with col2:
-                        p3_edit = st.selectbox("Player 3 (optional)", [""] + available_players, index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0, key=f"edit_t2p1_{booking_id}")
-                        p4_edit = st.selectbox("Player 4 (optional)", [""] + available_players, index=available_players.index(booking_row["player4"]) + 1 if booking_row["player4"] in available_players else 0, key=f"edit_t2p2_{booking_id}")
-                else:
-                    p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players, index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0, key=f"edit_s1p1_{booking_id}")
-                    p3_edit = st.selectbox("Player 2 (optional)", [""] + available_players, index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0, key=f"edit_s1p2_{booking_id}")
-                    p2_edit = ""
-                    p4_edit = ""
-                standby_initial_index = available_players.index(booking_row["standby_player"]) + 1 if "standby_player" in booking_row and row['standby_player'] in available_players else 0
-                standby_edit = st.selectbox("Standby Player (optional)", [""] + available_players, index=standby_initial_index, key=f"edit_standby_{booking_id}")
-                court_edit = st.selectbox("Court Name *", [""] + court_names, index=court_names.index(booking_row["court_name"]) + 1 if booking_row["court_name"] in court_names else 0, key=f"edit_court_{booking_id}")
-                screenshot_edit = st.file_uploader("Update Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_screenshot_{booking_id}")
-                st.markdown("*Required fields", unsafe_allow_html=True)
-                col_save, col_delete = st.columns(2)
-                with col_save:
-                    if st.button("Save Changes", key=f"save_booking_changes_{booking_id}"):
-                        if not court_edit:
-                            st.error("Court name is required.")
-                        elif not date_edit or not time_edit:
-                            st.error("Booking date and time are required.")
-                        else:
-                            selected_players_edit = [p for p in [p1_edit, p2_edit, p3_edit, p4_edit, standby_edit] if p]
-                            if match_type_edit == "Doubles" and len(set(selected_players_edit)) != len(selected_players_edit):
-                                st.error("Please select different players for each position.")
-                            else:
-                                screenshot_url_edit = booking_row["screenshot_url"]
-                                if screenshot_edit:
-                                    screenshot_url_edit = upload_image_to_supabase(screenshot_edit, booking_id, image_type="booking")
-                                time_24hr_edit = datetime.strptime(time_edit, "%I:%M %p").strftime("%H:%M")
-                                updated_booking = {
-                                    "booking_id": booking_id,
-                                    "date": date_edit,
-                                    "time": time_24hr_edit,
-                                    "match_type": match_type_edit,
-                                    "court_name": court_edit,
-                                    "player1": p1_edit,
-                                    "player2": p2_edit,
-                                    "player3": p3_edit,
-                                    "player4": p4_edit,
-                                    "standby_player": standby_edit if standby_edit else "",
-                                    "screenshot_url": screenshot_url_edit
-                                }
-                                st.session_state.bookings_df.loc[booking_idx] = updated_booking
-                                try:
-                                    expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
-                                    bookings_to_save = st.session_state.bookings_df[expected_columns]
-                                    save_bookings(bookings_to_save)
-                                    load_bookings()
-                                    st.success("Booking updated successfully.")
-                                except Exception as e:
-                                    st.error(f"Failed to save booking: {str(e)}")
-                                st.session_state.edit_booking_key += 1
-                                st.rerun()
-                with col_delete:
-                    if st.button("🗑️ Delete This Booking", key=f"delete_booking_{booking_id}"):
-                        try:
-                            delete_booking_from_db(booking_id)
-                            load_bookings()
-                            st.success("Booking deleted.")
-                        except Exception as e:
-                            st.error(f"Failed to delete booking: {str(e)}")
-                        st.session_state.edit_booking_key += 1
-                        st.rerun()
+        with rank_tab_combined:
+            if rank_df_combined.empty:
+                st.info("No rankings available yet. Play some matches to see rankings!")
+            else:
+                # Display Top 3 with images
+                st.markdown('<div class="top-3-container">', unsafe_allow_html=True)
+                cols = st.columns(3)
+                top_3 = rank_df_combined.head(3)
+                for i, player in top_3.iterrows():
+                    with cols[i]:
+                        rank_emoji = "🥇" if i == 0 else "🥈" if i == 1 else "🥉"
+                        profile_html = f'<a href="{player["Profile"]}" target="_blank"><img src="{player["Profile"]}" class="profile-image" alt="Profile" style="width:150px; height:150px; object-fit: cover; border-radius: 0;"></a>' if player["Profile"] else ''
+                        st.markdown(f"""
+                        <div class="top-player-card">
+                            <div class="rank-emoji">{rank_emoji}</div>
+                            {profile_html}
+                            <div class="player-name">{player['Player']}</div>
+                            <div class="player-points">{player['Points']:.1f} Points</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Display full rankings in card format
+                st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
+                st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
+                for _, player in rank_df_combined.iterrows():
+                    profile_html = f'<a href="{player["Profile"]}" target="_blank"><img src="{player["Profile"]}" class="profile-image" alt="Profile"></a>' if player["Profile"] else ''
+                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Player']}</span>"
+                    points_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Points']:.1f}</span>"
+                    win_percent_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Win %']:.1f}%</span>"
+                    matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Matches'])}</span>"
+                    wins_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Wins'])}</span>"
+                    losses_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Losses'])}</span>"
+                    games_won_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Games Won'])}</span>"
+                    game_diff_avg_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Game Diff Avg']:.2f}</span>"
+                    cumulative_game_diff_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Cumulative Game Diff'])}</span>"
+                    trend_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Recent Trend']}</span>"
+                    st.markdown(f"""
+                    <div class="ranking-row">
+                        <div class="rank-profile-player-group">
+                            <div class="rank-col">{player['Rank']}</div>
+                            <div class="profile-col">{profile_html}</div>
+                            <div class="player-col">{player_styled}</div>
+                        </div>
+                        <div class="points-col">{points_styled}</div>
+                        <div class="win-percent-col">{win_percent_styled}</div>
+                        <div class="matches-col">{matches_styled}</div>
+                        <div class="wins-col">{wins_styled}</div>
+                        <div class="losses-col">{losses_styled}</div>
+                        <div class="games-won-col">{games_won_styled}</div>
+                        <div class="game-diff-avg-col">{game_diff_avg_styled}</div>
+                        <div class="cumulative-game-diff-col">{cumulative_game_diff_styled}</div>
+                        <div class="trend-col">{trend_styled}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
+        with rank_tab_doubles:
+            if rank_df_doubles.empty:
+                st.info("No doubles rankings available yet.")
+            else:
+                # Display Top 3 with images for doubles
+                st.markdown('<div class="top-3-container">', unsafe_allow_html=True)
+                cols = st.columns(3)
+                top_3 = rank_df_doubles.head(3)
+                for i, player in top_3.iterrows():
+                    with cols[i]:
+                        rank_emoji = "🥇" if i == 0 else "🥈" if i == 1 else "🥉"
+                        profile_html = f'<a href="{player["Profile"]}" target="_blank"><img src="{player["Profile"]}" class="profile-image" alt="Profile" style="width:150px; height:150px; object-fit: cover; border-radius: 0;"></a>' if player["Profile"] else ''
+                        st.markdown(f"""
+                        <div class="top-player-card">
+                            <div class="rank-emoji">{rank_emoji}</div>
+                            {profile_html}
+                            <div class="player-name">{player['Player']}</div>
+                            <div class="player-points">{player['Points']:.1f} Points</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Display full doubles rankings
+                st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
+                st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
+                for _, player in rank_df_doubles.iterrows():
+                    profile_html = f'<a href="{player["Profile"]}" target="_blank"><img src="{player["Profile"]}" class="profile-image" alt="Profile"></a>' if player["Profile"] else ''
+                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Player']}</span>"
+                    points_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Points']:.1f}</span>"
+                    win_percent_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Win %']:.1f}%</span>"
+                    matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Matches'])}</span>"
+                    wins_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Wins'])}</span>"
+                    losses_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Losses'])}</span>"
+                    games_won_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Games Won'])}</span>"
+                    game_diff_avg_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Game Diff Avg']:.2f}</span>"
+                    cumulative_game_diff_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Cumulative Game Diff'])}</span>"
+                    trend_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Recent Trend']}</span>"
+                    st.markdown(f"""
+                    <div class="ranking-row">
+                        <div class="rank-profile-player-group">
+                            <div class="rank-col">{player['Rank']}</div>
+                            <div class="profile-col">{profile_html}</div>
+                            <div class="player-col">{player_styled}</div>
+                        </div>
+                        <div class="points-col">{points_styled}</div>
+                        <div class="win-percent-col">{win_percent_styled}</div>
+                        <div class="matches-col">{matches_styled}</div>
+                        <div class="wins-col">{wins_styled}</div>
+                        <div class="losses-col">{losses_styled}</div>
+                        <div class="games-won-col">{games_won_styled}</div>
+                        <div class="game-diff-avg-col">{game_diff_avg_styled}</div>
+                        <div class="cumulative-game-diff-col">{cumulative_game_diff_styled}</div>
+                        <div class="trend-col">{trend_styled}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
+        with rank_tab_singles:
+            if rank_df_singles.empty:
+                st.info("No singles rankings available yet.")
+            else:
+                # Display Top 3 with images for singles
+                st.markdown('<div class="top-3-container">', unsafe_allow_html=True)
+                cols = st.columns(3)
+                top_3 = rank_df_singles.head(3)
+                for i, player in top_3.iterrows():
+                    with cols[i]:
+                        rank_emoji = "🥇" if i == 0 else "🥈" if i == 1 else "🥉"
+                        profile_html = f'<a href="{player["Profile"]}" target="_blank"><img src="{player["Profile"]}" class="profile-image" alt="Profile" style="width:150px; height:150px; object-fit: cover; border-radius: 0;"></a>' if player["Profile"] else ''
+                        st.markdown(f"""
+                        <div class="top-player-card">
+                            <div class="rank-emoji">{rank_emoji}</div>
+                            {profile_html}
+                            <div class="player-name">{player['Player']}</div>
+                            <div class="player-points">{player['Points']:.1f} Points</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Display full singles rankings
+                st.markdown('<div class="rankings-table-container">', unsafe_allow_html=True)
+                st.markdown('<div class="rankings-table-scroll">', unsafe_allow_html=True)
+                for _, player in rank_df_singles.iterrows():
+                    profile_html = f'<a href="{player["Profile"]}" target="_blank"><img src="{player["Profile"]}" class="profile-image" alt="Profile"></a>' if player["Profile"] else ''
+                    player_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Player']}</span>"
+                    points_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Points']:.1f}</span>"
+                    win_percent_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Win %']:.1f}%</span>"
+                    matches_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Matches'])}</span>"
+                    wins_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Wins'])}</span>"
+                    losses_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Losses'])}</span>"
+                    games_won_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Games Won'])}</span>"
+                    game_diff_avg_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Game Diff Avg']:.2f}</span>"
+                    cumulative_game_diff_styled = f"<span style='font-weight:bold; color:#fff500;'>{int(player['Cumulative Game Diff'])}</span>"
+                    trend_styled = f"<span style='font-weight:bold; color:#fff500;'>{player['Recent Trend']}</span>"
+                    st.markdown(f"""
+                    <div class="ranking-row">
+                        <div class="rank-profile-player-group">
+                            <div class="rank-col">{player['Rank']}</div>
+                            <div class="profile-col">{profile_html}</div>
+                            <div class="player-col">{player_styled}</div>
+                        </div>
+                        <div class="points-col">{points_styled}</div>
+                        <div class="win-percent-col">{win_percent_styled}</div>
+                        <div class="matches-col">{matches_styled}</div>
+                        <div class="wins-col">{wins_styled}</div>
+                        <div class="losses-col">{losses_styled}</div>
+                        <div class="games-won-col">{games_won_styled}</div>
+                        <div class="game-diff-avg-col">{game_diff_avg_styled}</div>
+                        <div class="cumulative-game-diff-col">{cumulative_game_diff_styled}</div>
+                        <div class="trend-col">{trend_styled}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
+        # Download PDF Button
+        pdf_data = generate_pdf_reportlab(rank_df_combined, rank_df_doubles, rank_df_singles)
+        st.download_button(
+            label="Download Rankings PDF",
+            data=pdf_data,
+            file_name=f"ar_tennis_rankings_{datetime.now().strftime('%Y%m%d')}.pdf",
+            mime="application/pdf"
+        )
 
+        # Community Stats
+        st.subheader("Community Stats")
+        display_community_stats(st.session_state.matches_df)
 
-# ... End of Tab[4]-------------------------------------------------------------------------
-
-
-
-#--MINI TOURNEY -----------------------
-with tabs[5]:
-    st.header("Mini Tournaments Organiser")
-    st.markdown("<small><i>Assignments of teams and courts are done randomly.</i></small>", unsafe_allow_html=True)
-
-    # Input fields
-    st.subheader("Tournament Setup")
-    tournament_name = st.text_input("Enter Tournament Name")
-    num_teams = st.number_input("Enter number of teams", min_value=2, step=1)
-    num_courts = st.number_input("Enter number of courts", min_value=1, step=1)
-    enter_names = st.radio("Do you want to enter team names?", ("No", "Yes"))
-    enter_court_names = st.radio("Do you want to enter court names?", ("No", "Yes"))
-
-    # Collect team names early, depending on radio selection
-    team_names = []
-    if num_teams and enter_names == "Yes":
-        st.subheader("Enter Team Names")
-        if num_teams <= 8:
-            cols = st.columns(2)
-        elif num_teams <= 16:
-            cols = st.columns(3)
+        # Nerd Stats Chart
+        st.subheader("Nerd Stats")
+        fig = create_nerd_stats_chart(rank_df_combined)
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
         else:
-            cols = st.columns(4)
+            st.info("No data available for Nerd Stats chart.")
 
-        for i in range(num_teams):
-            col = cols[i % len(cols)]
-            with col:
-                name = st.text_input(f"Team {i+1} Name", key=f"team_{i}")
-                team_names.append(name if name else f"Team {i+1}")
-    else:
-        team_names = [f"Team {i+1}" for i in range(num_teams)]
-
-    # Optional court names
-    court_names = []
-    if num_courts and enter_court_names == "Yes":
-        st.subheader("Enter Court Names")
-        for i in range(num_courts):
-            key = f"court_name_{i}"
-            if key not in st.session_state:
-                st.session_state[key] = f"Court {i+1}"
-            name = st.text_input(f"Court {i+1} Name", key=key)
-            court_names.append(name)
-    else:
-        court_names = [f"Court {i+1}" for i in range(num_courts)]
-
-    # Optional tournament rules input
-    rules = st.text_area("Enter Tournament Rules (optional, supports rich text)")
-
-    if num_teams % 2 != 0:
-        st.warning("Number of teams is odd. Consider adding one more team for even distribution.")
-
-    if st.button("Organise Tournament"):
-        random.shuffle(team_names)
-
-        base = len(team_names) // num_courts
-        extras = len(team_names) % num_courts
-
-        courts = []
-        idx = 0
-        for i in range(num_courts):
-            num = base + (1 if i < extras else 0)
-            if num % 2 != 0:
-                if i < num_courts - 1:
-                    num += 1
-            court_teams = team_names[idx:idx+num]
-            courts.append((court_names[i], court_teams))
-            idx += num
+    elif tab_index == 1:
+        st.header("Matches")
+        st.subheader("Submit New Match")
+        with st.expander("Add New Match", expanded=False, icon="➡️"):
+            with st.form(key=f"new_match_form_{st.session_state.form_key_suffix}"):
+                date_new = st.date_input("Match Date", value=datetime.today())
+                time_new = st.time_input("Match Time", value=datetime.now().time())
+                match_type_new = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True)
+                available_players_new = [""] + available_players + ["Visitor"]
+                all_scores_new = [""] + tennis_scores()
+                if match_type_new == "Doubles":
+                    col1_new, col2_new = st.columns(2)
+                    with col1_new:
+                        p1_new = st.selectbox("Team 1 - Player 1", available_players_new, key="t1p1_new")
+                        p2_new = st.selectbox("Team 1 - Player 2", available_players_new, key="t1p2_new")
+                    with col2_new:
+                        p3_new = st.selectbox("Team 2 - Player 1", available_players_new, key="t2p1_new")
+                        p4_new = st.selectbox("Team 2 - Player 2", available_players_new, key="t2p2_new")
+                else:
+                    p1_new = st.selectbox("Team 1 - Player 1", available_players_new, key="s1p1_new")
+                    p3_new = st.selectbox("Team 2 - Player 1", available_players_new, key="s1p2_new")
+                    p2_new = ""
+                    p4_new = ""
+                set1_new = st.selectbox("Set 1", all_scores_new, key="set1_new")
+                set2_new = st.selectbox("Set 2 (optional)", all_scores_new, key="set2_new")
+                set3_new = st.selectbox("Set 3 (optional)", all_scores_new, key="set3_new")
+                winner_new = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], key="winner_new")
+                match_image_new = st.file_uploader("Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key="match_image_new")
+                submit_match_new = st.form_submit_button("Submit Match")
+                if submit_match_new:
+                    if not set1_new:
+                        st.error("Set 1 score is required.")
+                    elif match_type_new == "Doubles" and (not p1_new or not p2_new or not p3_new or not p4_new):
+                        st.error("All four players are required for doubles.")
+                    elif match_type_new == "Singles" and (not p1_new or not p3_new):
+                        st.error("Both players are required for singles.")
+                    else:
+                        selected_players_new = [p for p in [p1_new, p2_new, p3_new, p4_new] if p]
+                        if len(set(selected_players_new)) != len(selected_players_new):
+                            st.error("Please select different players for each position.")
+                        else:
+                            combined_datetime_new = datetime.combine(date_new, time_new)
+                            match_id_new = generate_match_id(st.session_state.matches_df, combined_datetime_new)
+                            image_url_new = ""
+                            if match_image_new:
+                                image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image_type="match")
+                            new_match_entry = {
+                                "match_id": match_id_new,
+                                "date": combined_datetime_new,
+                                "match_type": match_type_new,
+                                "team1_player1": p1_new,
+                                "team1_player2": p2_new,
+                                "team2_player1": p3_new,
+                                "team2_player2": p4_new,
+                                "set1": set1_new,
+                                "set2": set2_new,
+                                "set3": set3_new,
+                                "winner": winner_new,
+                                "match_image_url": image_url_new
+                            }
+                            st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match_entry])], ignore_index=True)
+                            save_matches(st.session_state.matches_df)
+                            load_matches()
+                            st.success("Match submitted.")
+                            st.session_state.form_key_suffix += 1
+                            st.rerun()
 
         st.markdown("---")
-        st.subheader("Court Assignments")
+        st.subheader("Match History")
 
-        # Dynamic court layout with styled boxes matching ar.py colors
-        primary_color = "#07314f"  # From ar.py gradient
-        accent_color = "#fff500"   # Optic yellow from ar.py
+        # Create columns for the filters
+        col1_filter, col2_filter = st.columns(2)
+        with col1_filter:
+            match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True, key="match_history_filter")
+        with col2_filter:
+            player_search = st.selectbox("Filter by Player", ["All Players"] + available_players, key="player_search_filter")
 
-        if len(courts) <= 4:
-            num_cols = len(courts)
-        elif len(courts) <= 8:
-            num_cols = 4
-        elif len(courts) <= 12:
-            num_cols = 3
+        filtered_matches = st.session_state.matches_df.copy()
+
+        # Apply type filter first
+        if match_filter != "All":
+            filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
+
+        # Apply player search filter on the result
+        if player_search != "All Players":
+            filtered_matches = filtered_matches[
+                (filtered_matches['team1_player1'] == player_search) |
+                (filtered_matches['team1_player2'] == player_search) |
+                (filtered_matches['team2_player1'] == player_search) |
+                (filtered_matches['team2_player2'] == player_search)
+            ]
+
+        filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
+        filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
+
+        def format_match_players(row):
+            if row["match_type"] == "Singles":
+                p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
+                p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
+                if row["winner"] == "Team 1":
+                    return f"{p1_styled} def. {p2_styled}"
+                else:
+                    return f"{p2_styled} def. {p1_styled}"
+            else:
+                p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
+                p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player2']}</span>"
+                p3_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
+                p4_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player2']}</span>"
+                if row["winner"] == "Team 1":
+                    return f"{p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
+                else:
+                    return f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
+
+        def format_match_scores_and_date(row):
+            score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
+            score_text = ", ".join(score_parts_plain)
+            target_width = 30
+            padding_spaces = " " * (target_width - len(score_text))
+            score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
+            score_html = ", ".join(score_parts_html)
+            date_str = row['date'].strftime('%d %b %y')
+            return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
+
+        def generate_whatsapp_link(row):
+            if row["match_type"] == "Singles":
+                if row["winner"] == "Team 1":
+                    desc = f"{row['team1_player1']} def. {row['team2_player1']}"
+                else:
+                    desc = f"{row['team2_player1']} def. {row['team1_player1']}"
+            else:
+                if row["winner"] == "Team 1":
+                    desc = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}"
+                else:
+                    desc = f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+            score = f"{row['set1']}"
+            if row['set2']:
+                score += f", {row['set2']}"
+            if row['set3']:
+                score += f", {row['set3']}"
+            date = row['date'].strftime('%d %b %y')
+            share_text = f"{desc} | {score} | {date}"
+            encoded_text = urllib.parse.quote(share_text)
+            return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
+
+        if filtered_matches.empty:
+            st.info("No matches found for the selected filters.")
         else:
-            num_cols = 2
+            for index, row in filtered_matches.iterrows():
+                cols = st.columns([1, 8, 1])
+                if row["match_image_url"]:
+                    with cols[0]:
+                        try:
+                            st.image(row["match_image_url"], width=50, caption="")
+                        except Exception as e:
+                            st.error(f"Error displaying match image: {str(e)}")
+                with cols[1]:
+                    st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
+                    st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
+                with cols[2]:
+                    share_link = generate_whatsapp_link(row)
+                    st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
+                st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
 
-        for i in range(0, len(courts), num_cols):
-            row = st.columns(num_cols)
-            for j, court in enumerate(courts[i:i + num_cols]):
-                with row[j]:
-                    court_name, teams = court
-                    st.markdown(
-                        f"""
-                        <div style='border: 2px solid {accent_color}; border-radius: 12px; padding: 15px; margin: 10px 0; background-color: {primary_color}; color: white;'>
-                            <img src='court.png' width='100%' style='border-radius: 8px;' />
-                            <h4 style='text-align:center; color:{accent_color};'>{court_name}</h4>
-                            <ul>{''.join(f'<li><b style="color:{accent_color};">{team}</b></li>' for team in teams)}</ul>
+        st.markdown("---")
+        st.subheader("✏️ Manage Existing Match")
+        clean_match_options = []
+        for _, row in filtered_matches.iterrows():
+            score_plain = f"{row['set1']}"
+            if row['set2']:
+                score_plain += f", {row['set2']}"
+            if row['set3']:
+                score_plain += f", {row['set3']}"
+            date_plain = row['date'].strftime('%d %b %y %H:%M')
+            if row["match_type"] == "Singles":
+                desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
+            else:
+                desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+            clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
+        # Use a unique key to avoid conflicts
+        selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_1")
+        if selected_match_to_edit:
+            selected_id = selected_match_to_edit.split(" | ")[-1]
+            row = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].iloc[0]
+            idx = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].index[0]
+            current_date_dt = pd.to_datetime(row["date"])
+            all_scores = [""] + tennis_scores()
+            set1_index = all_scores.index(row["set1"]) if row["set1"] in all_scores else 0
+            set2_index = all_scores.index(row["set2"]) if row["set2"] in all_scores else 0
+            set3_index = all_scores.index(row["set3"]) if row["set3"] in all_scores else 0
+            with st.expander("Edit Match Details"):
+                date_edit = st.date_input("Match Date", value=current_date_dt.date(), key=f"edit_date_{selected_id}")
+                time_edit = st.time_input("Match Time", value=current_date_dt.time(), key=f"edit_time_{selected_id}")
+                match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
+                p1_edit = st.selectbox("Team 1 - Player 1", [""] + available_players, index=available_players.index(row["team1_player1"]) + 1 if row["team1_player1"] in available_players else 0, key=f"edit_t1p1_{selected_id}")
+                p2_edit = st.selectbox("Team 1 - Player 2", [""] + available_players, index=available_players.index(row["team1_player2"]) + 1 if row["team1_player2"] in available_players else 0, key=f"edit_t1p2_{selected_id}")
+                p3_edit = st.selectbox("Team 2 - Player 1", [""] + available_players, index=available_players.index(row["team2_player1"]) + 1 if row["team2_player1"] in available_players else 0, key=f"edit_t2p1_{selected_id}")
+                p4_edit = st.selectbox("Team 2 - Player 2", [""] + available_players, index=available_players.index(row["team2_player2"]) + 1 if row["team2_player2"] in available_players else 0, key=f"edit_t2p2_{selected_id}")
+                set1_edit = st.selectbox("Set 1", all_scores, index=set1_index, key=f"edit_set1_{selected_id}")
+                set2_edit = st.selectbox("Set 2 (optional)", all_scores, index=set2_index, key=f"edit_set2_{selected_id}")
+                set3_edit = st.selectbox("Set 3 (optional)", all_scores, index=set3_index, key=f"edit_set3_{selected_id}")
+                winner_edit = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
+                match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
+                if st.button("Save Changes", key=f"save_match_changes_{selected_id}"):
+                    image_url_edit = row["match_image_url"]
+                    if match_image_edit:
+                        image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
+                    combined_datetime = datetime.combine(date_edit, time_edit)
+                    st.session_state.matches_df.loc[idx] = {
+                        "match_id": selected_id,
+                        "date": combined_datetime,
+                        "match_type": match_type_edit,
+                        "team1_player1": p1_edit,
+                        "team1_player2": p2_edit,
+                        "team2_player1": p3_edit,
+                        "team2_player2": p4_edit,
+                        "set1": set1_edit,
+                        "set2": set2_edit,
+                        "set3": set3_edit,
+                        "winner": winner_edit,
+                        "match_image_url": image_url_edit
+                    }
+                    save_matches(st.session_state.matches_df)
+                    load_matches()
+                    st.success("Match updated.")
+                    st.rerun()
+                if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
+                    delete_match_from_db(selected_id)
+                    load_matches()
+                    st.success("Match deleted.")
+                    st.rerun()
+
+    elif tab_index == 2:
+        st.header("Player Profile")
+        st.subheader("Manage & Edit Player Profiles")
+        with st.expander("Add, Edit or Remove Player", expanded=False, icon="➡️"):
+            st.markdown("##### Add New Player")
+            new_player = st.text_input("Player Name", key="new_player_input").strip()
+            if st.button("Add Player", key="add_player_button"):
+                if new_player:
+                    if new_player.lower() == "visitor":
+                        st.warning("The name 'Visitor' is reserved and cannot be added.")
+                    elif new_player in st.session_state.players_df["name"].tolist():
+                        st.warning(f"{new_player} already exists.")
+                    else:
+                        new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
+                        st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_data])], ignore_index=True)
+                        save_players(st.session_state.players_df)
+                        load_players()
+                        st.success(f"{new_player} added.")
+                        st.rerun()
+                else:
+                    st.warning("Please enter a player name to add.")
+            st.markdown("---")
+            st.markdown("##### Edit or Remove Existing Player")
+            players = sorted([p for p in st.session_state.players_df["name"].dropna().tolist() if p != "Visitor"]) if "name" in st.session_state.players_df.columns else []
+            if not players:
+                st.info("No players available. Add a new player to begin.")
+            else:
+                selected_player_manage = st.selectbox("Select Player", [""] + players, key="manage_player_select")
+                if selected_player_manage:
+                    player_data = st.session_state.players_df[st.session_state.players_df["name"] == selected_player_manage].iloc[0]
+                    current_image = player_data.get("profile_image_url", "")
+                    current_birthday = player_data.get("birthday", "")
+                    st.markdown(f"**Current Profile for {selected_player_manage}**")
+                    if current_image:
+                        st.image(current_image, width=100)
+                    else:
+                        st.write("No profile image set.")
+                    profile_image = st.file_uploader("Upload New Profile Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"profile_image_upload_{selected_player_manage}")
+                    default_day = 1
+                    default_month = 1
+                    if current_birthday and isinstance(current_birthday, str) and re.match(r'^\d{2}-\d{2}$', current_birthday):
+                        try:
+                            day_str, month_str = current_birthday.split("-")
+                            default_day = int(day_str)
+                            default_month = int(month_str)
+                        except (ValueError, IndexError):
+                            pass
+                    birthday_day = st.number_input("Birthday Day", min_value=1, max_value=31, value=default_day, key=f"birthday_day_{selected_player_manage}")
+                    birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player_manage}")
+                    col_save, col_delete = st.columns(2)
+                    with col_save:
+                        if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player_manage}"):
+                            image_url = current_image
+                            if profile_image:
+                                image_url = upload_image_to_supabase(profile_image, f"profile_{selected_player_manage}_{uuid.uuid4().hex[:6]}", image_type="profile")
+                            st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "profile_image_url"] = image_url
+                            st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
+                            save_players(st.session_state.players_df)
+                            load_players()
+                            st.success(f"Profile for {selected_player_manage} updated.")
+                            st.rerun()
+                    with col_delete:
+                        if st.button("Remove Player", key=f"remove_player_{selected_player_manage}"):
+                            if selected_player_manage.lower() == "visitor":
+                                st.warning("The 'Visitor' player cannot be removed.")
+                            else:
+                                # Check for associated matches
+                                if st.session_state.matches_df[
+                                    (st.session_state.matches_df["team1_player1"] == selected_player_manage) |
+                                    (st.session_state.matches_df["team1_player2"] == selected_player_manage) |
+                                    (st.session_state.matches_df["team2_player1"] == selected_player_manage) |
+                                    (st.session_state.matches_df["team2_player2"] == selected_player_manage)
+                                ].shape[0] > 0:
+                                    st.warning(f"Cannot delete {selected_player_manage} because they have associated matches. Delete their matches first.")
+                                else:
+                                    delete_player_from_db(selected_player_manage)
+                                    st.session_state.players_df = st.session_state.players_df[st.session_state.players_df["name"] != selected_player_manage].reset_index(drop=True)
+                                    save_players(st.session_state.players_df)
+                                    load_players()
+                                    st.success(f"{selected_player_manage} removed.")
+                                    st.rerun()
+        st.markdown("---")
+        st.subheader("Player Insights")
+        if available_players:
+            display_player_insights(available_players, st.session_state.players_df, st.session_state.matches_df, rank_df_combined, partner_stats_combined, key_prefix="profile_")
+        else:
+            st.info("No players available for insights. Please add players above.")
+
+    elif tab_index == 3:
+        st.header("Court Locations")
+        
+        # Icon URL (use a free tennis court icon; you can host it or use an external link)
+        court_icon_url = "https://img.icons8.com/color/48/000000/tennis.png"  # Example from Icons8; replace if needed
+        
+        # Arabian Ranches courts (as a list of dicts for name and URL)
+        ar_courts = [
+            {"name": "Alvorado 1 & 2", "url": "https://maps.google.com/?q=25.041792,55.259258"},
+            {"name": "Palmera 2", "url": "https://maps.app.goo.gl/CHimjtqQeCfU1d3W6"},
+            {"name": "Palmera 4", "url": "https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6"},
+            {"name": "Saheel", "url": "https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8"},
+            {"name": "Hattan", "url": "https://maps.app.goo.gl/fjGpeNzncyG1o34c7"},
+            {"name": "MLC Mirador La Colleccion", "url": "https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6"},
+            {"name": "Al Mahra", "url": "https://maps.app.goo.gl/zVivadvUsD6yyL2Y9"},
+            {"name": "Mirador", "url": "https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8"},
+            {"name": "Reem 1", "url": "https://maps.app.goo.gl/qKswqmb9Lqsni5RD7"},
+            {"name": "Reem 2", "url": "https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5"},
+            {"name": "Reem 3", "url": "https://maps.app.goo.gl/o8z9pHo8tSqTbEL39"},
+            {"name": "Alma", "url": "https://maps.app.goo.gl/BZNfScABbzb3osJ18"},
+        ]
+        
+        # Mira & Mira Oasis courts
+        mira_courts = [
+            {"name": "Mira 2", "url": "https://maps.app.goo.gl/JeVmwiuRboCnzhnb9"},
+            {"name": "Mira 4", "url": "https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A"},
+            {"name": "Mira 5 A & B", "url": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6"},
+            {"name": "Mira Oasis 1", "url": "https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8"},
+            {"name": "Mira Oasis 2", "url": "https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9"},
+            {"name": "Mira Oasis 3 A & B", "url": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9"},
+            {"name": "Mira Oasis 3 C", "url": "https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8"},
+        ]
+        
+        # Function to display courts in a grid
+        def display_courts(section_title, courts_list):
+            st.subheader(section_title)
+            num_cols = 3 if len(courts_list) > 6 else 2  # Responsive: 2-3 columns based on list length
+            for i in range(0, len(courts_list), num_cols):
+                cols = st.columns(num_cols)
+                for j, court in enumerate(courts_list[i:i+num_cols]):
+                    with cols[j]:
+                        st.markdown(f"""
+                        <div class="court-card">
+                            <img src="{court_icon_url}" class="court-icon" alt="Tennis Court Icon">
+                            <h4>{court['name']}</h4>
+                            <a href="{court['url']}" target="_blank">View on Map</a>
                         </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
+                        """, unsafe_allow_html=True)
+        
+        # Display sections
+        with st.expander("Arabian Ranches Tennis Courts", expanded=False, icon="➡️"):
+            display_courts("", ar_courts)  # No extra title inside expander
+        with st.expander("Mira & Mira Oasis Tennis Courts", expanded=False, icon="➡️"):
+            display_courts("", mira_courts)
 
-        if rules:
-            st.subheader("Tournament Rules")
-            st.markdown(rules, unsafe_allow_html=True)
+    elif tab_index == 4:
+        load_bookings()
+        #st.header("Court Bookings")
+        #st.markdown("<small><i>Plan and manage court bookings for upcoming matches.</i></small>", unsafe_allow_html=True)
 
-        # PDF Generation
-        def generate_pdf(tournament_name, courts, rules):
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", 'B', 16)
-            pdf.cell(0, 10, tournament_name, ln=True, align="C")
-            pdf.ln(10)
+        # New Booking Form (Expandable)
+        #st.markdown("---")
+        st.subheader("Create New Booking")
+        with st.expander("Add New Booking", expanded=False, icon="➡️"):
+            with st.form(key=f"new_booking_form_{st.session_state.get('form_key_suffix', 0)}"):
+                date = st.date_input("Booking Date *", min_value=datetime.today())
+                hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
+                time = st.selectbox("Booking Time *", hours)
+                match_type = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True)
+                available_players = sorted([p for p in st.session_state.players_df["name"].tolist() if p != "Visitor"])
+                court_names = [court["name"] for court in ar_courts + mira_courts]
+                if match_type == "Doubles":
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key="t1p1")
+                        p2 = st.selectbox("Player 2 (optional)", [""] + available_players, key="t1p2")
+                    with col2:
+                        p3 = st.selectbox("Player 3 (optional)", [""] + available_players, key="t2p1")
+                        p4 = st.selectbox("Player 4 (optional)", [""] + available_players, key="t2p2")
+                else:
+                    p1 = st.selectbox("Player 1 (optional)", [""] + available_players, key="s1p1")
+                    p3 = st.selectbox("Player 2 (optional)", [""] + available_players, key="s1p2")
+                    p2 = ""
+                    p4 = ""
+                standby = st.selectbox("Standby Player (optional)", [""] + available_players, key="standby")
+                court_name = st.selectbox("Court Name *", [""] + court_names)
+                screenshot = st.file_uploader("Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"])
+                st.markdown("*Required fields", unsafe_allow_html=True)
+                submit_booking = st.form_submit_button("Submit Booking")
+                if submit_booking:
+                    if not court_name:
+                        st.error("Court name is required.")
+                    elif not date or not time:
+                        st.error("Booking date and time are required.")
+                    else:
+                        selected_players = [p for p in [p1, p2, p3, p4, standby] if p]
+                        if match_type == "Doubles" and len(set(selected_players)) != len(selected_players):
+                            st.error("Please select different players for each position.")
+                        else:
+                            booking_id = str(uuid.uuid4())
+                            screenshot_url = ""
+                            if screenshot:
+                                screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking")
+                            time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
+                            new_booking = pd.DataFrame([{
+                                "booking_id": booking_id,
+                                "date": date,
+                                "time": time_24hr,
+                                "match_type": match_type,
+                                "court_name": court_name,
+                                "player1": p1,
+                                "player2": p2,
+                                "player3": p3,
+                                "player4": p4,
+                                "standby_player": standby if standby else "",
+                                "screenshot_url": screenshot_url
+                            }])
+                            try:
+                                st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, new_booking], ignore_index=True)
+                                expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+                                bookings_to_save = st.session_state.bookings_df[expected_columns]
+                                save_bookings(bookings_to_save)
+                                load_bookings()
+                                st.success("Booking submitted.")
+                            except Exception as e:
+                                st.error(f"Failed to save booking: {str(e)}")
+                            st.session_state.form_key_suffix = st.session_state.get('form_key_suffix', 0) + 1
+                            st.rerun()
 
-            pdf.set_font("Arial", '', 12)
-            for court_name, teams in courts:
-                pdf.set_text_color(7, 49, 79)  # RGB for #07314f
-                pdf.cell(0, 10, court_name, ln=True)
-                pdf.set_text_color(0, 0, 0)
-                for team in teams:
-                    pdf.cell(10)
-                    pdf.cell(0, 10, f"- {team}", ln=True)
-                pdf.ln(2)
+        st.markdown("---")
+        st.subheader("Upcoming Bookings")
+        bookings_df = st.session_state.bookings_df.copy()
+        court_url_mapping = {court["name"]: court["url"] for court in ar_courts + mira_courts}
+        if bookings_df.empty:
+            st.info("No upcoming bookings found.")
+        else:
+            if 'standby_player' not in bookings_df.columns:
+                bookings_df['standby_player'] = ""
+            if 'standby' in bookings_df.columns:
+                bookings_df = bookings_df.drop(columns=['standby'])
+            if 'players' in bookings_df.columns:
+                bookings_df = bookings_df.drop(columns=['players'])
+            
+            bookings_df['datetime'] = pd.to_datetime(bookings_df['date'] + ' ' + bookings_df['time'], errors='coerce')
+            bookings_df = bookings_df.sort_values(by='datetime', ascending=True).reset_index(drop=True)
+            try:
+                rank_df, _ = calculate_rankings(st.session_state.matches_df)
+            except Exception as e:
+                rank_df = pd.DataFrame()
+                st.warning(f"Unable to load rankings for pairing suggestions: {str(e)}")
+
+            for _, row in bookings_df.iterrows():
+                players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
+                players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
+                standby_str = f"<span style='font-weight:bold; color:#fff500;'>{row['standby_player']}</span>" if 'standby_player' in row and row['standby_player'] else "None"
+                date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
+                time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
+                
+                court_url = court_url_mapping.get(row['court_name'], "#")
+                court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#fff500; text-decoration:none;'>{row['court_name']}</a>"
+
+                pairing_suggestion = ""
+                try:
+                    if row['match_type'] == "Doubles" and len(players) == 4:
+                        suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
+                        if team1_odds is not None and team2_odds is not None:
+                            teams = suggested_pairing.split(' vs ')
+                            team1_players = teams[0].replace('Team 1: ', '')
+                            team2_players = teams[1].replace('Team 2: ', '')
+                            pairing_suggestion = (
+                                f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
+                                f"<span style='font-weight:bold;'>{team1_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
+                                f"<span style='font-weight:bold;'>{team2_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
+                            )
+                        else:
+                            pairing_suggestion = (
+                                f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
+                                f"<span style='font-weight:bold;'>{suggested_pairing}</span></div>"
+                            )
+                    elif row['match_type'] == "Singles" and len(players) == 2:
+                        p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
+                        if p1_odds is not None:
+                            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
+                            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
+                            pairing_suggestion = (
+                                f"<div><strong style='color:white;'>Odds:</strong> "
+                                f"<span style='font-weight:bold;'>{p1_styled}</span> ({p1_odds:.1f}%) vs "
+                                f"<span style='font-weight:bold;'>{p2_styled}</span> ({p2_odds:.1f}%)</div>"
+                            )
+                except Exception as e:
+                    pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
+
+                weekday = pd.to_datetime(row['date']).strftime('%a')
+                date_part = pd.to_datetime(row['date']).strftime('%d %b')
+                full_date = f"{weekday} , {date_part} , {time_ampm}"
+                court_name = row['court_name']
+                players_list = ""
+                if players:
+                    players_list = "\n".join([f"{i+1}. *{p}*" for i, p in enumerate(players)])
+                standby_text = f"\nSTD. BY : *{row['standby_player']}*" if 'standby_player' in row and row['standby_player'] else ""
+                
+                plain_suggestion = ""
+                if pairing_suggestion and "Error" not in pairing_suggestion:
+                    plain_suggestion = re.sub(r'<.*?>', '', pairing_suggestion).replace('Suggested Pairing: ', '').replace('Odds: ', '').strip()
+                    plain_suggestion = f"\n\n*Suggested Pairing: {plain_suggestion}*"
+                
+                share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{plain_suggestion}\nCourt location : {court_url}"
+                encoded_text = urllib.parse.quote(share_text)
+                whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
+
+                booking_text = f"""
+                <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+                    <div><strong>Court:</strong> {court_name_html}</div>
+                    <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
+                    <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
+                    <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
+                    <div><strong>Players:</strong> {players_str}</div>
+                    <div><strong>Standby Player:</strong> {standby_str}</div>
+                    {pairing_suggestion}
+                    <div style="margin-top: 10px;">
+                        <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp">
+                        </a>
+                    </div>
+                """
+
+                visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
+                screenshot_url = row["screenshot_url"] if row["screenshot_url"] and isinstance(row["screenshot_url"], str) else None
+                if screenshot_url:
+                    visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
+                visuals_html += '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
+                booking_players = [row['player1'], row['player2'], row['player3'], row['player4'], row.get('standby_player', '')]
+                players_df = st.session_state.players_df
+                image_urls = []
+                placeholder_initials = []
+                for player_name in booking_players:
+                    if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
+                        player_data = players_df[players_df["name"] == player_name]
+                        if not player_data.empty:
+                            img_url = player_data.iloc[0].get("profile_image_url")
+                            if img_url and isinstance(img_url, str) and img_url.strip():
+                                image_urls.append((player_name, img_url))
+                            else:
+                                placeholder_initials.append((player_name, player_name[0].upper()))
+                for player_name, img_url in image_urls:
+                    visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
+                for player_name, initial in placeholder_initials:
+                    visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
+                visuals_html += '</div></div>'
+                booking_text += visuals_html + '</div>'
+
+                try:
+                    st.markdown(booking_text, unsafe_allow_html=True)
+                except Exception as e:
+                    st.warning(f"Failed to render HTML for booking: {str(e)}")
+                    st.markdown(f"""
+                    **Court:** {court_name_html}  
+                    **Date:** {date_str}  
+                    **Time:** {time_ampm}  
+                    **Match Type:** {row['match_type']}  
+                    **Players:** {', '.join(players)}  
+                    **Standby Player:** {row.get('standby_player', 'None')}  
+                    {pairing_suggestion.replace('<div><strong style="color:white;">', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style="font-weight:bold; color:#fff500;">', '').replace('</span>', '')}
+                    <a href="{whatsapp_link}" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:24px; vertical-align:middle; margin-top:10px;" alt="WhatsApp"></a>
+                    """, unsafe_allow_html=True)
+                    if screenshot_url:
+                        st.markdown(f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; cursor:pointer;" title="Click to view full-size"></a>', unsafe_allow_html=True)
+                    if image_urls or placeholder_initials:
+                        cols = st.columns(len(image_urls) + len(placeholder_initials))
+                        col_idx = 0
+                        for player_name, img_url in image_urls:
+                            with cols[col_idx]:
+                                st.image(img_url, width=50, caption=player_name)
+                            col_idx += 1
+                        for player_name, initial in placeholder_initials:
+                            with cols[col_idx]:
+                                st.markdown(f"""
+                                <div style='width: 50px; height: 50px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;'>{initial}</div>
+                                <div style='text-align: center;'>{player_name}</div>
+                                """, unsafe_allow_html=True)
+                            col_idx += 1
+
+                st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
+
+       st.markdown("---")
+        st.subheader("✏️ Manage Existing Booking")
+        
+        if 'edit_booking_key' not in st.session_state:
+            st.session_state.edit_booking_key = 0
+        
+        unique_key = f"select_booking_to_edit_{st.session_state.edit_booking_key}"
+        
+        if bookings_df.empty:
+            st.info("No bookings available to manage.")
+        else:
+            booking_options = []
+            for _, row in bookings_df.iterrows():
+                date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
+                time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
+                players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
+                players_str = ", ".join(players) if players else "No players"
+                standby_str = row.get('standby_player', "None")
+                desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str} | Standby: {standby_str}"
+                booking_options.append(f"{desc} | Booking ID: {row['booking_id']}")
+            selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key=unique_key)
+            if selected_booking:
+                booking_id = selected_booking.split(" | Booking ID: ")[-1]
+                booking_row = bookings_df[bookings_df["booking_id"] == booking_id].iloc[0]
+                booking_idx = bookings_df[bookings_df["booking_id"] == booking_id].index[0]
+                with st.expander("Edit Booking Details", expanded=True):
+                    date_edit = st.date_input("Booking Date *", value=pd.to_datetime(booking_row["date"]).date(), key=f"edit_booking_date_{booking_id}")
+                    hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
+                    current_time_ampm = datetime.strptime(booking_row["time"], "%H:%M").strftime("%-I:%M %p")
+                    time_index = hours.index(current_time_ampm) if current_time_ampm in hours else 0
+                    time_edit = st.selectbox("Booking Time *", hours, index=time_index, key=f"edit_booking_time_{booking_id}")
+                    match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if booking_row["match_type"] == "Doubles" else 1, key=f"edit_booking_match_type_{booking_id}")
+                    if match_type_edit == "Doubles":
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players, index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0, key=f"edit_t1p1_{booking_id}")
+                            p2_edit = st.selectbox("Player 2 (optional)", [""] + available_players, index=available_players.index(booking_row["player2"]) + 1 if booking_row["player2"] in available_players else 0, key=f"edit_t1p2_{booking_id}")
+                        with col2:
+                            p3_edit = st.selectbox("Player 3 (optional)", [""] + available_players, index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0, key=f"edit_t2p1_{booking_id}")
+                            p4_edit = st.selectbox("Player 4 (optional)", [""] + available_players, index=available_players.index(booking_row["player4"]) + 1 if booking_row["player4"] in available_players else 0, key=f"edit_t2p2_{booking_id}")
+                    else:
+                        p1_edit = st.selectbox("Player 1 (optional)", [""] + available_players, index=available_players.index(booking_row["player1"]) + 1 if booking_row["player1"] in available_players else 0, key=f"edit_s1p1_{booking_id}")
+                        p3_edit = st.selectbox("Player 2 (optional)", [""] + available_players, index=available_players.index(booking_row["player3"]) + 1 if booking_row["player3"] in available_players else 0, key=f"edit_s1p2_{booking_id}")
+                        p2_edit = ""
+                        p4_edit = ""
+                    standby_initial_index = available_players.index(booking_row["standby_player"]) + 1 if "standby_player" in booking_row and row['standby_player'] in available_players else 0
+                    standby_edit = st.selectbox("Standby Player (optional)", [""] + available_players, index=standby_initial_index, key=f"edit_standby_{booking_id}")
+                    court_edit = st.selectbox("Court Name *", [""] + court_names, index=court_names.index(booking_row["court_name"]) + 1 if booking_row["court_name"] in court_names else 0, key=f"edit_court_{booking_id}")
+                    screenshot_edit = st.file_uploader("Update Booking Screenshot (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_screenshot_{booking_id}")
+                    st.markdown("*Required fields", unsafe_allow_html=True)
+                    col_save, col_delete = st.columns(2)
+                    with col_save:
+                        if st.button("Save Changes", key=f"save_booking_changes_{booking_id}"):
+                            if not court_edit:
+                                st.error("Court name is required.")
+                            elif not date_edit or not time_edit:
+                                st.error("Booking date and time are required.")
+                            else:
+                                selected_players_edit = [p for p in [p1_edit, p2_edit, p3_edit, p4_edit, standby_edit] if p]
+                                if match_type_edit == "Doubles" and len(set(selected_players_edit)) != len(selected_players_edit):
+                                    st.error("Please select different players for each position.")
+                                else:
+                                    screenshot_url_edit = booking_row["screenshot_url"]
+                                    if screenshot_edit:
+                                        screenshot_url_edit = upload_image_to_supabase(screenshot_edit, booking_id, image_type="booking")
+                                    time_24hr_edit = datetime.strptime(time_edit, "%I:%M %p").strftime("%H:%M")
+                                    updated_booking = {
+                                        "booking_id": booking_id,
+                                        "date": date_edit,
+                                        "time": time_24hr_edit,
+                                        "match_type": match_type_edit,
+                                        "court_name": court_edit,
+                                        "player1": p1_edit,
+                                        "player2": p2_edit,
+                                        "player3": p3_edit,
+                                        "player4": p4_edit,
+                                        "standby_player": standby_edit if standby_edit else "",
+                                        "screenshot_url": screenshot_url_edit
+                                    }
+                                    st.session_state.bookings_df.loc[booking_idx] = updated_booking
+                                    try:
+                                        expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+                                        bookings_to_save = st.session_state.bookings_df[expected_columns]
+                                        save_bookings(bookings_to_save)
+                                        load_bookings()
+                                        st.success("Booking updated successfully.")
+                                    except Exception as e:
+                                        st.error(f"Failed to save booking: {str(e)}")
+                                    st.session_state.edit_booking_key += 1
+                                    st.rerun()
+                    with col_delete:
+                        if st.button("🗑️ Delete This Booking", key=f"delete_booking_{booking_id}"):
+                            try:
+                                delete_booking_from_db(booking_id)
+                                load_bookings()
+                                st.success("Booking deleted.")
+                            except Exception as e:
+                                st.error(f"Failed to delete booking: {str(e)}")
+                            st.session_state.edit_booking_key += 1
+                            st.rerun()
+
+    elif tab_index == 5:
+        st.header("Mini Tournaments Organiser")
+        st.markdown("<small><i>Assignments of teams and courts are done randomly.</i></small>", unsafe_allow_html=True)
+
+        # Input fields
+        st.subheader("Tournament Setup")
+        tournament_name = st.text_input("Enter Tournament Name")
+        num_teams = st.number_input("Enter number of teams", min_value=2, step=1)
+        num_courts = st.number_input("Enter number of courts", min_value=1, step=1)
+        enter_names = st.radio("Do you want to enter team names?", ("No", "Yes"))
+
+        enter_court_names = st.radio("Do you want to enter court names?", ("No", "Yes"))
+
+        # Collect team names early, depending on radio selection
+        team_names = []
+        if num_teams and enter_names == "Yes":
+            st.subheader("Enter Team Names")
+            if num_teams <= 8:
+                cols = st.columns(2)
+            elif num_teams <= 16:
+                cols = st.columns(3)
+            else:
+                cols = st.columns(4)
+
+            for i in range(num_teams):
+                col = cols[i % len(cols)]
+                with col:
+                    name = st.text_input(f"Team {i+1} Name", key=f"team_{i}")
+                    team_names.append(name if name else f"Team {i+1}")
+        else:
+            team_names = [f"Team {i+1}" for i in range(num_teams)]
+
+        # Optional court names
+        court_names = []
+        if num_courts and enter_court_names == "Yes":
+            st.subheader("Enter Court Names")
+            for i in range(num_courts):
+                key = f"court_name_{i}"
+                if key not in st.session_state:
+                    st.session_state[key] = f"Court {i+1}"
+                name = st.text_input(f"Court {i+1} Name", key=key)
+                court_names.append(name)
+        else:
+            court_names = [f"Court {i+1}" for i in range(num_courts)]
+
+        # Optional tournament rules input
+        rules = st.text_area("Enter Tournament Rules (optional, supports rich text)")
+
+        if num_teams % 2 != 0:
+            st.warning("Number of teams is odd. Consider adding one more team for even distribution.")
+
+        if st.button("Organise Tournament"):
+            random.shuffle(team_names)
+
+            base = len(team_names) // num_courts
+            extras = len(team_names) % num_courts
+
+            courts = []
+            idx = 0
+            for i in range(num_courts):
+                num = base + (1 if i < extras else 0)
+                if num % 2 != 0:
+                    if i < num_courts - 1:
+                        num += 1
+                court_teams = team_names[idx:idx+num]
+                courts.append((court_names[i], court_teams))
+                idx += num
+
+            st.markdown("---")
+            st.subheader("Court Assignments")
+
+            # Dynamic court layout with styled boxes matching ar.py colors
+            primary_color = "#07314f"  # From ar.py gradient
+            accent_color = "#fff500"   # Optic yellow from ar.py
+
+            if len(courts) <= 4:
+                num_cols = len(courts)
+            elif len(courts) <= 8:
+                num_cols = 4
+            elif len(courts) <= 12:
+                num_cols = 3
+            else:
+                num_cols = 2
+
+            for i in range(0, len(courts), num_cols):
+                row = st.columns(num_cols)
+                for j, court in enumerate(courts[i:i + num_cols]):
+                    with row[j]:
+                        court_name, teams = court
+                        st.markdown(
+                            f"""
+                            <div style='border: 2px solid {accent_color}; border-radius: 12px; padding: 15px; margin: 10px 0; background-color: {primary_color}; color: white;'>
+                                <img src='court.png' width='100%' style='border-radius: 8px;' />
+                                <h4 style='text-align:center; color:{accent_color};'>{court_name}</h4>
+                                <ul>{''.join(f'<li><b style="color:{accent_color};">{team}</b></li>' for team in teams)}</ul>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
 
             if rules:
-                pdf.ln(5)
-                pdf.set_font("Arial", 'B', 14)
-                pdf.cell(0, 10, "Tournament Rules", ln=True)
-                pdf.set_font("Arial", '', 11)
-                for line in rules.splitlines():
-                    pdf.multi_cell(0, 8, line)
+                st.subheader("Tournament Rules")
+                st.markdown(rules, unsafe_allow_html=True)
 
-            return pdf.output(dest='S').encode('latin-1')
+            # PDF Generation
+            def generate_pdf(tournament_name, courts, rules):
+                pdf = FPDF()
+                pdf.add_page()
+                pdf.set_font("Arial", 'B', 16)
+                pdf.cell(0, 10, tournament_name, ln=True, align="C")
+                pdf.ln(10)
 
-        pdf_bytes = generate_pdf(tournament_name, courts, rules)
-        st.download_button(
-            label="Download PDF",
-            data=pdf_bytes,
-            file_name=f"{tournament_name or 'tournament'}.pdf",
-            mime='application/pdf'
-        )
-        #----MINI TOURNEY-------
+                pdf.set_font("Arial", '', 12)
+                for court_name, teams in courts:
+                    pdf.set_text_color(7, 49, 79)  # RGB for #07314f
+                    pdf.cell(0, 10, court_name, ln=True)
+                    pdf.set_text_color(0, 0, 0)
+                    for team in teams:
+                        pdf.cell(10)
+                        pdf.cell(0, 10, f"- {team}", ln=True)
+                    pdf.ln(2)
 
+                if rules:
+                    pdf.ln(5)
+                    pdf.set_font("Arial", 'B', 14)
+                    pdf.cell(0, 10, "Tournament Rules", ln=True)
+                    pdf.set_font("Arial", '', 11)
+                    for line in rules.splitlines():
+                        pdf.multi_cell(0, 8, line)
+
+                return pdf.output(dest='S').encode('latin-1')
+
+            pdf_bytes = generate_pdf(tournament_name, courts, rules)
+            st.download_button(
+                label="Download PDF",
+                data=pdf_bytes,
+                file_name=f"{tournament_name or 'tournament'}.pdf",
+                mime='application/pdf'
+            )
 
 #st.markdown("---")
 # Backup Download Button
