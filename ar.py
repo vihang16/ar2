@@ -1714,7 +1714,7 @@ with tabs[0]:
         filtered_matches = matches.copy()
         rank_df, partner_stats = calculate_rankings(filtered_matches)
         current_date_formatted = datetime.now().strftime("%d/%m")
-        st.subheader(f"Rankings as of {current_date_formatted}")
+        #st.subheader(f"Rankings as of {current_date_formatted}")
 
         # --- START: New Top 3 Players Display ---
         if not rank_df.empty and len(rank_df) >= 3:
