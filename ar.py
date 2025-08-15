@@ -2242,7 +2242,7 @@ with tabs[4]:
     #st.markdown("<small><i>Plan and manage court bookings for upcoming matches.</i></small>", unsafe_allow_html=True)
 
     # New Booking Form (Expandable)
-    st.markdown("---")
+    #st.markdown("---")
     st.subheader("Create New Booking")
     with st.expander("Add New Booking", expanded=False, icon="➡️"):
         with st.form(key=f"new_booking_form_{st.session_state.get('form_key_suffix', 0)}"):
