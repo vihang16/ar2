@@ -2062,8 +2062,8 @@ with tabs[1]:
 
 # Player Profile tab
 with tabs[2]:
-    st.header("Player Profile")
-    st.subheader("Manage & Edit Player Profiles")
+    #st.header("Player Profile")
+    st.subheader("Add or Edit Player Profiles")
     with st.expander("Add, Edit or Remove Player", expanded=False, icon="➡️"):
         st.markdown("##### Add New Player")
         new_player = st.text_input("Player Name", key="new_player_input").strip()
