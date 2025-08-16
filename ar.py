@@ -1284,7 +1284,7 @@ def generate_whatsapp_link(row):
     # Format scores with bolding and date
     scores_list = [f'*{s.replace("-", ":")}*' for s in [row['set1'], row['set2'], row['set3']] if s]
     scores_str = " ".join(scores_list)
-    date_str = row['date'].strftime('%d %b %y')
+    date_str = row['date'].strftime('%A, %d %b')
 
     # Create the text to be shared
     share_text = f"*{winner_str} def. {loser_str}*\nSet scores {scores_str} on {date_str}"
@@ -1963,7 +1963,7 @@ with tabs[1]:
         padding_spaces = " " * (target_width - len(score_text))
         score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
         score_html = ", ".join(score_parts_html)
-        date_str = row['date'].strftime('%d %b %y')
+        date_str = row['date'].strftime('%A, %d %b')
         return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
 
     if filtered_matches.empty:
@@ -2308,7 +2308,7 @@ with tabs[4]:
             players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
             players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
             standby_str = f"<span style='font-weight:bold; color:#fff500;'>{row['standby_player']}</span>" if 'standby_player' in row and row['standby_player'] else "None"
-            date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
+            date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
             time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
             
             court_url = court_url_mapping.get(row['court_name'], "#")
@@ -2365,8 +2365,8 @@ with tabs[4]:
     
             booking_text = f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
                 <div><strong>Court:</strong> {court_name_html}</div>
+                <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
                 <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
                 <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
                 <div><strong>Players:</strong> {players_str}</div>
@@ -2447,7 +2447,7 @@ with tabs[4]:
     else:
         booking_options = []
         for _, row in bookings_df.iterrows():
-            date_str = pd.to_datetime(row['date']).strftime('%d %b %y')
+            date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
             time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
             players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
             players_str = ", ".join(players) if players else "No players"
