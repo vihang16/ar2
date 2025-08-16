@@ -2365,8 +2365,8 @@ with tabs[4]:
     
             booking_text = f"""
             <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                <div><strong>Court:</strong> {court_name_html}</div>
                 <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
+                <div><strong>Court:</strong> {court_name_html}</div>
                 <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
                 <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
                 <div><strong>Players:</strong> {players_str}</div>
