@@ -2062,8 +2062,8 @@ with tabs[1]:
 
 # Player Profile tab
 with tabs[2]:
-    #st.header("Player Profile")
-    st.subheader("Add or Edit Player Profiles")
+    st.header("Player Profile")
+    #st.subheader("Add or Edit Player Profiles")
     with st.expander("Add, Edit or Remove Player", expanded=False, icon="➡️"):
         st.markdown("##### Add New Player")
         new_player = st.text_input("Player Name", key="new_player_input").strip()
@@ -2143,7 +2143,7 @@ with tabs[2]:
                                 st.success(f"{selected_player_manage} removed.")
                                 st.rerun()
     st.markdown("---")
-    st.subheader("Player Insights")
+    st.header("Player Insights")
     rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df)
     if players:
         display_player_insights(players, st.session_state.players_df, st.session_state.matches_df, rank_df_combined, partner_stats_combined, key_prefix="profile_")
