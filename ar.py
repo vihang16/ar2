@@ -2400,7 +2400,7 @@ with tabs[4]:
             for player_name, img_url in image_urls:
                 visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
             for player_name, initial in placeholder_initials:
-                visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
+                visuals_html += f'<div title="{player_name}" style="width: 80px; height: 80px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
             visuals_html += '</div></div>'
             booking_text += visuals_html + '</div>'
     
