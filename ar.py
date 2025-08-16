@@ -1972,7 +1972,7 @@ with tabs[1]:
     def format_match_scores_and_date(row):
         score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
         score_text = ", ".join(score_parts_plain)
-        target_width = 20
+        target_width = 23
         padding_spaces = " " * (target_width - len(score_text))
         score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
         score_html = ", ".join(score_parts_html)
