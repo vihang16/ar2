@@ -34,6 +34,7 @@ import zipfile
 import io
 from datetime import datetime
 import urllib.parse
+import requests
 
 
 # Set the page title
@@ -493,6 +494,19 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
         
 def tennis_scores():
     return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
+
+
+
+def download_image(url):
+    """Download image bytes from a public Supabase URL."""
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            return response.content
+    except Exception as e:
+        st.error(f"Failed to download {url}: {e}")
+    return None
+
 
 def get_quarter(month):
     if 1 <= month <= 3:
