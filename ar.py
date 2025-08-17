@@ -2295,6 +2295,7 @@ with tabs[3]:
 
 
 
+
 with tabs[4]:
     load_bookings()
     with st.expander("Add New Booking", expanded=False, icon="➡️"):
@@ -2360,7 +2361,6 @@ with tabs[4]:
                                 bookings_to_save[col] = bookings_to_save[col].replace("", None)
                             save_bookings(bookings_to_save)
                             load_bookings()
-                            st.write(f"New booking added: {new_booking}")
                             st.success("Booking added successfully.")
                             st.session_state.form_key_suffix += 1
                             st.rerun()
@@ -2383,22 +2383,12 @@ with tabs[4]:
         if 'players' in bookings_df.columns:
             bookings_df = bookings_df.drop(columns=['players'])
         
-        # Debug: Log raw data
-        st.write(f"Raw date values: {bookings_df['date'].tolist()}")
-        st.write(f"Raw time values: {bookings_df['time'].tolist()}")
-        
         # Create datetime column
         bookings_df['datetime'] = pd.to_datetime(
             bookings_df['date'].astype(str) + ' ' + bookings_df['time'],
             errors='coerce',
             utc=True
         ).dt.tz_convert('Asia/Dubai')
-        
-        # Debug: Log datetime and invalid rows
-        st.write(f"Datetime column: {bookings_df['datetime'].tolist()}")
-        nat_rows = bookings_df[bookings_df['datetime'].isna()]
-        if not nat_rows.empty:
-            st.warning(f"Found {len(nat_rows)} rows with invalid datetime values: {nat_rows[['booking_id', 'date', 'time']].to_dict('records')}")
         
         # Filter upcoming bookings
         upcoming_bookings = bookings_df[
@@ -2463,7 +2453,6 @@ with tabs[4]:
                 except Exception as e:
                     pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
                     plain_suggestion = f"\n*Suggestion: Error calculating: {str(e)}*"
-                    st.write(f"Pairing suggestion error for booking {row['booking_id']}: {str(e)}")
     
                 weekday = pd.to_datetime(row['date']).strftime('%a')
                 date_part = pd.to_datetime(row['date']).strftime('%d %b')
@@ -2517,15 +2506,10 @@ with tabs[4]:
                 visuals_html += '</div></div>'
                 booking_text += visuals_html + '</div>'
     
-                # Debug: Log HTML and WhatsApp link
-                st.write(f"Booking {row['booking_id']} HTML: {booking_text[:200]}...")  # Truncated for brevity
-                st.write(f"WhatsApp link for {row['booking_id']}: {whatsapp_link}")
-    
                 try:
                     st.markdown(booking_text, unsafe_allow_html=True)
                 except Exception as e:
                     st.warning(f"Failed to render HTML for booking {row['booking_id']}: {str(e)}")
-                    # Simplified fallback rendering
                     st.markdown(f"""
                     **Court:** {court_name_html}  
                     **Date:** {date_str}  
@@ -2561,9 +2545,6 @@ with tabs[4]:
                                 """, unsafe_allow_html=True)
                             col_idx += 1
     
-                # Debug: Log booking details
-                st.write(f"Booking {row['booking_id']}: Players={players}, Standby={row.get('standby_player', 'None')}, Screenshot={screenshot_url}")
-    
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
     
     st.markdown("---")
@@ -2584,7 +2565,7 @@ with tabs[4]:
             for _, row in bookings_df.iterrows():
                 date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
                 time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
-                players = [p for p in [row['player1'], row['player2'], 'player3', 'player4'] if p]
+                players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
                 players_str = ", ".join(players) if players else "No players"
                 standby_str = row.get('standby_player', "None")
                 desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str} | Standby: {standby_str}"
@@ -2651,27 +2632,14 @@ with tabs[4]:
                                         "screenshot_url": screenshot_url_edit if screenshot_url_edit else None
                                     }
                                     try:
-                                        st.write(f"Before update - bookings_df for {booking_id}: {st.session_state.bookings_df[st.session_state.bookings_df['booking_id'] == booking_id].to_dict('records')}")
                                         st.session_state.bookings_df.loc[booking_idx] = {**updated_booking, "date": date_edit.isoformat()}
-                                        st.write(f"Updated booking: {updated_booking}")
                                         expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
                                         bookings_to_save = st.session_state.bookings_df[expected_columns].copy()
                                         for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
                                             bookings_to_save[col] = bookings_to_save[col].replace("", None)
                                         bookings_to_save = bookings_to_save.drop_duplicates(subset=['booking_id'], keep='last')
-                                        st.write(f"DataFrame to save: {bookings_to_save[bookings_to_save['booking_id'] == booking_id].to_dict('records')}")
                                         save_bookings(bookings_to_save)
                                         load_bookings()
-                                        refreshed_row = st.session_state.bookings_df[st.session_state.bookings_df['booking_id'] == booking_id]
-                                        if not refreshed_row.empty:
-                                            st.write(f"Refreshed booking row: {refreshed_row.to_dict('records')}")
-                                        else:
-                                            st.error(f"Booking {booking_id} not found after refresh.")
-                                        try:
-                                            supabase_response = supabase.table("bookings").select("*").eq("booking_id", booking_id).execute()
-                                            st.write(f"Supabase query result: {supabase_response.data}")
-                                        except Exception as e:
-                                            st.error(f"Failed to query Supabase: {str(e)}")
                                         st.success("Booking updated successfully.")
                                         st.session_state.edit_booking_key += 1
                                         st.rerun()
@@ -2691,6 +2659,7 @@ with tabs[4]:
                                 st.error(f"Failed to delete booking: {str(e)}")
                                 st.session_state.edit_booking_key += 1
                                 st.rerun()
+
 
 
 
