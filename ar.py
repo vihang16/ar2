@@ -2554,7 +2554,7 @@ with tabs[4]:
                                 """, unsafe_allow_html=True)
                             col_idx += 1
     
-            st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
+            #st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
     
     st.markdown("---")
     
