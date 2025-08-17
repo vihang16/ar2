@@ -2341,7 +2341,7 @@ with tabs[4]:
                         time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
                         new_booking = {
                             "booking_id": booking_id,
-                            "date": date.isoformat(),  # Convert to ISO string for Supabase
+                            "date": date.isoformat(),
                             "time": time_24hr,
                             "match_type": match_type,
                             "court_name": court,
@@ -2383,8 +2383,28 @@ with tabs[4]:
         if 'players' in bookings_df.columns:
             bookings_df = bookings_df.drop(columns=['players'])
         
-        bookings_df['datetime'] = pd.to_datetime(bookings_df['date'].astype(str) + ' ' + bookings_df['time'], errors='coerce')
-        upcoming_bookings = bookings_df[bookings_df['datetime'] >= pd.Timestamp.now(tz='Asia/Dubai')].sort_values('datetime')
+        # Debug: Log raw date and time values
+        st.write(f"Raw date values: {bookings_df['date'].tolist()}")
+        st.write(f"Raw time values: {bookings_df['time'].tolist()}")
+        
+        # Create datetime column with explicit timezone
+        bookings_df['datetime'] = pd.to_datetime(
+            bookings_df['date'].astype(str) + ' ' + bookings_df['time'],
+            errors='coerce',
+            utc=True
+        ).dt.tz_convert('Asia/Dubai')
+        
+        # Debug: Log datetime values and any NaT rows
+        st.write(f"Datetime column: {bookings_df['datetime'].tolist()}")
+        nat_rows = bookings_df[bookings_df['datetime'].isna()]
+        if not nat_rows.empty:
+            st.warning(f"Found {len(nat_rows)} rows with invalid datetime values: {nat_rows[['booking_id', 'date', 'time']].to_dict('records')}")
+        
+        # Filter upcoming bookings, excluding NaT
+        upcoming_bookings = bookings_df[
+            (bookings_df['datetime'].notna()) & 
+            (bookings_df['datetime'] >= pd.Timestamp.now(tz='Asia/Dubai'))
+        ].sort_values('datetime')
         
         if upcoming_bookings.empty:
             st.info("No upcoming bookings found.")
@@ -2602,7 +2622,7 @@ with tabs[4]:
                                     time_24hr_edit = datetime.strptime(time_edit, "%I:%M %p").strftime("%H:%M")
                                     updated_booking = {
                                         "booking_id": booking_id,
-                                        "date": date_edit.isoformat(),  # Convert to ISO string
+                                        "date": date_edit.isoformat(),
                                         "time": time_24hr_edit,
                                         "match_type": match_type_edit,
                                         "court_name": court_edit,
@@ -2614,12 +2634,9 @@ with tabs[4]:
                                         "screenshot_url": screenshot_url_edit if screenshot_url_edit else None
                                     }
                                     try:
-                                        # Log DataFrame before update
                                         st.write(f"Before update - bookings_df for {booking_id}: {st.session_state.bookings_df[st.session_state.bookings_df['booking_id'] == booking_id].to_dict('records')}")
-                                        # Update DataFrame
                                         st.session_state.bookings_df.loc[booking_idx] = {**updated_booking, "date": date_edit.isoformat()}
                                         st.write(f"Updated booking: {updated_booking}")
-                                        # Save to Supabase
                                         expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
                                         bookings_to_save = st.session_state.bookings_df[expected_columns].copy()
                                         for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
@@ -2657,6 +2674,9 @@ with tabs[4]:
                                 st.error(f"Failed to delete booking: {str(e)}")
                                 st.session_state.edit_booking_key += 1
                                 st.rerun()
+
+
+
 
 
 
