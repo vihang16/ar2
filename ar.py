@@ -2383,24 +2383,24 @@ with tabs[4]:
         if 'players' in bookings_df.columns:
             bookings_df = bookings_df.drop(columns=['players'])
         
-        # Debug: Log raw date and time values
+        # Debug: Log raw data
         st.write(f"Raw date values: {bookings_df['date'].tolist()}")
         st.write(f"Raw time values: {bookings_df['time'].tolist()}")
         
-        # Create datetime column with explicit timezone
+        # Create datetime column
         bookings_df['datetime'] = pd.to_datetime(
             bookings_df['date'].astype(str) + ' ' + bookings_df['time'],
             errors='coerce',
             utc=True
         ).dt.tz_convert('Asia/Dubai')
         
-        # Debug: Log datetime values and any NaT rows
+        # Debug: Log datetime and invalid rows
         st.write(f"Datetime column: {bookings_df['datetime'].tolist()}")
         nat_rows = bookings_df[bookings_df['datetime'].isna()]
         if not nat_rows.empty:
             st.warning(f"Found {len(nat_rows)} rows with invalid datetime values: {nat_rows[['booking_id', 'date', 'time']].to_dict('records')}")
         
-        # Filter upcoming bookings, excluding NaT
+        # Filter upcoming bookings
         upcoming_bookings = bookings_df[
             (bookings_df['datetime'].notna()) & 
             (bookings_df['datetime'] >= pd.Timestamp.now(tz='Asia/Dubai'))
@@ -2457,9 +2457,13 @@ with tabs[4]:
                                 f"<span style='font-weight:bold;'>{p2_styled}</span> ({p2_odds:.1f}%)</div>"
                             )
                             plain_suggestion = f"\n*Odds: {players[0]} ({p1_odds:.1f}%) vs {players[1]} ({p2_odds:.1f}%)*"
+                    elif row['match_type'] == "Doubles" and len(players) < 4:
+                        pairing_suggestion = "<div><strong style='color:white;'>Suggested Pairing:</strong> Not enough players for pairing suggestion</div>"
+                        plain_suggestion = "\n*Suggested Pairing: Not enough players for pairing suggestion*"
                 except Exception as e:
                     pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
                     plain_suggestion = f"\n*Suggestion: Error calculating: {str(e)}*"
+                    st.write(f"Pairing suggestion error for booking {row['booking_id']}: {str(e)}")
     
                 weekday = pd.to_datetime(row['date']).strftime('%a')
                 date_part = pd.to_datetime(row['date']).strftime('%d %b')
@@ -2513,10 +2517,15 @@ with tabs[4]:
                 visuals_html += '</div></div>'
                 booking_text += visuals_html + '</div>'
     
+                # Debug: Log HTML and WhatsApp link
+                st.write(f"Booking {row['booking_id']} HTML: {booking_text[:200]}...")  # Truncated for brevity
+                st.write(f"WhatsApp link for {row['booking_id']}: {whatsapp_link}")
+    
                 try:
                     st.markdown(booking_text, unsafe_allow_html=True)
                 except Exception as e:
                     st.warning(f"Failed to render HTML for booking {row['booking_id']}: {str(e)}")
+                    # Simplified fallback rendering
                     st.markdown(f"""
                     **Court:** {court_name_html}  
                     **Date:** {date_str}  
@@ -2525,10 +2534,18 @@ with tabs[4]:
                     **Players:** {', '.join(players) if players else 'No players'}  
                     **Standby Player:** {row.get('standby_player', 'None')}  
                     {pairing_suggestion.replace('<div><strong style="color:white;">', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style="font-weight:bold; color:#fff500;">', '').replace('</span>', '')}
-                    <a href="{whatsapp_link}" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width:30px; height:30px; vertical-align:middle; margin-top:10px;"></a>
+                    """, unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <a href="{whatsapp_link}" target="_blank">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width:30px; height:30px; vertical-align:middle; margin-top:10px;">
+                    </a>
                     """, unsafe_allow_html=True)
                     if screenshot_url:
-                        st.markdown(f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; cursor:pointer;" title="Click to view full-size"></a>', unsafe_allow_html=True)
+                        st.markdown(f"""
+                        <a href="{screenshot_url}" target="_blank">
+                            <img src="{screenshot_url}" style="width:120px; cursor:pointer;" title="Click to view full-size">
+                        </a>
+                        """, unsafe_allow_html=True)
                     if image_urls or placeholder_initials:
                         cols = st.columns(len(image_urls) + len(placeholder_initials))
                         col_idx = 0
@@ -2567,7 +2584,7 @@ with tabs[4]:
             for _, row in bookings_df.iterrows():
                 date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
                 time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
-                players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
+                players = [p for p in [row['player1'], row['player2'], 'player3', 'player4'] if p]
                 players_str = ", ".join(players) if players else "No players"
                 standby_str = row.get('standby_player', "None")
                 desc = f"Court: {row['court_name']} | Date: {date_str} | Time: {time_ampm} | Match Type: {row['match_type']} | Players: {players_str} | Standby: {standby_str}"
@@ -2674,6 +2691,7 @@ with tabs[4]:
                                 st.error(f"Failed to delete booking: {str(e)}")
                                 st.session_state.edit_booking_key += 1
                                 st.rerun()
+
 
 
 
