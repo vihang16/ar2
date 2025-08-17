@@ -1398,7 +1398,7 @@ def generate_whatsapp_link(row):
     scores_str = " ".join(scores_list)
     date_str = row['date'].strftime('%A, %d %b')
 
-    # Headline text: def. vs tied with
+    # Headline text: use "tied with" for ties
     if row["winner"] == "Tie":
         headline = f"*{t1} tied with {t2}*"
     elif row["winner"] == "Team 1":
@@ -1409,7 +1409,6 @@ def generate_whatsapp_link(row):
     share_text = f"*Match Result: {row['match_id']}*\n{date_str}\n{headline}\nSet scores {scores_str}"
     encoded_text = urllib.parse.quote(share_text)
     return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
-
 
 
 # Birthday Functions added
