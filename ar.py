@@ -1098,8 +1098,8 @@ def create_partnership_chart(player_name, partner_stats, players_df):
 
 def save_bookings(bookings_df):
     try:
-        # Convert DataFrame to list of dicts, handle None/empty values
-        data = bookings_df.replace("", None).to_dict('records')
+        # Convert DataFrame to list of dicts
+        data = bookings_df.to_dict('records')
         # Upsert to Supabase with explicit conflict handling
         response = supabase.table("bookings").upsert(
             data,
@@ -1114,15 +1114,23 @@ def save_bookings(bookings_df):
 def load_bookings():
     try:
         response = supabase.table("bookings").select("*").execute()
-        st.session_state.bookings_df = pd.DataFrame(response.data)
-        # Ensure empty strings for missing player fields
-        for col in ['player1', 'player2', 'player3', 'player4', 'standby_player']:
-            if col in st.session_state.bookings_df:
-                st.session_state.bookings_df[col] = st.session_state.bookings_df[col].fillna("")
+        df = pd.DataFrame(response.data)
+        # Ensure all expected columns exist
+        expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
+        for col in expected_columns:
+            if col not in df:
+                df[col] = None
+        # Convert date to datetime.date and fill nulls for players
+        df['date'] = pd.to_datetime(df['date']).dt.date
+        for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
+            df[col] = df[col].fillna("")
+        st.session_state.bookings_df = df[expected_columns]
         st.write(f"Loaded bookings: {st.session_state.bookings_df.shape[0]} rows")
     except Exception as e:
         st.error(f"Failed to load bookings: {str(e)}")
         st.session_state.bookings_df = pd.DataFrame(columns=['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url'])
+
+
       
 def create_backup_zip(players_df, matches_df, bookings_df):
     """Create a zip file with CSV tables + images from Supabase URLs."""
