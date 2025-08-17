@@ -2518,6 +2518,7 @@ with tabs[4]:
     
     st.markdown("---")
     st.markdown("---")
+    st.markdown("---")
     st.subheader("✏️ Manage Existing Booking")
     if 'edit_booking_key' not in st.session_state:
         st.session_state.edit_booking_key = 0
@@ -2549,8 +2550,7 @@ with tabs[4]:
                     hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:%M %p") for h in range(6, 22)]
                     current_time_ampm = datetime.strptime(booking_row["time"], "%H:%M").strftime("%-I:%M %p")
                     time_index = hours.index(current_time_ampm) if current_time_ampm in hours else 0
-                    time_edit = st.selectbox("Booking Time *", hours, index=time_indexколько
-    
+                    time_edit = st.selectbox("Booking Time *", hours, index=time_index, key=f"edit_booking_time_{booking_id}")
                     match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if booking_row["match_type"] == "Doubles" else 1, key=f"edit_booking_match_type_{booking_id}")
                     if match_type_edit == "Doubles":
                         col1, col2 = st.columns(2)
@@ -2651,7 +2651,7 @@ with tabs[4]:
                                 st.error(f"Failed to delete booking: {str(e)}")
                                 st.session_state.edit_booking_key += 1
                                 st.rerun()
-       
+           
 
 
 # ... End of Tab[4]-------------------------------------------------------------------------
