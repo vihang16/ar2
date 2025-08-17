@@ -2460,7 +2460,23 @@ with tabs[4]:
                 players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
                 standby_str = f"<span style='font-weight:bold; color:#fff500;'>{row['standby_player']}</span>" if row['standby_player'] else "None"
                 date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
-                time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
+                ###time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
+                time_value = str(row['time']).strip()
+
+                time_ampm = ""
+                if time_value and time_value not in ["NaT", "nan", "None"]:
+                    try:
+                        # Try HH:MM
+                        dt_obj = datetime.strptime(time_value, "%H:%M")
+                    except ValueError:
+                        try:
+                            # Try HH:MM:SS
+                            dt_obj = datetime.strptime(time_value, "%H:%M:%S")
+                        except ValueError:
+                            dt_obj = None
+                    
+                    if dt_obj:
+                        time_ampm = dt_obj.strftime("%-I:%M %p")  # e.g. 2:30 PM
                 
                 court_url = court_url_mapping.get(row['court_name'], "#")
                 court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#fff500; text-decoration:none;'>{row['court_name']}</a>"
