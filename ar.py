@@ -37,6 +37,7 @@ import urllib.parse
 import requests
 
 
+
 # Set the page title
 st.set_page_config(page_title="AR Tennis")
 
@@ -2293,6 +2294,7 @@ with tabs[3]:
 #-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
 
 
+
 with tabs[4]:
     load_bookings()
     with st.expander("Add New Booking", expanded=False, icon="➡️"):
@@ -2335,36 +2337,40 @@ with tabs[4]:
                         st.error("Please select different players for each position.")
                     else:
                         booking_id = str(uuid.uuid4())
-                        screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking") if screenshot else ""
+                        screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking") if screenshot else None
                         time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
                         new_booking = {
                             "booking_id": booking_id,
-                            "date": date,
+                            "date": date.isoformat(),  # Convert to ISO string for Supabase
                             "time": time_24hr,
                             "match_type": match_type,
                             "court_name": court,
-                            "player1": p1,
-                            "player2": p2,
-                            "player3": p3,
-                            "player4": p4,
-                            "standby_player": standby if standby else "",
+                            "player1": p1 if p1 else None,
+                            "player2": p2 if p2 else None,
+                            "player3": p3 if p3 else None,
+                            "player4": p4 if p4 else None,
+                            "standby_player": standby if standby else None,
                             "screenshot_url": screenshot_url
                         }
                         st.session_state.bookings_df = pd.concat([st.session_state.bookings_df, pd.DataFrame([new_booking])], ignore_index=True)
                         try:
                             expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
-                            bookings_to_save = st.session_state.bookings_df[expected_columns]
+                            bookings_to_save = st.session_state.bookings_df[expected_columns].copy()
+                            for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
+                                bookings_to_save[col] = bookings_to_save[col].replace("", None)
                             save_bookings(bookings_to_save)
                             load_bookings()
                             st.write(f"New booking added: {new_booking}")
                             st.success("Booking added successfully.")
                             st.session_state.form_key_suffix += 1
+                            st.rerun()
                         except Exception as e:
                             st.error(f"Failed to save booking: {str(e)}")
-                        st.rerun()
+                            st.rerun()
     
     st.markdown("---")
-    st.subheader("Upcoming Bookings")
+    
+    st.subheader("📅 Upcoming Bookings")
     bookings_df = st.session_state.bookings_df.copy()
     court_url_mapping = {court["name"]: court["url"] for court in ar_courts + mira_courts}
     if bookings_df.empty:
@@ -2377,144 +2383,149 @@ with tabs[4]:
         if 'players' in bookings_df.columns:
             bookings_df = bookings_df.drop(columns=['players'])
         
-        bookings_df['datetime'] = pd.to_datetime(bookings_df['date'] + ' ' + bookings_df['time'], errors='coerce')
-        bookings_df = bookings_df.sort_values(by='datetime', ascending=True).reset_index(drop=True)
-        try:
-            rank_df, _ = calculate_rankings(st.session_state.matches_df)
-        except Exception as e:
-            rank_df = pd.DataFrame()
-            st.warning(f"Unable to load rankings for pairing suggestions: {str(e)}")
-    
-        for _, row in bookings_df.iterrows():
-            players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
-            players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
-            standby_str = f"<span style='font-weight:bold; color:#fff500;'>{row['standby_player']}</span>" if 'standby_player' in row and row['standby_player'] else "None"
-            date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
-            time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
-            
-            court_url = court_url_mapping.get(row['court_name'], "#")
-            court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#fff500; text-decoration:none;'>{row['court_name']}</a>"
-    
-            pairing_suggestion = ""
-            plain_suggestion = ""
+        bookings_df['datetime'] = pd.to_datetime(bookings_df['date'].astype(str) + ' ' + bookings_df['time'], errors='coerce')
+        upcoming_bookings = bookings_df[bookings_df['datetime'] >= pd.Timestamp.now(tz='Asia/Dubai')].sort_values('datetime')
+        
+        if upcoming_bookings.empty:
+            st.info("No upcoming bookings found.")
+        else:
             try:
-                if row['match_type'] == "Doubles" and len(players) == 4:
-                    suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
-                    if team1_odds is not None and team2_odds is not None:
-                        teams = suggested_pairing.split(' vs ')
-                        team1_players = teams[0].replace('Team 1: ', '')
-                        team2_players = teams[1].replace('Team 2: ', '')
-                        pairing_suggestion = (
-                            f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
-                            f"<span style='font-weight:bold;'>{team1_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
-                            f"<span style='font-weight:bold;'>{team2_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
-                        )
-                        plain_suggestion = f"\n\n*Suggested Pairing: {re.sub(r'<.*?>', '', team1_players)} ({team1_odds:.1f}%) vs {re.sub(r'<.*?>', '', team2_players)} ({team2_odds:.1f}%)*"
-                    else:
-                        pairing_suggestion = (
-                            f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
-                            f"<span style='font-weight:bold;'>{suggested_pairing}</span></div>"
-                        )
-                        plain_suggestion = f"\n\n*Suggested Pairing: {re.sub(r'<.*?>', '', suggested_pairing).replace('Suggested Pairing: ', '').strip()}*"
-                elif row['match_type'] == "Singles" and len(players) == 2:
-                    p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
-                    if p1_odds is not None:
-                        p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
-                        p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
-                        pairing_suggestion = (
-                            f"<div><strong style='color:white;'>Odds:</strong> "
-                            f"<span style='font-weight:bold;'>{p1_styled}</span> ({p1_odds:.1f}%) vs "
-                            f"<span style='font-weight:bold;'>{p2_styled}</span> ({p2_odds:.1f}%)</div>"
-                        )
-                        plain_suggestion = f"\n\n*Odds: {players[0]} ({p1_odds:.1f}%) vs {players[1]} ({p2_odds:.1f}%)*"
+                rank_df, _ = calculate_rankings(st.session_state.matches_df)
             except Exception as e:
-                pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
-                plain_suggestion = f"\n\n*Suggestion: Error calculating: {str(e)}*"
+                rank_df = pd.DataFrame()
+                st.warning(f"Unable to load rankings for pairing suggestions: {str(e)}")
     
-            weekday = pd.to_datetime(row['date']).strftime('%a')
-            date_part = pd.to_datetime(row['date']).strftime('%d %b')
-            full_date = f"{weekday} , {date_part} , {time_ampm}"
-            court_name = row['court_name']
-            players_list = ""
-            if players:
-                players_list = "\n".join([f"{i+1}. *{p}*" for i, p in enumerate(players)])
-            standby_text = f"\nSTD. BY : *{row['standby_player']}*" if 'standby_player' in row and row['standby_player'] else ""
-            
-            share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{plain_suggestion}\nCourt location : {court_url}"
-            encoded_text = urllib.parse.quote(share_text)
-            whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
+            for _, row in upcoming_bookings.iterrows():
+                players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
+                players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
+                standby_str = f"<span style='font-weight:bold; color:#fff500;'>{row['standby_player']}</span>" if row['standby_player'] else "None"
+                date_str = pd.to_datetime(row['date']).strftime('%A, %d %b')
+                time_ampm = datetime.strptime(row['time'], "%H:%M").strftime("%-I:%M %p")
+                
+                court_url = court_url_mapping.get(row['court_name'], "#")
+                court_name_html = f"<a href='{court_url}' target='_blank' style='font-weight:bold; color:#fff500; text-decoration:none;'>{row['court_name']}</a>"
     
-            booking_text = f"""
-            <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
-                <div><strong>Court:</strong> {court_name_html}</div>
-                <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
-                <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
-                <div><strong>Players:</strong> {players_str}</div>
-                <div><strong>Standby Player:</strong> {standby_str}</div>
-                {pairing_suggestion}
-                <div style="margin-top: 10px;">
-                    <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp">
-                    </a>
-                </div>
-            """
-    
-            visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
-            screenshot_url = row["screenshot_url"] if row["screenshot_url"] and isinstance(row["screenshot_url"], str) else None
-            if screenshot_url:
-                visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
-            visuals_html += '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
-            booking_players = [row['player1'], row['player2'], row['player3'], row['player4'], row.get('standby_player', '')]
-            players_df = st.session_state.players_df
-            image_urls = []
-            placeholder_initials = []
-            for player_name in booking_players:
-                if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
-                    player_data = players_df[players_df["name"] == player_name]
-                    if not player_data.empty:
-                        img_url = player_data.iloc[0].get("profile_image_url")
-                        if img_url and isinstance(img_url, str) and img_url.strip():
-                            image_urls.append((player_name, img_url))
+                pairing_suggestion = ""
+                plain_suggestion = ""
+                try:
+                    if row['match_type'] == "Doubles" and len(players) == 4:
+                        suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
+                        if team1_odds is not None and team2_odds is not None:
+                            teams = suggested_pairing.split(' vs ')
+                            team1_players = teams[0].replace('Team 1: ', '')
+                            team2_players = teams[1].replace('Team 2: ', '')
+                            pairing_suggestion = (
+                                f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
+                                f"<span style='font-weight:bold;'>{team1_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team1_odds:.1f}%</span>) vs "
+                                f"<span style='font-weight:bold;'>{team2_players}</span> (<span style='font-weight:bold; color:#fff500;'>{team2_odds:.1f}%</span>)</div>"
+                            )
+                            plain_suggestion = f"\n*Suggested Pairing: {re.sub(r'<.*?>', '', team1_players)} ({team1_odds:.1f}%) vs {re.sub(r'<.*?>', '', team2_players)} ({team2_odds:.1f}%)*"
                         else:
-                            placeholder_initials.append((player_name, player_name[0].upper()))
-            for player_name, img_url in image_urls:
-                visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
-            for player_name, initial in placeholder_initials:
-                visuals_html += f'<div title="{player_name}" style="width: 80px; height: 80px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
-            visuals_html += '</div></div>'
-            booking_text += visuals_html + '</div>'
+                            pairing_suggestion = (
+                                f"<div><strong style='color:white;'>Suggested Pairing:</strong> "
+                                f"<span style='font-weight:bold;'>{suggested_pairing}</span></div>"
+                            )
+                            plain_suggestion = f"\n*Suggested Pairing: {re.sub(r'<.*?>', '', suggested_pairing).replace('Suggested Pairing: ', '').strip()}*"
+                    elif row['match_type'] == "Singles" and len(players) == 2:
+                        p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
+                        if p1_odds is not None:
+                            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
+                            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
+                            pairing_suggestion = (
+                                f"<div><strong style='color:white;'>Odds:</strong> "
+                                f"<span style='font-weight:bold;'>{p1_styled}</span> ({p1_odds:.1f}%) vs "
+                                f"<span style='font-weight:bold;'>{p2_styled}</span> ({p2_odds:.1f}%)</div>"
+                            )
+                            plain_suggestion = f"\n*Odds: {players[0]} ({p1_odds:.1f}%) vs {players[1]} ({p2_odds:.1f}%)*"
+                except Exception as e:
+                    pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
+                    plain_suggestion = f"\n*Suggestion: Error calculating: {str(e)}*"
     
-            try:
-                st.markdown(booking_text, unsafe_allow_html=True)
-            except Exception as e:
-                st.warning(f"Failed to render HTML for booking: {str(e)}")
-                st.markdown(f"""
-                **Court:** {court_name_html}  
-                **Date:** {date_str}  
-                **Time:** {time_ampm}  
-                **Match Type:** {row['match_type']}  
-                **Players:** {', '.join(players)}  
-                **Standby Player:** {row.get('standby_player', 'None')}  
-                {pairing_suggestion.replace('<div><strong style="color:white;">', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style="font-weight:bold; color:#fff500;">', '').replace('</span>', '')}
-                <a href="{whatsapp_link}" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:24px; vertical-align:middle; margin-top:10px;" alt="WhatsApp"></a>
-                """, unsafe_allow_html=True)
+                weekday = pd.to_datetime(row['date']).strftime('%a')
+                date_part = pd.to_datetime(row['date']).strftime('%d %b')
+                full_date = f"{weekday} , {date_part} , {time_ampm}"
+                court_name = row['court_name']
+                players_list = "\n".join([f"{i+1}. *{p}*" for i, p in enumerate(players)]) if players else "No players"
+                standby_text = f"\nSTD. BY : *{row['standby_player']}*" if row['standby_player'] else ""
+                
+                share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{plain_suggestion}\nCourt location : {court_url}"
+                encoded_text = urllib.parse.quote(share_text)
+                whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
+    
+                booking_text = f"""
+                <div class="booking-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
+                    <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
+                    <div><strong>Court:</strong> {court_name_html}</div>
+                    <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_ampm}</span></div>
+                    <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
+                    <div><strong>Players:</strong> {players_str}</div>
+                    <div><strong>Standby Player:</strong> {standby_str}</div>
+                    {pairing_suggestion}
+                    <div style="margin-top: 10px;">
+                        <a href="{whatsapp_link}" class="whatsapp-share" target="_blank">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width: 30px; height: 30px;">
+                        </a>
+                    </div>
+                """
+    
+                visuals_html = '<div style="display: flex; flex-direction: row; align-items: center; margin-top: 10px;">'
+                screenshot_url = row["screenshot_url"] if row["screenshot_url"] and isinstance(row["screenshot_url"], str) else None
                 if screenshot_url:
-                    st.markdown(f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; cursor:pointer;" title="Click to view full-size"></a>', unsafe_allow_html=True)
-                if image_urls or placeholder_initials:
-                    cols = st.columns(len(image_urls) + len(placeholder_initials))
-                    col_idx = 0
-                    for player_name, img_url in image_urls:
-                        with cols[col_idx]:
-                            st.image(img_url, width=50, caption=player_name)
-                        col_idx += 1
-                    for player_name, initial in placeholder_initials:
-                        with cols[col_idx]:
-                            st.markdown(f"""
-                            <div style='width: 50px; height: 50px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;'>{initial}</div>
-                            <div style='text-align: center;'>{player_name}</div>
-                            """, unsafe_allow_html=True)
-                        col_idx += 1
+                    visuals_html += f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; margin-right:20px; cursor:pointer;" title="Click to view full-size"></a>'
+                visuals_html += '<div style="display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap;">'
+                booking_players = [row['player1'], row['player2'], row['player3'], row['player4'], row.get('standby_player', '')]
+                players_df = st.session_state.players_df
+                image_urls = []
+                placeholder_initials = []
+                for player_name in booking_players:
+                    if player_name and isinstance(player_name, str) and player_name.strip() and player_name != "Visitor":
+                        player_data = players_df[players_df["name"] == player_name]
+                        if not player_data.empty:
+                            img_url = player_data.iloc[0].get("profile_image_url")
+                            if img_url and isinstance(img_url, str) and img_url.strip():
+                                image_urls.append((player_name, img_url))
+                            else:
+                                placeholder_initials.append((player_name, player_name[0].upper()))
+                for player_name, img_url in image_urls:
+                    visuals_html += f'<img src="{img_url}" class="profile-image" style="width: 50px; height: 50px; margin-right: 8px;" title="{player_name}">'
+                for player_name, initial in placeholder_initials:
+                    visuals_html += f'<div title="{player_name}" style="width: 50px; height: 50px; margin-right: 8px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;">{initial}</div>'
+                visuals_html += '</div></div>'
+                booking_text += visuals_html + '</div>'
+    
+                try:
+                    st.markdown(booking_text, unsafe_allow_html=True)
+                except Exception as e:
+                    st.warning(f"Failed to render HTML for booking {row['booking_id']}: {str(e)}")
+                    st.markdown(f"""
+                    **Court:** {court_name_html}  
+                    **Date:** {date_str}  
+                    **Time:** {time_ampm}  
+                    **Match Type:** {row['match_type']}  
+                    **Players:** {', '.join(players) if players else 'No players'}  
+                    **Standby Player:** {row.get('standby_player', 'None')}  
+                    {pairing_suggestion.replace('<div><strong style="color:white;">', '**').replace('</strong>', '**').replace('</div>', '').replace('<span style="font-weight:bold; color:#fff500;">', '').replace('</span>', '')}
+                    <a href="{whatsapp_link}" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width:30px; height:30px; vertical-align:middle; margin-top:10px;"></a>
+                    """, unsafe_allow_html=True)
+                    if screenshot_url:
+                        st.markdown(f'<a href="{screenshot_url}" target="_blank"><img src="{screenshot_url}" style="width:120px; cursor:pointer;" title="Click to view full-size"></a>', unsafe_allow_html=True)
+                    if image_urls or placeholder_initials:
+                        cols = st.columns(len(image_urls) + len(placeholder_initials))
+                        col_idx = 0
+                        for player_name, img_url in image_urls:
+                            with cols[col_idx]:
+                                st.image(img_url, width=50, caption=player_name)
+                            col_idx += 1
+                        for player_name, initial in placeholder_initials:
+                            with cols[col_idx]:
+                                st.markdown(f"""
+                                <div style='width: 50px; height: 50px; border-radius: 50%; background-color: #07314f; border: 2px solid #fff500; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff500; font-weight: bold;'>{initial}</div>
+                                <div style='text-align: center;'>{player_name}</div>
+                                """, unsafe_allow_html=True)
+                            col_idx += 1
+    
+                # Debug: Log booking details
+                st.write(f"Booking {row['booking_id']}: Players={players}, Standby={row.get('standby_player', 'None')}, Screenshot={screenshot_url}")
     
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
     
@@ -2591,7 +2602,7 @@ with tabs[4]:
                                     time_24hr_edit = datetime.strptime(time_edit, "%I:%M %p").strftime("%H:%M")
                                     updated_booking = {
                                         "booking_id": booking_id,
-                                        "date": date_edit.isoformat(),  # Convert date to ISO string
+                                        "date": date_edit.isoformat(),  # Convert to ISO string
                                         "time": time_24hr_edit,
                                         "match_type": match_type_edit,
                                         "court_name": court_edit,
@@ -2606,26 +2617,22 @@ with tabs[4]:
                                         # Log DataFrame before update
                                         st.write(f"Before update - bookings_df for {booking_id}: {st.session_state.bookings_df[st.session_state.bookings_df['booking_id'] == booking_id].to_dict('records')}")
                                         # Update DataFrame
-                                        st.session_state.bookings_df.loc[booking_idx] = {**updated_booking, "date": date_edit.isoformat()}  # Store as string in DataFrame
+                                        st.session_state.bookings_df.loc[booking_idx] = {**updated_booking, "date": date_edit.isoformat()}
                                         st.write(f"Updated booking: {updated_booking}")
                                         # Save to Supabase
                                         expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
                                         bookings_to_save = st.session_state.bookings_df[expected_columns].copy()
-                                        # Replace empty strings with None for Supabase
                                         for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
                                             bookings_to_save[col] = bookings_to_save[col].replace("", None)
-                                        # Remove duplicates
                                         bookings_to_save = bookings_to_save.drop_duplicates(subset=['booking_id'], keep='last')
                                         st.write(f"DataFrame to save: {bookings_to_save[bookings_to_save['booking_id'] == booking_id].to_dict('records')}")
                                         save_bookings(bookings_to_save)
-                                        # Reload and verify
                                         load_bookings()
                                         refreshed_row = st.session_state.bookings_df[st.session_state.bookings_df['booking_id'] == booking_id]
                                         if not refreshed_row.empty:
                                             st.write(f"Refreshed booking row: {refreshed_row.to_dict('records')}")
                                         else:
                                             st.error(f"Booking {booking_id} not found after refresh.")
-                                        # Query Supabase directly to confirm
                                         try:
                                             supabase_response = supabase.table("bookings").select("*").eq("booking_id", booking_id).execute()
                                             st.write(f"Supabase query result: {supabase_response.data}")
@@ -2650,7 +2657,7 @@ with tabs[4]:
                                 st.error(f"Failed to delete booking: {str(e)}")
                                 st.session_state.edit_booking_key += 1
                                 st.rerun()
-           
+
 
 
 # ... End of Tab[4]-------------------------------------------------------------------------
