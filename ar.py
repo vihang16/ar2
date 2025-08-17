@@ -2523,6 +2523,7 @@ with tabs[4]:
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
     
     st.markdown("---")
+    st.markdown("---")
     st.subheader("✏️ Manage Existing Booking")
     if 'edit_booking_key' not in st.session_state:
         st.session_state.edit_booking_key = 0
@@ -2579,8 +2580,8 @@ with tabs[4]:
                         elif not date_edit or not time_edit:
                             st.error("Booking date and time are required.")
                         else:
-                            selected_players_edit = [p for p in [p1_edit, p2_edit, p3_edit, p4_edit, standby_edit] if p]
-                            if match_type_edit == "Doubles" and len(set(selected_players_edit)) != len(selected_players_edit):
+                            players_edit = [p for p in [p1_edit, p2_edit, p3_edit, p4_edit] if p]
+                            if len(set(players_edit)) != len(players_edit):
                                 st.error("Please select different players for each position.")
                             else:
                                 screenshot_url_edit = booking_row["screenshot_url"]
