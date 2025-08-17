@@ -1096,47 +1096,33 @@ def create_partnership_chart(player_name, partner_stats, players_df):
 
   #-----------------------------------------------------------------------------------
 
+def save_bookings(bookings_df):
+    try:
+        # Convert DataFrame to list of dicts, handle None/empty values
+        data = bookings_df.replace("", None).to_dict('records')
+        # Upsert to Supabase with explicit conflict handling
+        response = supabase.table("bookings").upsert(
+            data,
+            on_conflict="booking_id",
+            returning="representation"
+        ).execute()
+        st.write(f"Supabase save response: {response.data}")
+        return response
+    except Exception as e:
+        raise Exception(f"Supabase save failed: {str(e)}")
+
 def load_bookings():
     try:
-        response = supabase.table(bookings_table_name).select("*").execute()
-        df = pd.DataFrame(response.data)
-        expected_columns = ["booking_id", "date", "time", "match_type", "court_name", "player1", "player2", "player3", "player4", "screenshot_url"]
-        for col in expected_columns:
-            if col not in df.columns:
-                df[col] = ""
-        # Convert date and time to datetime for comparison
-        df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['time'], errors='coerce')
-        # Filter out past bookings
-        current_datetime = datetime.now()
-        df = df[df['datetime'] >= current_datetime].copy()
-        df = df.drop(columns=['datetime'])
-        st.session_state.bookings_df = df
-        # Delete past bookings from Supabase
-        supabase.table(bookings_table_name).delete().lt("date", current_datetime.strftime('%Y-%m-%d')).execute()
+        response = supabase.table("bookings").select("*").execute()
+        st.session_state.bookings_df = pd.DataFrame(response.data)
+        # Ensure empty strings for missing player fields
+        for col in ['player1', 'player2', 'player3', 'player4', 'standby_player']:
+            if col in st.session_state.bookings_df:
+                st.session_state.bookings_df[col] = st.session_state.bookings_df[col].fillna("")
+        st.write(f"Loaded bookings: {st.session_state.bookings_df.shape[0]} rows")
     except Exception as e:
-        st.error(f"Error loading bookings: {str(e)}")
-
-def save_bookings(df):
-    try:
-        df_to_save = df.copy()
-        if 'date' in df_to_save.columns:
-            df_to_save['date'] = pd.to_datetime(df_to_save['date'], errors='coerce').dt.date
-            df_to_save = df_to_save.dropna(subset=['date'])
-            df_to_save['date'] = df_to_save['date'].astype(str)  # Ensure date is string for JSON
-
-        # Check for and remove duplicate booking_id values
-        duplicates = df_to_save[df_to_save.duplicated(subset=['booking_id'], keep=False)]
-        if not duplicates.empty:
-            st.warning(f"Found duplicate booking_id values: {duplicates['booking_id'].tolist()}")
-            df_to_save = df_to_save.drop_duplicates(subset=['booking_id'], keep='last')
-
-        # Replace NaN with None for JSON compliance
-        df_to_save = df_to_save.where(pd.notna(df_to_save), None)
-
-        # Perform upsert
-        supabase.table(bookings_table_name).upsert(df_to_save.to_dict("records")).execute()
-    except Exception as e:
-        st.error(f"Error saving bookings: {str(e)}")
+        st.error(f"Failed to load bookings: {str(e)}")
+        st.session_state.bookings_df = pd.DataFrame(columns=['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url'])
       
 def create_backup_zip(players_df, matches_df, bookings_df):
     """Create a zip file with CSV tables + images from Supabase URLs."""
