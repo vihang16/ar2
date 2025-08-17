@@ -2006,22 +2006,27 @@ with tabs[1]:
     filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
 
     def format_match_players(row):
-        if row["match_type"] == "Singles":
-            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
-            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
-            if row["winner"] == "Team 1":
-                return f"{p1_styled} def. {p2_styled}"
-            else:
-                return f"{p2_styled} def. {p1_styled}"
-        else:
-            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
-            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player2']}</span>"
-            p3_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
-            p4_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player2']}</span>"
-            if row["winner"] == "Team 1":
-                return f"{p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
-            else:
-                return f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
+      if row["match_type"] == "Singles":
+          p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
+          p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
+          if row["winner"] == "Tie":
+              return f"{p1_styled} tie {p2_styled}"
+          elif row["winner"] == "Team 1":
+              return f"{p1_styled} def. {p2_styled}"
+          else:  # Team 2
+              return f"{p2_styled} def. {p1_styled}"
+      else:
+          p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
+          p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player2']}</span>"
+          p3_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
+          p4_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player2']}</span>"
+          if row["winner"] == "Tie":
+              return f"{p1_styled} & {p2_styled} tie {p3_styled} & {p4_styled}"
+          elif row["winner"] == "Team 1":
+              return f"{p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
+          else:  # Team 2
+              return f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
+
 
     def format_match_scores_and_date(row):
         score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
