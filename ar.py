@@ -1335,41 +1335,29 @@ def display_match_table(df, title):
 
 
 def generate_whatsapp_link(row):
-    # Determine the winner and loser(s) based on the match type and winner
-    if row["winner"] == "Tie":
-        if row["match_type"] == "Singles":
-            match_str = f"{row['team1_player1']} vs {row['team2_player1']}"
-        else:  # Doubles
-            match_str = f"{row['team1_player1']} & {row['team1_player2']} vs {row['team2_player1']} & {row['team2_player2']}"
-        result_str = f"*{match_str} tie*"
-    else:
-        if row["match_type"] == "Singles":
-            if row["winner"] == "Team 1":
-                winner_str = f"{row['team1_player1']}"
-                loser_str = f"{row['team2_player1']}"
-            else:
-                winner_str = f"{row['team2_player1']}"
-                loser_str = f"{row['team1_player1']}"
-        else:  # Doubles
-            if row["winner"] == "Team 1":
-                winner_str = f"{row['team1_player1']} & {row['team1_player2']}"
-                loser_str = f"{row['team2_player1']} & {row['team2_player2']}"
-            else:
-                winner_str = f"{row['team2_player1']} & {row['team2_player2']}"
-                loser_str = f"{row['team1_player1']} & {row['team1_player2']}"
-        result_str = f"*{winner_str} def. {loser_str}*"
+    # Build side labels
+    if row["match_type"] == "Singles":
+        t1 = f"{row['team1_player1']}"
+        t2 = f"{row['team2_player1']}"
+    else:  # Doubles
+        t1 = f"{row['team1_player1']} & {row['team1_player2']}"
+        t2 = f"{row['team2_player1']} & {row['team2_player2']}"
 
-    # Format scores with bolding and date
+    # Scores and date
     scores_list = [f'*{s.replace("-", ":")}*' for s in [row['set1'], row['set2'], row['set3']] if s]
     scores_str = " ".join(scores_list)
     date_str = row['date'].strftime('%A, %d %b')
 
-    # Create the text to be shared
-    share_text = f"{result_str}\nSet scores {scores_str} on {date_str}"
+    # Headline text: def. vs tie
+    if row["winner"] == "Tie":
+        headline = f"*{t1} tie {t2}*"
+    elif row["winner"] == "Team 1":
+        headline = f"*{t1} def. {t2}*"
+    else:  # Team 2
+        headline = f"*{t2} def. {t1}*"
 
-    # URL-encode the text
+    share_text = f"{headline}\nSet scores {scores_str} on {date_str}"
     encoded_text = urllib.parse.quote(share_text)
-
     return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
 
 
