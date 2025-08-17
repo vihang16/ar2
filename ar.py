@@ -2124,9 +2124,19 @@ with tabs[1]:
             score_plain += f", {row['set3']}"
         date_plain = row['date'].strftime('%d %b %y %H:%M')
         if row["match_type"] == "Singles":
-            desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} def. {row['team1_player1']}"
-        else:
-            desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}" if row["winner"] == "Team 1" else f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+            if row["winner"] == "Tie":
+                desc_plain = f"{row['team1_player1']} tied with {row['team2_player1']}"
+            elif row["winner"] == "Team 1":
+                desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}"
+            else:  # Team 2
+                desc_plain = f"{row['team2_player1']} def. {row['team1_player1']}"
+        else:  # Doubles
+            if row["winner"] == "Tie":
+                desc_plain = f"{row['team1_player1']} & {row['team1_player2']} tied with {row['team2_player1']} & {row['team2_player2']}"
+            elif row["winner"] == "Team 1":
+                desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}"
+            else:  # Team 2
+                desc_plain = f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
     # Use a unique key to avoid conflicts
     selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_1")
