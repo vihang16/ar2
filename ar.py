@@ -1356,9 +1356,12 @@ def display_match_table(df, title):
         else:
             players = f"{row['team1_player1']} vs. {row['team2_player1']}"
 
-        # ✅ Add tie/def handling
+        # Handle tie and winner cases with "tied with" for ties
         if row['winner'] == "Tie":
-            return f"{players} (Tie, {scores_str})"
+            if row['match_type'] == 'Doubles':
+                return f"{row['team1_player1']} & {row['team1_player2']} tied with {row['team2_player1']} & {row['team2_player2']} ({scores_str})"
+            else:
+                return f"{row['team1_player1']} tied with {row['team2_player1']} ({scores_str})"
         elif row['winner'] == "Team 1":
             return f"{row['team1_player1']} {'& ' + row['team1_player2'] if row['match_type']=='Doubles' else ''} def. {row['team2_player1']} {'& ' + row['team2_player2'] if row['match_type']=='Doubles' else ''} ({scores_str})"
         elif row['winner'] == "Team 2":
@@ -1395,15 +1398,15 @@ def generate_whatsapp_link(row):
     scores_str = " ".join(scores_list)
     date_str = row['date'].strftime('%A, %d %b')
 
-    # Headline text: def. vs tie
+    # Headline text: def. vs tied with
     if row["winner"] == "Tie":
-        headline = f"*{t1} tie {t2}*"
+        headline = f"*{t1} tied with {t2}*"
     elif row["winner"] == "Team 1":
         headline = f"*{t1} def. {t2}*"
     else:  # Team 2
         headline = f"*{t2} def. {t1}*"
 
-    share_text = f"{headline}\nSet scores {scores_str} on {date_str}"
+    share_text = f"*Match Result: {row['match_id']}*\n{date_str}\n{headline}\nSet scores {scores_str}"
     encoded_text = urllib.parse.quote(share_text)
     return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
 
