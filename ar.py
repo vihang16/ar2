@@ -1309,7 +1309,15 @@ def display_match_table(df, title):
         else:
             players = f"{row['team1_player1']} vs. {row['team2_player1']}"
 
-        return f"{players} ({scores_str})"
+        # ✅ Add tie/def handling
+        if row['winner'] == "Tie":
+            return f"{players} (Tie, {scores_str})"
+        elif row['winner'] == "Team 1":
+            return f"{row['team1_player1']} {'& ' + row['team1_player2'] if row['match_type']=='Doubles' else ''} def. {row['team2_player1']} {'& ' + row['team2_player2'] if row['match_type']=='Doubles' else ''} ({scores_str})"
+        elif row['winner'] == "Team 2":
+            return f"{row['team2_player1']} {'& ' + row['team2_player2'] if row['match_type']=='Doubles' else ''} def. {row['team1_player1']} {'& ' + row['team1_player2'] if row['match_type']=='Doubles' else ''} ({scores_str})"
+        else:
+            return f"{players} ({scores_str})"
 
     table_df['Match Details'] = table_df.apply(format_match_info, axis=1)
 
@@ -1325,22 +1333,31 @@ def display_match_table(df, title):
 
     st.dataframe(display_df, height=300)
 
+
 def generate_whatsapp_link(row):
     # Determine the winner and loser(s) based on the match type and winner
-    if row["match_type"] == "Singles":
-        if row["winner"] == "Team 1":
-            winner_str = f"{row['team1_player1']}"
-            loser_str = f"{row['team2_player1']}"
-        else:
-            winner_str = f"{row['team2_player1']}"
-            loser_str = f"{row['team1_player1']}"
-    else: # Doubles
-        if row["winner"] == "Team 1":
-            winner_str = f"{row['team1_player1']} & {row['team1_player2']}"
-            loser_str = f"{row['team2_player1']} & {row['team2_player2']}"
-        else:
-            winner_str = f"{row['team2_player1']} & {row['team2_player2']}"
-            loser_str = f"{row['team1_player1']} & {row['team1_player2']}"
+    if row["winner"] == "Tie":
+        if row["match_type"] == "Singles":
+            match_str = f"{row['team1_player1']} vs {row['team2_player1']}"
+        else:  # Doubles
+            match_str = f"{row['team1_player1']} & {row['team1_player2']} vs {row['team2_player1']} & {row['team2_player2']}"
+        result_str = f"*{match_str} tie*"
+    else:
+        if row["match_type"] == "Singles":
+            if row["winner"] == "Team 1":
+                winner_str = f"{row['team1_player1']}"
+                loser_str = f"{row['team2_player1']}"
+            else:
+                winner_str = f"{row['team2_player1']}"
+                loser_str = f"{row['team1_player1']}"
+        else:  # Doubles
+            if row["winner"] == "Team 1":
+                winner_str = f"{row['team1_player1']} & {row['team1_player2']}"
+                loser_str = f"{row['team2_player1']} & {row['team2_player2']}"
+            else:
+                winner_str = f"{row['team2_player1']} & {row['team2_player2']}"
+                loser_str = f"{row['team1_player1']} & {row['team1_player2']}"
+        result_str = f"*{winner_str} def. {loser_str}*"
 
     # Format scores with bolding and date
     scores_list = [f'*{s.replace("-", ":")}*' for s in [row['set1'], row['set2'], row['set3']] if s]
@@ -1348,12 +1365,13 @@ def generate_whatsapp_link(row):
     date_str = row['date'].strftime('%A, %d %b')
 
     # Create the text to be shared
-    share_text = f"*{winner_str} def. {loser_str}*\nSet scores {scores_str} on {date_str}"
+    share_text = f"{result_str}\nSet scores {scores_str} on {date_str}"
 
     # URL-encode the text
     encoded_text = urllib.parse.quote(share_text)
 
     return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
+
 
 
 # Birthday Functions added
