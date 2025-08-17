@@ -1137,6 +1137,40 @@ def save_bookings(df):
         supabase.table(bookings_table_name).upsert(df_to_save.to_dict("records")).execute()
     except Exception as e:
         st.error(f"Error saving bookings: {str(e)}")
+      
+def create_backup_zip(players_df, matches_df, bookings_df):
+    """Create a zip file with CSV tables + images from Supabase URLs."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zf:
+        # --- CSVs ---
+        zf.writestr("players.csv", players_df.to_csv(index=False))
+        zf.writestr("matches.csv", matches_df.to_csv(index=False))
+        zf.writestr("bookings.csv", bookings_df.to_csv(index=False))
+
+        # --- Profile images ---
+        for _, row in players_df.iterrows():
+            url = row.get("profile_image_url")
+            if url:
+                img_data = download_image(url)
+                if img_data:
+                    safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', row["name"])  # sanitize filename
+                    filename = f"profile_images/{safe_name}.jpg"
+                    zf.writestr(filename, img_data)
+
+        # --- Match images ---
+        for _, row in matches_df.iterrows():
+            url = row.get("match_image_url")
+            if url:
+                img_data = download_image(url)
+                if img_data:
+                    match_id = row.get("match_id", str(uuid.uuid4()))
+                    filename = f"match_images/{match_id}.jpg"
+                    zf.writestr(filename, img_data)
+
+    buffer.seek(0)
+    return buffer
+
+
 
 def generate_booking_id(bookings_df, booking_date):
     year = booking_date.year
