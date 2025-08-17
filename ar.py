@@ -2747,21 +2747,53 @@ with tabs[5]:
 
 
 #st.markdown("---")
+
 # Backup Download Button
+
 st.markdown("---")
 st.subheader("Data Backup")
+
 zip_buffer = io.BytesIO()
 with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-    # Matches CSV
+    # --- Matches CSV ---
     matches_csv = st.session_state.matches_df.to_csv(index=False)
     zip_file.writestr("matches.csv", matches_csv)
-    # Players CSV
+
+    # --- Players CSV ---
     players_csv = st.session_state.players_df.to_csv(index=False)
     zip_file.writestr("players.csv", players_csv)
-    # Bookings CSV
+
+    # --- Bookings CSV ---
     bookings_csv = st.session_state.bookings_df.to_csv(index=False)
     zip_file.writestr("bookings.csv", bookings_csv)
+
+    # --- Profile Images ---
+    for _, row in st.session_state.players_df.iterrows():
+        url = row.get("profile_image_url")
+        if url:
+            try:
+                r = requests.get(url, timeout=10)
+                if r.status_code == 200:
+                    # sanitize name for safe filename
+                    safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', str(row["name"]))
+                    zip_file.writestr(f"profile_images/{safe_name}.jpg", r.content)
+            except Exception as e:
+                st.warning(f"Could not download profile image for {row.get('name')}: {e}")
+
+    # --- Match Images ---
+    for _, row in st.session_state.matches_df.iterrows():
+        url = row.get("match_image_url")
+        if url:
+            try:
+                r = requests.get(url, timeout=10)
+                if r.status_code == 200:
+                    match_id = row.get("match_id", str(uuid.uuid4()))
+                    zip_file.writestr(f"match_images/{match_id}.jpg", r.content)
+            except Exception as e:
+                st.warning(f"Could not download match image for {row.get('match_id')}: {e}")
+
 zip_buffer.seek(0)
+
 # Format current date and time for filename
 current_time = datetime.now().strftime("%Y%m%d-%H%M")
 st.download_button(
@@ -2771,6 +2803,7 @@ st.download_button(
     mime="application/zip",
     key=f"backup_download_{st.session_state.get('form_key_suffix', 0)}"
 )
+
 
 st.markdown("""
 <div style='background-color: #0d5384; padding: 1rem; border-left: 5px solid #fff500; border-radius: 0.5rem; color: white;'>
