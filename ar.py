@@ -1120,12 +1120,14 @@ def load_bookings():
         for col in expected_columns:
             if col not in df:
                 df[col] = None
-        # Convert date to datetime.date and fill nulls for players
-        df['date'] = pd.to_datetime(df['date']).dt.date
+        # Keep date as string for concatenation, ensure nulls are handled
+        df['date'] = df['date'].fillna('').astype(str)
         for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
             df[col] = df[col].fillna("")
         st.session_state.bookings_df = df[expected_columns]
         st.write(f"Loaded bookings: {st.session_state.bookings_df.shape[0]} rows")
+        # Log date column types for debugging
+        st.write(f"Date column types: {st.session_state.bookings_df['date'].apply(type).unique()}")
     except Exception as e:
         st.error(f"Failed to load bookings: {str(e)}")
         st.session_state.bookings_df = pd.DataFrame(columns=['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url'])
