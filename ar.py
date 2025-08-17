@@ -1407,7 +1407,7 @@ def generate_whatsapp_link(row):
         headline = f"*{t2} def. {t1}*"
 
     #share_text = f"*Match Result: {row['match_id']}*\n{date_str}\n{headline}\nSet scores {scores_str}"
-    share_text = f"*Match Result: {date_str}\n{headline}\nSet scores {scores_str}"
+    share_text = f"*Match Result: {date_str}*\n{headline}\nSet scores {scores_str}"
     encoded_text = urllib.parse.quote(share_text)
     return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
 
