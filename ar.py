@@ -2509,7 +2509,7 @@ with tabs[4]:
             st.markdown("<hr style='border-top: 1px solid #333333; margin: 15px 0;'>", unsafe_allow_html=True)
     
     st.markdown("---")
-   
+    st.markdown("---")
     st.subheader("✏️ Manage Existing Booking")
     if 'edit_booking_key' not in st.session_state:
         st.session_state.edit_booking_key = 0
@@ -2541,7 +2541,8 @@ with tabs[4]:
                     hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:%M %p") for h in range(6, 22)]
                     current_time_ampm = datetime.strptime(booking_row["time"], "%H:%M").strftime("%-I:%M %p")
                     time_index = hours.index(current_time_ampm) if current_time_ampm in hours else 0
-                    time_edit = st.selectbox("Booking Time *", hours, index=time_index, key=f"edit_booking_time_{booking_id}")
+                    time_edit = st.selectbox("Booking Time *", hours, index=time_indexколько
+    
                     match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if booking_row["match_type"] == "Doubles" else 1, key=f"edit_booking_match_type_{booking_id}")
                     if match_type_edit == "Doubles":
                         col1, col2 = st.columns(2)
@@ -2581,34 +2582,48 @@ with tabs[4]:
                                     time_24hr_edit = datetime.strptime(time_edit, "%I:%M %p").strftime("%H:%M")
                                     updated_booking = {
                                         "booking_id": booking_id,
-                                        "date": date_edit,
+                                        "date": date_edit.isoformat(),  # Convert date to ISO string (e.g., '2025-08-17')
                                         "time": time_24hr_edit,
                                         "match_type": match_type_edit,
                                         "court_name": court_edit,
-                                        "player1": p1_edit,
-                                        "player2": p2_edit,
-                                        "player3": p3_edit,
-                                        "player4": p4_edit,
-                                        "standby_player": standby_edit if standby_edit else "",
-                                        "screenshot_url": screenshot_url_edit
+                                        "player1": p1_edit if p1_edit else None,
+                                        "player2": p2_edit if p2_edit else None,
+                                        "player3": p3_edit if p3_edit else None,
+                                        "player4": p4_edit if p4_edit else None,
+                                        "standby_player": standby_edit if standby_edit else None,
+                                        "screenshot_url": screenshot_url_edit if screenshot_url_edit else None
                                     }
                                     try:
+                                        # Log DataFrame before update
+                                        st.write(f"Before update - bookings_df for {booking_id}: {st.session_state.bookings_df[st.session_state.bookings_df['booking_id'] == booking_id].to_dict('records')}")
                                         # Update DataFrame
-                                        st.session_state.bookings_df.loc[booking_idx] = updated_booking
+                                        st.session_state.bookings_df.loc[booking_idx] = {**updated_booking, "date": date_edit}  # Keep date as datetime.date for DataFrame
                                         st.write(f"Updated booking: {updated_booking}")
                                         # Save to Supabase
                                         expected_columns = ['booking_id', 'date', 'time', 'match_type', 'court_name', 'player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']
                                         bookings_to_save = st.session_state.bookings_df[expected_columns].copy()
-                                        # Ensure no duplicates in DataFrame before saving
+                                        # Convert date to string for Supabase
+                                        bookings_to_save['date'] = bookings_to_save['date'].apply(lambda x: x.isoformat() if isinstance(x, datetime.date) else x)
+                                        # Replace empty strings with None for Supabase
+                                        for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
+                                            bookings_to_save[col] = bookings_to_save[col].replace("", None)
+                                        # Remove duplicates
                                         bookings_to_save = bookings_to_save.drop_duplicates(subset=['booking_id'], keep='last')
+                                        st.write(f"DataFrame to save: {bookings_to_save[bookings_to_save['booking_id'] == booking_id].to_dict('records')}")
                                         save_bookings(bookings_to_save)
-                                        # Reload to confirm changes
+                                        # Reload and verify
                                         load_bookings()
                                         refreshed_row = st.session_state.bookings_df[st.session_state.bookings_df['booking_id'] == booking_id]
                                         if not refreshed_row.empty:
                                             st.write(f"Refreshed booking row: {refreshed_row.to_dict('records')}")
                                         else:
-                                            st.warning(f"Booking {booking_id} not found after refresh.")
+                                            st.error(f"Booking {booking_id} not found after refresh.")
+                                        # Query Supabase directly to confirm
+                                        try:
+                                            supabase_response = supabase.table("bookings").select("*").eq("booking_id", booking_id).execute()
+                                            st.write(f"Supabase query result: {supabase_response.data}")
+                                        except Exception as e:
+                                            st.error(f"Failed to query Supabase: {str(e)}")
                                         st.success("Booking updated successfully.")
                                         st.session_state.edit_booking_key += 1
                                         st.rerun()
@@ -2628,6 +2643,7 @@ with tabs[4]:
                                 st.error(f"Failed to delete booking: {str(e)}")
                                 st.session_state.edit_booking_key += 1
                                 st.rerun()
+       
 
 
 # ... End of Tab[4]-------------------------------------------------------------------------
