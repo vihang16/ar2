@@ -494,22 +494,7 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
         return ""
         
 def tennis_scores():
-    scores = ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
-    for i in range(1, 10):
-        scores.append(f"Tie Break 10-{i}")
-        scores.append(f"Tie Break {i}-10")
-    return scores
-
-# Helper function to convert tie break scores for calculations
-def get_calculation_score(display_score, winner, team1_wins):
-    if display_score and "Tie Break" in display_score:
-        tb_score = display_score.split("Tie Break ")[1].strip("()")
-        tb1, tb2 = map(int, tb_score.split('-'))
-        if team1_wins:
-            return "7-6" if tb1 > tb2 else "6-7"
-        else:
-            return "6-7" if tb1 > tb2 else "7-6"
-    return display_score
+    return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
 
 
 
@@ -757,26 +742,20 @@ def display_player_insights(selected_players, players_df, matches_df, rank_df, p
         st.markdown('</div>', unsafe_allow_html=True)
 
 
-
-
-
-
 def calculate_rankings(matches_to_rank):
     scores = defaultdict(float)
     wins = defaultdict(int)
     losses = defaultdict(int)
     matches_played = defaultdict(int)
-    singles_matches = defaultdict(int)
-    doubles_matches = defaultdict(int)
+    singles_matches = defaultdict(int) # Added
+    doubles_matches = defaultdict(int) # Added
     games_won = defaultdict(int)
     game_diff = defaultdict(float)
-    cumulative_game_diff = defaultdict(int)
+    cumulative_game_diff = defaultdict(int) # New: For cumulative game difference
     partner_stats = defaultdict(lambda: defaultdict(lambda: {'wins': 0, 'losses': 0, 'ties': 0, 'matches': 0, 'game_diff_sum': 0}))
 
     for _, row in matches_to_rank.iterrows():
-        match_type = row['match_type']
-        winner = row['winner']
-        team1_wins = (winner == "Team 1")
+        match_type = row['match_type'] # Added
         
         if match_type == 'Doubles':
             t1 = [row['team1_player1'], row['team1_player2']]
@@ -792,15 +771,13 @@ def calculate_rankings(matches_to_rank):
         for set_score in [row['set1'], row['set2'], row['set3']]:
             if set_score and '-' in set_score:
                 try:
-                    # Use get_calculation_score to get 7-6 or 6-7 for tie breaks
-                    calc_score = get_calculation_score(set_score, winner, team1_wins)
-                    team1_games, team2_games = map(int, calc_score.split('-'))
-                    
+                    team1_games, team2_games = map(int, set_score.split('-'))
                     team1_total_games += team1_games
                     team2_total_games += team2_games
                     match_gd_sum += team1_games - team2_games
                     set_count += 1
 
+                    # New: Calculate cumulative game difference for each player per set
                     set_difference = team1_games - team2_games
                     for p in t1:
                         if p != "Visitor":
@@ -823,16 +800,16 @@ def calculate_rankings(matches_to_rank):
                     wins[p] += 1
                     matches_played[p] += 1
                     game_diff[p] += match_gd_avg
-                    if match_type == 'Doubles': doubles_matches[p] += 1
-                    else: singles_matches[p] += 1
+                    if match_type == 'Doubles': doubles_matches[p] += 1 # Added
+                    else: singles_matches[p] += 1 # Added
             for p in t2:
                 if p != "Visitor":
                     scores[p] += 1
                     losses[p] += 1
                     matches_played[p] += 1
                     game_diff[p] -= match_gd_avg
-                    if match_type == 'Doubles': doubles_matches[p] += 1
-                    else: singles_matches[p] += 1
+                    if match_type == 'Doubles': doubles_matches[p] += 1 # Added
+                    else: singles_matches[p] += 1 # Added
         elif row["winner"] == "Team 2":
             for p in t2:
                 if p != "Visitor":
@@ -840,16 +817,16 @@ def calculate_rankings(matches_to_rank):
                     wins[p] += 1
                     matches_played[p] += 1
                     game_diff[p] -= match_gd_avg
-                    if match_type == 'Doubles': doubles_matches[p] += 1
-                    else: singles_matches[p] += 1
+                    if match_type == 'Doubles': doubles_matches[p] += 1 # Added
+                    else: singles_matches[p] += 1 # Added
             for p in t1:
                 if p != "Visitor":
                     scores[p] += 1
                     losses[p] += 1
                     matches_played[p] += 1
                     game_diff[p] += match_gd_avg
-                    if match_type == 'Doubles': doubles_matches[p] += 1
-                    else: singles_matches[p] += 1
+                    if match_type == 'Doubles': doubles_matches[p] += 1 # Added
+                    else: singles_matches[p] += 1 # Added
         else:
             # Tie
             for p in t1 + t2:
@@ -857,8 +834,8 @@ def calculate_rankings(matches_to_rank):
                     scores[p] += 1.5
                     matches_played[p] += 1
                     game_diff[p] += match_gd_avg if p in t1 else -match_gd_avg
-                    if match_type == 'Doubles': doubles_matches[p] += 1
-                    else: singles_matches[p] += 1
+                    if match_type == 'Doubles': doubles_matches[p] += 1 # Added
+                    else: singles_matches[p] += 1 # Added
 
         # Update partner stats for doubles matches
         if row['match_type'] == 'Doubles':
@@ -877,7 +854,7 @@ def calculate_rankings(matches_to_rank):
                 for p2 in t2:
                     if p1 != p2 and p1 != "Visitor" and p2 != "Visitor":
                         partner_stats[p1][p2]['matches'] += 1
-                        partner_stats[p1][p2]['game_diff_sum'] -= match_gd_sum
+                        partner_stats[p1][p2]['game_diff_sum'] -= match_gd_sum  # Reverse for losing team
                         if row["winner"] == "Team 2":
                             partner_stats[p1][p2]['wins'] += 1
                         elif row["winner"] == "Team 1":
@@ -889,7 +866,7 @@ def calculate_rankings(matches_to_rank):
     players_df = st.session_state.players_df
     for player in scores:
         if player == "Visitor":
-            continue
+            continue # Skip Visitor in rankings
         win_percentage = (wins[player] / matches_played[player] * 100) if matches_played[player] > 0 else 0
         game_diff_avg = (game_diff[player] / matches_played[player]) if matches_played[player] > 0 else 0
         profile_image = players_df[players_df["name"] == player]["profile_image_url"].iloc[0] if player in players_df["name"].values else ""
@@ -901,13 +878,13 @@ def calculate_rankings(matches_to_rank):
             "Points": scores[player],
             "Win %": round(win_percentage, 2),
             "Matches": matches_played[player],
-            "Doubles Matches": doubles_matches[player],
-            "Singles Matches": singles_matches[player],
+            "Doubles Matches": doubles_matches[player], # Added
+            "Singles Matches": singles_matches[player], # Added
             "Wins": wins[player],
             "Losses": losses[player],
             "Games Won": games_won[player],
             "Game Diff Avg": round(game_diff_avg, 2),
-            "Cumulative Game Diff": cumulative_game_diff[player],
+            "Cumulative Game Diff": cumulative_game_diff[player], # New: Add to rank data
             "Recent Trend": player_trend
         })
 
@@ -919,9 +896,6 @@ def calculate_rankings(matches_to_rank):
         ).reset_index(drop=True)
         rank_df["Rank"] = [f"🏆 {i}" for i in range(1, len(rank_df) + 1)]
     return rank_df, partner_stats
-
-
-    #----------------------------end of calculate rankings-----------------------------------------
 
 def display_community_stats(matches_df):
     """
@@ -1492,10 +1466,6 @@ load_players()
 load_matches()
 load_bookings()
 
-available_players = sorted(st.session_state.players_df["name"].tolist()) if not st.session_state.players_df.empty else []
-
-
-
 # Check for and display birthday messages
 todays_birthdays = check_birthdays(st.session_state.players_df)
 if todays_birthdays:
@@ -1984,8 +1954,6 @@ with tabs[0]:
         else:
             st.info("Player insights will be available once a player is selected.")
 
-#-----------------------------tab 1------------------------------------
-
 with tabs[1]:
     st.header("Matches")
     with st.expander("➕ Post New Match Result", expanded=False, icon="➡️"):
@@ -2236,18 +2204,6 @@ with tabs[1]:
                 load_matches()
                 st.success("Match deleted.")
                 st.rerun()
-
-
-
-
-
-
-
-
-
-#------------------------end of Tab 1--------------------------------------
-
-
 
 
 # Player Profile tab
