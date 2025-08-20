@@ -496,13 +496,21 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
 def tennis_scores():
     scores = ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
     
-    # Add winning tie-break scores (e.g., 10-0 to 10-9)
+    # Add winning super tie-break scores (e.g., 10-0 to 10-9)
     for i in range(10):
         scores.append(f"Tie Break 10-{i}")
         
-    # Add losing tie-break scores (e.g., 0-10 to 9-10)
+    # Add losing super tie-break scores (e.g., 0-10 to 9-10)
     for i in range(10):
         scores.append(f"Tie Break {i}-10")
+        
+    # Add winning standard tie-break scores (e.g., 7-0 to 7-5)
+    for i in range(6): # Scores from 0 to 5
+        scores.append(f"Tie Break 7-{i}")
+        
+    # Add losing standard tie-break scores (e.g., 0-7 to 5-7)
+    for i in range(6): # Scores from 0 to 5
+        scores.append(f"Tie Break {i}-7")
         
     return scores
 
