@@ -2069,6 +2069,7 @@ with tabs[1]:
     with col2_filter:
         player_search = st.selectbox("Filter by Player", ["All Players"] + players, key="player_search_filter")
 
+    # Start with a clean copy of the matches
     filtered_matches = st.session_state.matches_df.copy()
 
     # Apply type filter first
@@ -2084,14 +2085,31 @@ with tabs[1]:
             (filtered_matches['team2_player2'] == player_search)
         ]
 
-    # Sort matches by date in ascending order for serial numbers (oldest first)
-    filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
-    filtered_matches = filtered_matches.sort_values(by='date', ascending=True).reset_index(drop=True)
-    # Assign serial numbers starting from 1
-    filtered_matches['serial_number'] = filtered_matches.index + 1
+    # --- START: Robust Date Handling and Sorting ---
+    if not filtered_matches.empty:
+        # Convert date column, turning errors into NaT (Not a Time)
+        filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
 
-    # Re-sort for display in descending order (latest first)
-    filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
+        # Keep only the rows with valid dates
+        valid_matches = filtered_matches.dropna(subset=['date']).copy()
+        
+        # If some rows were dropped, inform the user
+        if len(valid_matches) < len(filtered_matches):
+            st.warning("Some match records were hidden due to missing or invalid date formats in the database.")
+        
+        if not valid_matches.empty:
+            # Sort ascending to assign serial numbers correctly (oldest = #1)
+            valid_matches = valid_matches.sort_values(by='date', ascending=True).reset_index(drop=True)
+            valid_matches['serial_number'] = valid_matches.index + 1
+            
+            # Re-sort descending for display (newest first)
+            display_matches = valid_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
+        else:
+            display_matches = pd.DataFrame() # Ensure an empty dataframe if no valid dates
+    else:
+        display_matches = pd.DataFrame()
+    # --- END: Robust Date Handling and Sorting ---
+
 
     def format_match_players(row):
         if row["match_type"] == "Singles":
@@ -2136,14 +2154,35 @@ with tabs[1]:
         score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
         score_html = ", ".join(score_parts_html)
         
-        # Check if the date is valid before formatting
         if pd.notna(row['date']):
             date_str = row['date'].strftime('%A, %d %b')
         else:
-            date_str = "Invalid Date" # Fallback text
+            date_str = "Invalid Date"
             
         return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
 
+    if display_matches.empty:
+        st.info("No matches found for the selected filters.")
+    else:
+        for index, row in display_matches.iterrows():
+            # Create four columns: serial number, image, match details, and share button
+            cols = st.columns([1, 1, 7, 1])
+            with cols[0]:
+                # Display serial number
+                st.markdown(f"<span style='font-weight:bold; color:#fff500;'>{row['serial_number']}</span>", unsafe_allow_html=True)
+            with cols[1]:
+                if row["match_image_url"]:
+                    try:
+                        st.image(row["match_image_url"], width=50, caption="")
+                    except Exception as e:
+                        st.error(f"Error displaying match image: {str(e)}")
+            with cols[2]:
+                st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
+                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
+            with cols[3]:
+                share_link = generate_whatsapp_link(row)
+                st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
+            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
 # ... (rest of the code remains unchanged)
 
     st.markdown("---")
@@ -2179,7 +2218,7 @@ with tabs[1]:
                 desc_plain = f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
 
-        
+
     # Use a unique key to avoid conflicts
     selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_1")
     if selected_match_to_edit:
