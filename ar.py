@@ -2953,7 +2953,8 @@ with tabs[4]:
                                 st.rerun()
 
 
-
+    st.markdown("Detailed Odd's calculation Logic at https://github.com/mahadevbk/ar2/blob/main/ar%20odds%20prediction%20system.pdf")
+            
 
 
 
