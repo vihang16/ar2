@@ -1269,83 +1269,140 @@ def generate_booking_id(bookings_df, booking_date):
         new_id = f"BK{quarter}{year}-{serial_number:02d}"
     return new_id
 
-def suggest_balanced_pairing(players, rank_df):
-    """Suggests balanced doubles teams and calculates odds, with styled player names."""
-    # This check is important to avoid errors
-    if len(players) != 4 or "" in players:
-        return ("Please select all four players for a doubles match.", None, None)
+
+# ==============================================================================
+# START: NEW COMPLEX ODDS CALCULATION FUNCTIONS
+# ==============================================================================
+
+def _calculate_performance_score(player_stats, full_dataset):
+    """
+    Calculates a weighted performance score for a player based on normalized stats.
+    """
+    # Define weights for each component
+    w_wp = 0.50  # Win Percentage
+    w_agd = 0.35 # Average Game Difference
+    w_ef = 0.15  # Experience Factor (Matches Played)
+
+    # --- 1. Normalize Win Percentage (WP) ---
+    max_wp = full_dataset['Win %'].max()
+    wp_norm = player_stats['Win %'] / max_wp if max_wp > 0 else 0
+
+    # --- 2. Normalize Average Game Difference (AGD) ---
+    max_agd = full_dataset['Game Diff Avg'].max()
+    min_agd = full_dataset['Game Diff Avg'].min()
+    if max_agd == min_agd:
+        agd_norm = 0.5 # Avoid division by zero if all values are the same
+    else:
+        agd_norm = (player_stats['Game Diff Avg'] - min_agd) / (max_agd - min_agd)
+
+    # --- 3. Normalize Experience Factor (EF) ---
+    max_matches = full_dataset['Matches'].max()
+    ef_norm = player_stats['Matches'] / max_matches if max_matches > 0 else 0
+
+    # --- 4. Calculate Final Performance Score ---
+    performance_score = (w_wp * wp_norm) + (w_agd * agd_norm) + (w_ef * ef_norm)
     
-    player_points = {}
+    return performance_score
+
+def calculate_enhanced_doubles_odds(players, doubles_rank_df):
+    """
+    Calculates balanced teams and odds for a doubles match using a multi-factor Performance Score.
+    """
+    if len(players) != 4 or "" in players or doubles_rank_df.empty:
+        return ("Please select four players with doubles match history.", None, None)
+
+    player_scores = {}
     for player in players:
-        if player == "Visitor" or player == "":
-            player_points[player] = 0
+        player_data = doubles_rank_df[doubles_rank_df["Player"] == player]
+        if not player_data.empty:
+            # Calculate performance score for this player
+            player_scores[player] = _calculate_performance_score(player_data.iloc[0], doubles_rank_df)
         else:
-            player_data = rank_df[rank_df["Player"] == player]
-            player_points[player] = player_data["Points"].iloc[0] if not player_data.empty else 0
-    
-    pairs = list(combinations(players, 2))
+            # Player has no doubles history, assign a baseline score (e.g., 0)
+            player_scores[player] = 0
+
+    # Find the most balanced pairing based on the new Performance Score
     min_diff = float('inf')
     best_pairing = None
-    team1_odds = None
-    team2_odds = None
     
-    for team1 in pairs:
-        team2 = tuple(p for p in players if p not in team1)
-        team1_points = sum(player_points.get(p, 0) for p in team1)
-        team2_points = sum(player_points.get(p, 0) for p in team2)
-        diff = abs(team1_points - team2_points)
+    for team1_combo in combinations(players, 2):
+        team2_combo = tuple(p for p in players if p not in team1_combo)
+        
+        team1_score = sum(player_scores.get(p, 0) for p in team1_combo)
+        team2_score = sum(player_scores.get(p, 0) for p in team2_combo)
+        
+        diff = abs(team1_score - team2_score)
         
         if diff < min_diff:
             min_diff = diff
-            best_pairing = (team1, team2)
-            total_points = team1_points + team2_points
-            if total_points > 0:
-                team1_odds = (team1_points / total_points) * 100
-                team2_odds = (team2_points / total_points) * 100
-            else:
-                team1_odds = 50.0
-                team2_odds = 50.0
-    
-    if best_pairing:
-        team1, team2 = best_pairing
-        
-        # Style the player names with optic yellow color
-        t1p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{team1[0]}</span>"
-        t1p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{team1[1]}</span>"
-        t2p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{team2[0]}</span>"
-        t2p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{team2[1]}</span>"
-        
-        pairing_text = f"Team 1: {t1p1_styled} & {t1p2_styled} vs Team 2: {t2p1_styled} & {t2p2_styled}"
-        return (pairing_text, team1_odds, team2_odds)
-    
-    return ("Unable to suggest a balanced pairing.", None, None)
+            best_pairing = (team1_combo, team2_combo)
 
-def suggest_singles_odds(players, rank_df):
-    """Calculates winning odds for a singles match based on player points."""
-    if len(players) != 2 or "" in players:
+    if not best_pairing:
+        return ("Could not determine a balanced pairing.", None, None)
+
+    team1, team2 = best_pairing
+    team1_total_score = sum(player_scores.get(p, 0) for p in team1)
+    team2_total_score = sum(player_scores.get(p, 0) for p in team2)
+    total_match_score = team1_total_score + team2_total_score
+
+    team1_odds = (team1_total_score / total_match_score) * 100 if total_match_score > 0 else 50.0
+    team2_odds = (team2_total_score / total_match_score) * 100 if total_match_score > 0 else 50.0
+
+    # Styled output
+    t1p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{team1[0]}</span>"
+    t1p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{team1[1]}</span>"
+    t2p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{team2[0]}</span>"
+    t2p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{team2[1]}</span>"
+    pairing_text = f"Team 1: {t1p1_styled} & {t1p2_styled} vs Team 2: {t2p1_styled} & {t2p2_styled}"
+    
+    return (pairing_text, team1_odds, team2_odds)
+
+def calculate_enhanced_singles_odds(players, singles_rank_df):
+    """
+    Calculates odds for a singles match using a multi-factor Performance Score.
+    """
+    if len(players) != 2 or "" in players or singles_rank_df.empty:
         return (None, None)
 
-    player_points = {}
+    player_scores = {}
     for player in players:
-        if player == "Visitor" or player == "":
-            player_points[player] = 0  # Visitors or empty slots have 0 points
+        player_data = singles_rank_df[singles_rank_df["Player"] == player]
+        if not player_data.empty:
+            player_scores[player] = _calculate_performance_score(player_data.iloc[0], singles_rank_df)
         else:
-            player_data = rank_df[rank_df["Player"] == player]
-            player_points[player] = player_data["Points"].iloc[0] if not player_data.empty else 0
+            player_scores[player] = 0
 
-    p1_points = player_points.get(players[0], 0)
-    p2_points = player_points.get(players[1], 0)
-    total_points = p1_points + p2_points
+    p1_score = player_scores.get(players[0], 0)
+    p2_score = player_scores.get(players[1], 0)
+    total_score = p1_score + p2_score
 
-    if total_points > 0:
-        p1_odds = (p1_points / total_points) * 100
-        p2_odds = (p2_points / total_points) * 100
-    else:
-        # If both players have 0 points, it's a 50/50 chance
-        p1_odds = 50.0
-        p2_odds = 50.0
+    p1_odds = (p1_score / total_score) * 100 if total_score > 0 else 50.0
+    p2_odds = (p2_score / total_score) * 100 if total_score > 0 else 50.0
 
     return (p1_odds, p2_odds)
+
+# ==============================================================================
+# UPDATED: Original functions now call the new enhanced versions
+# ==============================================================================
+
+def suggest_balanced_pairing(players, doubles_rank_df):
+    """Suggests balanced doubles teams. This function now calls the enhanced odds calculation."""
+    if len(players) != 4 or "" in players:
+        return ("Please select all four players for a doubles match.", None, None)
+    
+    return calculate_enhanced_doubles_odds(players, doubles_rank_df)
+
+def suggest_singles_odds(players, singles_rank_df):
+    """Calculates winning odds for a singles match. This function now calls the enhanced odds calculation."""
+    if len(players) != 2 or "" in players:
+        return (None, None)
+        
+    return calculate_enhanced_singles_odds(players, singles_rank_df)
+
+# ==============================================================================
+# END: NEW COMPLEX ODDS CALCULATION FUNCTIONS
+# ==============================================================================
+
 
 def delete_booking_from_db(booking_id):
     try:
@@ -1429,15 +1486,11 @@ def generate_whatsapp_link(row):
     for s in [row['set1'], row['set2'], row['set3']]:
         if s:
             if "Tie Break" in s:
-                # Correctly format the tie break score to include the text
-                tie_break_score_parts = s.replace("Tie Break", "").strip().split('-')
-                # Re-format the tie break part of the string to use a colon for consistency
-                tie_break_formatted_score = s.replace("-", ":") # e.g., "Tie Break 10:8"
-                
-                if int(tie_break_score_parts[0]) > int(tie_break_score_parts[1]):
-                    scores_list.append(f'*7-6({tie_break_formatted_score})*')
+                tie_break_scores = s.replace("Tie Break", "").strip().split('-')
+                if int(tie_break_scores[0]) > int(tie_break_scores[1]):
+                    scores_list.append(f'*7-6({tie_break_scores[0]}:{tie_break_scores[1]})*')
                 else:
-                    scores_list.append(f'*6-7({tie_break_formatted_score})*')
+                    scores_list.append(f'*6-7({tie_break_scores[0]}:{tie_break_scores[1]})*')
             else:
                 scores_list.append(f'*{s.replace("-", ":")}*')
                 
@@ -2555,12 +2608,24 @@ with tabs[4]:
         if upcoming_bookings.empty:
             st.info("No upcoming bookings found.")
         else:
+            # =====================================================================
+            # START: MODIFICATION FOR NEW ODDS CALCULATION
+            # =====================================================================
             try:
-                rank_df, _ = calculate_rankings(st.session_state.matches_df)
+                # Calculate format-specific rankings for odds calculation
+                doubles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Doubles']
+                singles_matches_df = st.session_state.matches_df[st.session_state.matches_df['match_type'] == 'Singles']
+                
+                doubles_rank_df, _ = calculate_rankings(doubles_matches_df)
+                singles_rank_df, _ = calculate_rankings(singles_matches_df)
             except Exception as e:
-                rank_df = pd.DataFrame()
+                doubles_rank_df = pd.DataFrame()
+                singles_rank_df = pd.DataFrame()
                 st.warning(f"Unable to load rankings for pairing suggestions: {str(e)}")
-    
+            # =====================================================================
+            # END: MODIFICATION FOR NEW ODDS CALCULATION
+            # =====================================================================
+
             for _, row in upcoming_bookings.iterrows():
                 players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
                 players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players specified"
@@ -2590,8 +2655,11 @@ with tabs[4]:
                 pairing_suggestion = ""
                 plain_suggestion = ""
                 try:
+                    # =====================================================================
+                    # START: MODIFICATION FOR NEW ODDS CALCULATION
+                    # =====================================================================
                     if row['match_type'] == "Doubles" and len(players) == 4:
-                        suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, rank_df)
+                        suggested_pairing, team1_odds, team2_odds = suggest_balanced_pairing(players, doubles_rank_df)
                         if team1_odds is not None and team2_odds is not None:
                             teams = suggested_pairing.split(' vs ')
                             team1_players = teams[0].replace('Team 1: ', '')
@@ -2609,7 +2677,7 @@ with tabs[4]:
                             )
                             plain_suggestion = f"\n*Suggested Pairing: {re.sub(r'<.*?>', '', suggested_pairing).replace('Suggested Pairing: ', '').strip()}*"
                     elif row['match_type'] == "Singles" and len(players) == 2:
-                        p1_odds, p2_odds = suggest_singles_odds(players, rank_df)
+                        p1_odds, p2_odds = suggest_singles_odds(players, singles_rank_df)
                         if p1_odds is not None:
                             p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[0]}</span>"
                             p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{players[1]}</span>"
@@ -2619,13 +2687,16 @@ with tabs[4]:
                                 f"<span style='font-weight:bold;'>{p2_styled}</span> ({p2_odds:.1f}%)</div>"
                             )
                             plain_suggestion = f"\n*Odds: {players[0]} ({p1_odds:.1f}%) vs {players[1]} ({p2_odds:.1f}%)*"
+                    # =====================================================================
+                    # END: MODIFICATION FOR NEW ODDS CALCULATION
+                    # =====================================================================
                     elif row['match_type'] == "Doubles" and len(players) < 4:
                         pairing_suggestion = "<div><strong style='color:white;'>Suggested Pairing:</strong> Not enough players for pairing suggestion</div>"
                         plain_suggestion = "\n*Suggested Pairing: Not enough players for pairing suggestion*"
                 except Exception as e:
                     pairing_suggestion = f"<div><strong style='color:white;'>Suggestion:</strong> Error calculating: {e}</div>"
                     plain_suggestion = f"\n*Suggestion: Error calculating: {str(e)}*"
-    
+
                 weekday = pd.to_datetime(row['date']).strftime('%a')
                 date_part = pd.to_datetime(row['date']).strftime('%d %b')
                 full_date = f"{weekday} , {date_part} , {time_ampm}"
