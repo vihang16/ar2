@@ -2187,20 +2187,22 @@ with tabs[1]:
 
     st.markdown("---")
    
+    st.markdown("---")
+   
     st.subheader("✏️ Manage Existing Match")
     clean_match_options = []
-    for _, row in filtered_matches.iterrows():
+    # Note: We are using 'display_matches' which is already sorted with the latest first
+    for _, row in display_matches.iterrows():
         score_plain = f"{row['set1']}"
         if row['set2']:
             score_plain += f", {row['set2']}"
         if row['set3']:
             score_plain += f", {row['set3']}"
-        
-        # Check if the date is valid before formatting
+
         if pd.notna(row['date']):
             date_plain = row['date'].strftime('%d %b %y %H:%M')
         else:
-            date_plain = "Invalid Date" # Fallback text
+            date_plain = "Invalid Date"
             
         if row["match_type"] == "Singles":
             if row["winner"] == "Tie":
@@ -2217,13 +2219,13 @@ with tabs[1]:
             else:  # Team 2
                 desc_plain = f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
-
-
+    
     # Use a unique key to avoid conflicts
     selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_1")
     if selected_match_to_edit:
         selected_id = selected_match_to_edit.split(" | ")[-1]
-        row = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].iloc[0]
+        # Use display_matches which is the final sorted and valid dataframe
+        row = display_matches[display_matches["match_id"] == selected_id].iloc[0]
         idx = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].index[0]
         current_date_dt = pd.to_datetime(row["date"])
         all_scores = [""] + tennis_scores()
@@ -2283,7 +2285,6 @@ with tabs[1]:
                 load_matches()
                 st.success("Match deleted.")
                 st.rerun()
-
 
 # Player Profile tab
 with tabs[2]:
