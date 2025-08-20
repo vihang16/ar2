@@ -1990,7 +1990,7 @@ with tabs[1]:
         match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_match_type_{st.session_state.form_key_suffix}")
 
         # FIX: Add this line to define the available_players variable
-        available_players = sorted(st.session_state.players_df['name'].tolist())
+        #available_players = sorted(st.session_state.players_df['name'].tolist())
         
         with st.form(key=f"add_match_form_{st.session_state.form_key_suffix}"):
             date = st.date_input("Match Date *", value=datetime.today(), key=f"date_{st.session_state.form_key_suffix}")
