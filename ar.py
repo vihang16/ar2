@@ -1430,7 +1430,12 @@ def generate_whatsapp_link(row):
                 scores_list.append(f'*{s.replace("-", ":")}*')
                 
     scores_str = " ".join(scores_list)
-    date_str = row['date'].strftime('%A, %d %b')
+    
+    # Check if the date is valid before formatting
+    if pd.notna(row['date']):
+        date_str = row['date'].strftime('%A, %d %b')
+    else:
+        date_str = "Unknown Date" # Fallback text
 
     # Headline text: use "tied with" for ties
     if row["winner"] == "Tie":
@@ -2131,7 +2136,12 @@ with tabs[1]:
         score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
         score_html = ", ".join(score_parts_html)
         
-        date_str = row['date'].strftime('%A, %d %b')
+        # Check if the date is valid before formatting
+        if pd.notna(row['date']):
+            date_str = row['date'].strftime('%A, %d %b')
+        else:
+            date_str = "Invalid Date" # Fallback text
+            
         return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
 
 # ... (rest of the code remains unchanged)
@@ -2146,7 +2156,13 @@ with tabs[1]:
             score_plain += f", {row['set2']}"
         if row['set3']:
             score_plain += f", {row['set3']}"
-        date_plain = row['date'].strftime('%d %b %y %H:%M')
+        
+        # Check if the date is valid before formatting
+        if pd.notna(row['date']):
+            date_plain = row['date'].strftime('%d %b %y %H:%M')
+        else:
+            date_plain = "Invalid Date" # Fallback text
+            
         if row["match_type"] == "Singles":
             if row["winner"] == "Tie":
                 desc_plain = f"{row['team1_player1']} tied with {row['team2_player1']}"
@@ -2162,6 +2178,8 @@ with tabs[1]:
             else:  # Team 2
                 desc_plain = f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
         clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
+
+        
     # Use a unique key to avoid conflicts
     selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_1")
     if selected_match_to_edit:
