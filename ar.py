@@ -1429,11 +1429,15 @@ def generate_whatsapp_link(row):
     for s in [row['set1'], row['set2'], row['set3']]:
         if s:
             if "Tie Break" in s:
-                tie_break_scores = s.replace("Tie Break", "").strip().split('-')
-                if int(tie_break_scores[0]) > int(tie_break_scores[1]):
-                    scores_list.append(f'*7-6({tie_break_scores[0]}:{tie_break_scores[1]})*')
+                # Correctly format the tie break score to include the text
+                tie_break_score_parts = s.replace("Tie Break", "").strip().split('-')
+                # Re-format the tie break part of the string to use a colon for consistency
+                tie_break_formatted_score = s.replace("-", ":") # e.g., "Tie Break 10:8"
+                
+                if int(tie_break_score_parts[0]) > int(tie_break_score_parts[1]):
+                    scores_list.append(f'*7-6({tie_break_formatted_score})*')
                 else:
-                    scores_list.append(f'*6-7({tie_break_scores[0]}:{tie_break_scores[1]})*')
+                    scores_list.append(f'*6-7({tie_break_formatted_score})*')
             else:
                 scores_list.append(f'*{s.replace("-", ":")}*')
                 
