@@ -1984,215 +1984,270 @@ with tabs[0]:
         else:
             st.info("Player insights will be available once a player is selected.")
 
+#-----------------------------tab 1------------------------------------
+
 with tabs[1]:
     st.header("Matches")
-    load_matches()
-    all_scores = tennis_scores()
-
-    with st.expander("Post a New Match", expanded=False, icon="➡️"):
-with tabs[1]:
-    st.subheader("Add a New Match")
-
-    # Ensure players_df is loaded and not empty before creating the list
-    if 'players_df' in st.session_state and not st.session_state.players_df.empty:
-        # Create a sorted list of player names
-        available_players = sorted(st.session_state.players_df['name'].tolist())
-    else:
-        # Provide an empty list if players haven't been loaded yet
-        available_players = []
-        st.warning("Player data is not available. Please load players in the 'Players' tab.")
-
-    # Form to add a new match
-    with st.form("new_match_form", clear_on_submit=True):
-        st.markdown("**Match Details**")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            match_date = st.date_input("Match Date *", datetime.now(), key=f"match_date_{st.session_state.form_key_suffix}")
-        with col2:
-            match_time = st.time_input("Match Time", datetime.now().time(), key=f"match_time_{st.session_state.form_key_suffix}")
-        with col3:
-            court_name = st.selectbox("Court Name", [""] + COURT_NAMES, key=f"court_name_{st.session_state.form_key_suffix}")
-
-        st.markdown("**Team 1**")
-        col1, col2 = st.columns(2)
-        with col1:
-            p1 = st.selectbox("Team 1 - Player 1 *", [""] + available_players, key=f"t1p1_{st.session_state.form_key_suffix}")
-            p2 = st.selectbox("Team 1 - Player 2", [""] + available_players, key=f"t1p2_{st.session_state.form_key_suffix}")
-        with col2:
-            s1 = st.number_input("Set 1 Score *", min_value=0, max_value=7, step=1, key=f"t1s1_{st.session_state.form_key_suffix}")
-            s2 = st.number_input("Set 2 Score", min_value=0, max_value=7, step=1, key=f"t1s2_{st.session_state.form_key_suffix}")
-            s3 = st.number_input("Set 3 Score", min_value=0, max_value=7, step=1, key=f"t1s3_{st.session_state.form_key_suffix}")
-
-        st.markdown("**Team 2**")
-        col1, col2 = st.columns(2)
-        with col1:
-            p3 = st.selectbox("Team 2 - Player 1 *", [""] + available_players, key=f"t2p1_{st.session_state.form_key_suffix}")
-            p4 = st.selectbox("Team 2 - Player 2", [""] + available_players, key=f"t2p2_{st.session_state.form_key_suffix}")
-        with col2:
-            s4 = st.number_input("Set 1 Score *", min_value=0, max_value=7, step=1, key=f"t2s1_{st.session_state.form_key_suffix}")
-            s5 = st.number_input("Set 2 Score", min_value=0, max_value=7, step=1, key=f"t2s2_{st.session_state.form_key_suffix}")
-            s6 = st.number_input("Set 3 Score", min_value=0, max_value=7, step=1, key=f"t2s3_{st.session_state.form_key_suffix}")
-
-        match_image_url = st.text_input("Match Image URL (Optional)", key=f"match_image_{st.session_state.form_key_suffix}")
-
-        # This is the submit button for the form
-        submitted = st.form_submit_button("Add Match")
-
-        if submitted:
-            # Validation checks
-            if not all([match_date, p1, p3, s1 is not None, s4 is not None]):
-                st.error("Please fill in all required fields marked with *.")
-            elif len(set(filter(None, [p1, p2, p3, p4]))) != len(list(filter(None, [p1, p2, p3, p4]))):
-                st.error("Each player can only be selected once per match.")
-            elif (s1 == s4) or (s2 is not None and s5 is not None and s2 == s5) or (s3 is not None and s6 is not None and s3 == s6):
-                 st.error("Set scores cannot be a tie. Please enter a valid score.")
-            else:
-                # Combine date and time
-                match_datetime = datetime.combine(match_date, match_time)
-
-                # Find winner
-                team1_sets_won = (s1 > s4) + (s2 > s5 if s2 is not None and s5 is not None else 0) + (s3 > s6 if s3 is not None and s6 is not None else 0)
-                team2_sets_won = (s4 > s1) + (s5 > s2 if s2 is not None and s5 is not None else 0) + (s6 > s3 if s3 is not None and s6 is not None else 0)
-                winner = 1 if team1_sets_won > team2_sets_won else 2
-
-                # Create new match dictionary
-                new_match = {
-                    "match_id": str(uuid.uuid4()),
-                    "datetime": match_datetime.isoformat(),
-                    "court_name": court_name,
-                    "team1_player1": p1, "team1_player2": p2 if p2 else None,
-                    "team2_player1": p3, "team2_player2": p4 if p4 else None,
-                    "team1_set1_score": s1, "team1_set2_score": s2 if s2 is not None else None, "team1_set3_score": s3 if s3 is not None else None,
-                    "team2_set1_score": s4, "team2_set2_score": s5 if s5 is not None else None, "team2_set3_score": s6 if s6 is not None else None,
-                    "winner_team": winner,
-                    "match_image_url": match_image_url if match_image_url else None
-                }
-
-                try:
-                    # Insert data into Supabase
-                    _, error = st.session_state.supabase.table("matches").insert(new_match).execute()
-                    if isinstance(error, tuple) and len(error) > 1 and error[1]:
-                         raise Exception(error[1])
-
-                    # Refresh matches from DB and recalculate stats
-                    load_matches(force_refresh=True)
-                    calculate_player_stats()
-
-                    st.success("Match added successfully!")
-
-                    # Increment form key to reset fields
-                    st.session_state.form_key_suffix += 1
-                    st.experimental_rerun()
-
-                except Exception as e:
-                    st.error(f"Failed to add match: {e}")
-
-    st.markdown("---")
-    st.subheader("🎾 Recent Matches")
-    if st.session_state.matches_df.empty:
-        st.info("No matches found.")
-    else:
-        matches_df = st.session_state.matches_df.copy()
-        matches_df['date'] = pd.to_datetime(matches_df['date'], errors='coerce')
-        matches_df = matches_df.sort_values(by='date', ascending=False)
-        
-        for idx, row in matches_df.iterrows():
-            date_str = row['date'].strftime('%A, %d %b') if pd.notnull(row['date']) else "Unknown Date"
-            time_str = row['date'].strftime('%-I:%M %p') if pd.notnull(row['date']) else "Unknown Time"
-            players = [p for p in [row['team1_player1'], row['team1_player2'], row['team2_player1'], row['team2_player2']] if p]
-            players_str = ", ".join([f"<span style='font-weight:bold; color:#fff500;'>{p}</span>" for p in players]) if players else "No players"
-            set1_str = f"<span style='font-weight:bold; color:#fff500;'>{row['set1']}</span>" if row['set1'] else ""
-            set2_str = f"<span style='font-weight:bold; color:#fff500;'>{row['set2']}</span>" if row['set2'] else ""
-            set3_str = f"<span style='font-weight:bold; color:#fff500;'>{row['set3']}</span>" if row['set3'] else ""
-            winner_str = f"<span style='font-weight:bold; color:#fff500;'>{row['winner']}</span>" if row['winner'] else "No winner"
-            
-            match_image_html = ""
-            if row.get('match_image_url'):
-                match_image_html = f'<a href="{row["match_image_url"]}" target="_blank"><img src="{row["match_image_url"]}" style="width:120px; cursor:pointer;" title="Click to view full-size"></a>'
-            
-            match_text = f"""
-            <div class="match-row" style='background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);'>
-                <div><strong>Date:</strong> <span style='font-weight:bold; color:#fff500;'>{date_str}</span></div>
-                <div><strong>Time:</strong> <span style='font-weight:bold; color:#fff500;'>{time_str}</span></div>
-                <div><strong>Match Type:</strong> <span style='font-weight:bold; color:#fff500;'>{row['match_type']}</span></div>
-                <div><strong>Players:</strong> {players_str}</div>
-                <div><strong>Set 1:</strong> {set1_str}</div>
-            """
-            if set2_str:
-                match_text += f"<div><strong>Set 2:</strong> {set2_str}</div>"
-            if set3_str:
-                match_text += f"<div><strong>Set 3:</strong> {set3_str}</div>"
-            match_text += f"""
-                <div><strong>Winner:</strong> {winner_str}</div>
-                {match_image_html}
-            </div>
-            """
-            st.markdown(match_text, unsafe_allow_html=True)
-            
-            with st.expander(f"Edit Match {row['match_id']}", icon="✏️"):
-                date_edit = st.date_input("Match Date *", value=row['date'].date() if pd.notnull(row['date']) else datetime.today(), key=f"edit_date_{row['match_id']}")
-                current_time = row['date'].strftime("%-I:%M %p") if pd.notnull(row['date']) else hours[0]
-                time_edit = st.selectbox("Match Time *", hours, index=hours.index(current_time) if current_time in hours else 0, key=f"edit_time_{row['match_id']}")
-                match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row['match_type'] == "Doubles" else 1, key=f"edit_match_type_{row['match_id']}")
-                
-                set1_index = all_scores.index(row['set1']) if row['set1'] in all_scores else 0
-                set2_index = all_scores.index(row['set2']) if row['set2'] in all_scores else 0
-                set3_index = all_scores.index(row['set3']) if row['set3'] in all_scores else 0
-                
-                if match_type_edit == "Doubles":
+    with st.expander("➕ Post New Match Result", expanded=False, icon="➡️"):
+        st.subheader("Enter Match Result")
+        match_type_new = st.radio("Match Type", ["Doubles", "Singles"], horizontal=True, key=f"post_match_type_new_{st.session_state.form_key_suffix}")
+        available_players = sorted(players.copy() + ["Visitor"] if players else ["Visitor"])
+        if not available_players:
+            st.warning("No players available. Please add players in the Player Profile tab.")
+        else:
+            with st.form(key=f"new_match_form_{st.session_state.form_key_suffix}"):
+                if match_type_new == "Doubles":
                     col1, col2 = st.columns(2)
                     with col1:
-                        p1_edit = st.selectbox("Team 1 - Player 1", [""] + available_players, index=available_players.index(row["team1_player1"]) + 1 if row["team1_player1"] in available_players else 0, key=f"edit_t1p1_{row['match_id']}")
-                        p2_edit = st.selectbox("Team 1 - Player 2", [""] + available_players, index=available_players.index(row["team1_player2"]) + 1 if row["team1_player2"] in available_players else 0, key=f"edit_t1p2_{row['match_id']}")
+                        p1_new = st.selectbox("Team 1 - Player 1", [""] + available_players, key=f"t1p1_new_post_{st.session_state.form_key_suffix}")
+                        p2_new = st.selectbox("Team 1 - Player 2", [""] + available_players, key=f"t1p2_new_post_{st.session_state.form_key_suffix}")
                     with col2:
-                        p3_edit = st.selectbox("Team 2 - Player 1", [""] + available_players, index=available_players.index(row["team2_player1"]) + 1 if row["team2_player1"] in available_players else 0, key=f"edit_t2p1_{row['match_id']}")
-                        p4_edit = st.selectbox("Team 2 - Player 2", [""] + available_players, index=available_players.index(row["team2_player2"]) + 1 if row["team2_player2"] in available_players else 0, key=f"edit_t2p2_{row['match_id']}")
+                        p3_new = st.selectbox("Team 2 - Player 1", [""] + available_players, key=f"t2p1_new_post_{st.session_state.form_key_suffix}")
+                        p4_new = st.selectbox("Team 2 - Player 2", [""] + available_players, key=f"t2p2_new_post_{st.session_state.form_key_suffix}")
                 else:
-                    p1_edit = st.selectbox("Player 1", [""] + available_players, index=available_players.index(row["team1_player1"]) + 1 if row["team1_player1"] in available_players else 0, key=f"edit_t1p1_{row['match_id']}")
-                    p3_edit = st.selectbox("Player 2", [""] + available_players, index=available_players.index(row["team2_player1"]) + 1 if row["team2_player1"] in available_players else 0, key=f"edit_t2p1_{row['match_id']}")
-                    p2_edit = ""
-                    p4_edit = ""
-                
-                set1_edit = st.selectbox("Set 1", [""] + all_scores, index=set1_index, key=f"edit_set1_{row['match_id']}")
-                set2_edit = st.selectbox("Set 2 (optional)", [""] + all_scores, index=set2_index, key=f"edit_set2_{row['match_id']}")
-                set3_edit = st.selectbox("Set 3 (optional)", [""] + all_scores, index=set3_index, key=f"edit_set3_{row['match_id']}")
-                winner_edit = st.selectbox("Winner", ["", "Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]) if row["winner"] in ["Team 1", "Team 2", "Tie"] else 0, key=f"edit_winner_{row['match_id']}")
-                match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{row['match_id']}")
-                
-                if st.button("Save Changes", key=f"save_match_changes_{row['match_id']}"):
-                    team1_wins = (winner_edit == "Team 1")
-                    set1_display = format_display_score(set1_edit, winner_edit, team1_wins)
-                    set2_display = format_display_score(set2_edit, winner_edit, team1_wins)
-                    set3_display = format_display_score(set3_edit, winner_edit, team1_wins)
-                    
-                    image_url_edit = row["match_image_url"]
-                    if match_image_edit:
-                        image_url_edit = upload_image_to_supabase(match_image_edit, row['match_id'], image_type="match")
-                    combined_datetime = datetime.combine(date_edit, datetime.strptime(time_edit, "%I:%M %p").time())
-                    st.session_state.matches_df.loc[idx] = {
-                        "match_id": row['match_id'],
-                        "date": combined_datetime,
-                        "match_type": match_type_edit,
-                        "team1_player1": p1_edit,
-                        "team1_player2": p2_edit,
-                        "team2_player1": p3_edit,
-                        "team2_player2": p4_edit,
-                        "set1": set1_display,
-                        "set2": set2_display,
-                        "set3": set3_display,
-                        "winner": winner_edit,
-                        "match_image_url": image_url_edit
+                    p1_new = st.selectbox("Player 1", [""] + available_players, key=f"s1p1_new_post_{st.session_state.form_key_suffix}")
+                    p3_new = st.selectbox("Player 2", [""] + available_players, key=f"s1p2_new_post_{st.session_state.form_key_suffix}")
+                    p2_new = ""
+                    p4_new = ""
+                set1_new = st.selectbox("Set 1 *", tennis_scores(), index=4, key=f"set1_new_post_{st.session_state.form_key_suffix}")
+                set2_new = st.selectbox("Set 2 *" if match_type_new == "Doubles" else "Set 2 (optional)", [""] + tennis_scores(), key=f"set2_new_post_{st.session_state.form_key_suffix}")
+                set3_new = st.selectbox("Set 3 (optional)", [""] + tennis_scores(), key=f"set3_new_post_{st.session_state.form_key_suffix}")
+                winner_new = st.radio("Winner", ["Team 1", "Team 2", "Tie"], key=f"winner_new_post_{st.session_state.form_key_suffix}")
+                match_image_new = st.file_uploader("Upload Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"match_image_new_post_{st.session_state.form_key_suffix}")
+                st.markdown("*Required fields", unsafe_allow_html=True)
+                submit_button = st.form_submit_button("Submit Match")
+            if submit_button:
+                selected_players = [p1_new, p2_new, p3_new, p4_new] if match_type_new == "Doubles" else [p1_new, p3_new]
+                if "" in selected_players:
+                    st.error("Please select all players.")
+                elif len(selected_players) != len(set(selected_players)):
+                    st.error("Please select different players for each position.")
+                elif not set1_new:
+                    st.error("Set 1 score is required.")
+                elif match_type_new == "Doubles" and not set2_new:
+                    st.error("Set 2 score is required for doubles matches.")
+                else:
+                    new_match_date = datetime.now()
+                    match_id_new = generate_match_id(st.session_state.matches_df, new_match_date)
+                    image_url_new = ""
+                    if match_image_new:
+                        image_url_new = upload_image_to_supabase(match_image_new, match_id_new, image_type="match")
+                    new_match_entry = {
+                        "match_id": match_id_new,
+                        "date": new_match_date,
+                        "match_type": match_type_new,
+                        "team1_player1": p1_new,
+                        "team1_player2": p2_new,
+                        "team2_player1": p3_new,
+                        "team2_player2": p4_new,
+                        "set1": set1_new,
+                        "set2": set2_new,
+                        "set3": set3_new,
+                        "winner": winner_new,
+                        "match_image_url": image_url_new
                     }
-                    save_matches(st.session_state.matches_df)
-                    load_matches()
-                    st.success("Match updated.")
+                    matches_to_save = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match_entry])], ignore_index=True)
+                    save_matches(matches_to_save)
+                    load_matches()  # Reload data from DB
+                    st.success("Match submitted.")
+                    st.session_state.form_key_suffix += 1
                     st.rerun()
-                
-                if st.button("🗑️ Delete This Match", key=f"delete_match_{row['match_id']}"):
-                    delete_match_from_db(row['match_id'])
-                    load_matches()
-                    st.success("Match deleted.")
-                    st.rerun()
+
+    #st.markdown("---")
+    #st.markdown("---")
+    #st.subheader("Match History")
+
+    # Create columns for the filters
+    col1_filter, col2_filter = st.columns(2)
+    with col1_filter:
+        match_filter = st.radio("Filter by Type", ["All", "Singles", "Doubles"], horizontal=True, key="match_history_filter")
+    with col2_filter:
+        player_search = st.selectbox("Filter by Player", ["All Players"] + players, key="player_search_filter")
+
+    filtered_matches = st.session_state.matches_df.copy()
+
+    # Apply type filter first
+    if match_filter != "All":
+        filtered_matches = filtered_matches[filtered_matches["match_type"] == match_filter]
+
+    # Apply player search filter on the result
+    if player_search != "All Players":
+        filtered_matches = filtered_matches[
+            (filtered_matches['team1_player1'] == player_search) |
+            (filtered_matches['team1_player2'] == player_search) |
+            (filtered_matches['team2_player1'] == player_search) |
+            (filtered_matches['team2_player2'] == player_search)
+        ]
+
+    # Sort matches by date in ascending order for serial numbers (oldest first)
+    filtered_matches['date'] = pd.to_datetime(filtered_matches['date'], errors='coerce')
+    filtered_matches = filtered_matches.sort_values(by='date', ascending=True).reset_index(drop=True)
+    # Assign serial numbers starting from 1
+    filtered_matches['serial_number'] = filtered_matches.index + 1
+
+    # Re-sort for display in descending order (latest first)
+    filtered_matches = filtered_matches.sort_values(by='date', ascending=False).reset_index(drop=True)
+
+    def format_match_players(row):
+        if row["match_type"] == "Singles":
+            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
+            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
+            if row["winner"] == "Tie":
+                return f"{p1_styled} tied with {p2_styled}"
+            elif row["winner"] == "Team 1":
+                return f"{p1_styled} def. {p2_styled}"
+            else:  # Team 2
+                return f"{p2_styled} def. {p1_styled}"
+        else:  # Doubles
+            p1_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player1']}</span>"
+            p2_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team1_player2']}</span>"
+            p3_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player1']}</span>"
+            p4_styled = f"<span style='font-weight:bold; color:#fff500;'>{row['team2_player2']}</span>"
+            if row["winner"] == "Tie":
+                return f"{p1_styled} & {p2_styled} tied with {p3_styled} & {p4_styled}"
+            elif row["winner"] == "Team 1":
+                return f"{p1_styled} & {p2_styled} def. {p3_styled} & {p4_styled}"
+            else:  # Team 2
+                return f"{p3_styled} & {p4_styled} def. {p1_styled} & {p2_styled}"
+
+
+    def format_match_scores_and_date(row):
+        score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
+        score_text = ", ".join(score_parts_plain)
+        target_width = 23
+        padding_spaces = " " * (target_width - len(score_text))
+        score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
+        score_html = ", ".join(score_parts_html)
+        date_str = row['date'].strftime('%A, %d %b')
+        return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
+
+    if filtered_matches.empty:
+        st.info("No matches found for the selected filters.")
+    else:
+        for index, row in filtered_matches.iterrows():
+            # Create four columns: serial number, image, match details, and share button
+            cols = st.columns([1, 1, 7, 1])
+            with cols[0]:
+                # Display serial number
+                st.markdown(f"<span style='font-weight:bold; color:#fff500;'>{row['serial_number']}</span>", unsafe_allow_html=True)
+            with cols[1]:
+                if row["match_image_url"]:
+                    try:
+                        st.image(row["match_image_url"], width=50, caption="")
+                    except Exception as e:
+                        st.error(f"Error displaying match image: {str(e)}")
+            with cols[2]:
+                st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
+                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
+            with cols[3]:
+                share_link = generate_whatsapp_link(row)
+                st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
+            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
+
+# ... (rest of the code remains unchanged)
+
+    st.markdown("---")
+   
+    st.subheader("✏️ Manage Existing Match")
+    clean_match_options = []
+    for _, row in filtered_matches.iterrows():
+        score_plain = f"{row['set1']}"
+        if row['set2']:
+            score_plain += f", {row['set2']}"
+        if row['set3']:
+            score_plain += f", {row['set3']}"
+        date_plain = row['date'].strftime('%d %b %y %H:%M')
+        if row["match_type"] == "Singles":
+            if row["winner"] == "Tie":
+                desc_plain = f"{row['team1_player1']} tied with {row['team2_player1']}"
+            elif row["winner"] == "Team 1":
+                desc_plain = f"{row['team1_player1']} def. {row['team2_player1']}"
+            else:  # Team 2
+                desc_plain = f"{row['team2_player1']} def. {row['team1_player1']}"
+        else:  # Doubles
+            if row["winner"] == "Tie":
+                desc_plain = f"{row['team1_player1']} & {row['team1_player2']} tied with {row['team2_player1']} & {row['team2_player2']}"
+            elif row["winner"] == "Team 1":
+                desc_plain = f"{row['team1_player1']} & {row['team1_player2']} def. {row['team2_player1']} & {row['team2_player2']}"
+            else:  # Team 2
+                desc_plain = f"{row['team2_player1']} & {row['team2_player2']} def. {row['team1_player1']} & {row['team1_player2']}"
+        clean_match_options.append(f"{desc_plain} | {score_plain} | {date_plain} | {row['match_id']}")
+    # Use a unique key to avoid conflicts
+    selected_match_to_edit = st.selectbox("Select a match to edit or delete", [""] + clean_match_options, key="select_match_to_edit_1")
+    if selected_match_to_edit:
+        selected_id = selected_match_to_edit.split(" | ")[-1]
+        row = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].iloc[0]
+        idx = st.session_state.matches_df[st.session_state.matches_df["match_id"] == selected_id].index[0]
+        current_date_dt = pd.to_datetime(row["date"])
+        all_scores = [""] + tennis_scores()
+        set1_index = all_scores.index(row["set1"]) if row["set1"] in all_scores else 0
+        set2_index = all_scores.index(row["set2"]) if row["set2"] in all_scores else 0
+        set3_index = all_scores.index(row["set3"]) if row["set3"] in all_scores else 0
+        with st.expander("Edit Match Details"):
+            date_edit = st.date_input("Match Date", value=current_date_dt.date(), key=f"edit_date_{selected_id}")
+            time_edit = st.time_input("Match Time", value=current_date_dt.time(), key=f"edit_time_{selected_id}")
+            match_type_edit = st.radio("Match Type", ["Doubles", "Singles"], index=0 if row["match_type"] == "Doubles" else 1, key=f"edit_match_type_{selected_id}")
+            
+            # Conditionally render player selectboxes based on match type
+            if match_type_edit == "Doubles":
+                col1, col2 = st.columns(2)
+                with col1:
+                    p1_edit = st.selectbox("Team 1 - Player 1", [""] + available_players, index=available_players.index(row["team1_player1"]) + 1 if row["team1_player1"] in available_players else 0, key=f"edit_t1p1_{selected_id}")
+                    p2_edit = st.selectbox("Team 1 - Player 2", [""] + available_players, index=available_players.index(row["team1_player2"]) + 1 if row["team1_player2"] in available_players else 0, key=f"edit_t1p2_{selected_id}")
+                with col2:
+                    p3_edit = st.selectbox("Team 2 - Player 1", [""] + available_players, index=available_players.index(row["team2_player1"]) + 1 if row["team2_player1"] in available_players else 0, key=f"edit_t2p1_{selected_id}")
+                    p4_edit = st.selectbox("Team 2 - Player 2", [""] + available_players, index=available_players.index(row["team2_player2"]) + 1 if row["team2_player2"] in available_players else 0, key=f"edit_t2p2_{selected_id}")
+            else:  # Singles
+                p1_edit = st.selectbox("Player 1", [""] + available_players, index=available_players.index(row["team1_player1"]) + 1 if row["team1_player1"] in available_players else 0, key=f"edit_t1p1_{selected_id}")
+                p3_edit = st.selectbox("Player 2", [""] + available_players, index=available_players.index(row["team2_player1"]) + 1 if row["team2_player1"] in available_players else 0, key=f"edit_t2p1_{selected_id}")
+                p2_edit = ""  # Explicitly set to empty for Singles
+                p4_edit = ""  # Explicitly set to empty for Singles
+            
+            set1_edit = st.selectbox("Set 1", all_scores, index=set1_index, key=f"edit_set1_{selected_id}")
+            set2_edit = st.selectbox("Set 2 (optional)", all_scores, index=set2_index, key=f"edit_set2_{selected_id}")
+            set3_edit = st.selectbox("Set 3 (optional)", all_scores, index=set3_index, key=f"edit_set3_{selected_id}")
+            winner_edit = st.selectbox("Winner", ["Team 1", "Team 2", "Tie"], index=["Team 1", "Team 2", "Tie"].index(row["winner"]), key=f"edit_winner_{selected_id}")
+            match_image_edit = st.file_uploader("Update Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"edit_image_{selected_id}")
+            if st.button("Save Changes", key=f"save_match_changes_{selected_id}"):
+                image_url_edit = row["match_image_url"]
+                if match_image_edit:
+                    image_url_edit = upload_image_to_supabase(match_image_edit, selected_id, image_type="match")
+                combined_datetime = datetime.combine(date_edit, time_edit)
+                st.session_state.matches_df.loc[idx] = {
+                    "match_id": selected_id,
+                    "date": combined_datetime,
+                    "match_type": match_type_edit,
+                    "team1_player1": p1_edit,
+                    "team1_player2": p2_edit,
+                    "team2_player1": p3_edit,
+                    "team2_player2": p4_edit,
+                    "set1": set1_edit,
+                    "set2": set2_edit,
+                    "set3": set3_edit,
+                    "winner": winner_edit,
+                    "match_image_url": image_url_edit
+                }
+                save_matches(st.session_state.matches_df)
+                load_matches()
+                st.success("Match updated.")
+                st.rerun()
+            if st.button("🗑️ Delete This Match", key=f"delete_match_{selected_id}"):
+                delete_match_from_db(selected_id)
+                load_matches()
+                st.success("Match deleted.")
+                st.rerun()
+
+
+
+
+
+
+
+
+
+#------------------------end of Tab 1--------------------------------------
+
+
 
 
 # Player Profile tab
