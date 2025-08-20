@@ -494,7 +494,17 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
         return ""
         
 def tennis_scores():
-    return ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
+    scores = ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6", "0-6", "1-6", "2-6", "3-6", "4-6", "5-7", "6-7"]
+    
+    # Add winning tie-break scores (e.g., 10-0 to 10-9)
+    for i in range(10):
+        scores.append(f"Tie Break 10-{i}")
+        
+    # Add losing tie-break scores (e.g., 0-10 to 9-10)
+    for i in range(10):
+        scores.append(f"Tie Break {i}-10")
+        
+    return scores
 
 
 
@@ -769,9 +779,22 @@ def calculate_rankings(matches_to_rank):
         match_gd_sum = 0
         set_count = 0
         for set_score in [row['set1'], row['set2'], row['set3']]:
-            if set_score and '-' in set_score:
+            if set_score and ('-' in set_score or 'Tie Break' in set_score):
                 try:
-                    team1_games, team2_games = map(int, set_score.split('-'))
+                    team1_games, team2_games = 0, 0
+                    is_tie_break = "Tie Break" in set_score
+                    
+                    if is_tie_break:
+                        # For tie breaks, the game score is always 7-6 or 6-7
+                        tie_break_scores = [int(s) for s in set_score.replace("Tie Break", "").strip().split('-')]
+                        if tie_break_scores[0] > tie_break_scores[1]:
+                            team1_games, team2_games = 7, 6
+                        else:
+                            team1_games, team2_games = 6, 7
+                    else:
+                        # Regular set scores
+                        team1_games, team2_games = map(int, set_score.split('-'))
+
                     team1_total_games += team1_games
                     team2_total_games += team2_games
                     match_gd_sum += team1_games - team2_games
@@ -1394,7 +1417,18 @@ def generate_whatsapp_link(row):
         t2 = f"{row['team2_player1']} & {row['team2_player2']}"
 
     # Scores and date
-    scores_list = [f'*{s.replace("-", ":")}*' for s in [row['set1'], row['set2'], row['set3']] if s]
+    scores_list = []
+    for s in [row['set1'], row['set2'], row['set3']]:
+        if s:
+            if "Tie Break" in s:
+                tie_break_scores = s.replace("Tie Break", "").strip().split('-')
+                if int(tie_break_scores[0]) > int(tie_break_scores[1]):
+                    scores_list.append(f'*7-6({tie_break_scores[0]}:{tie_break_scores[1]})*')
+                else:
+                    scores_list.append(f'*6-7({tie_break_scores[0]}:{tie_break_scores[1]})*')
+            else:
+                scores_list.append(f'*{s.replace("-", ":")}*')
+                
     scores_str = " ".join(scores_list)
     date_str = row['date'].strftime('%A, %d %b')
 
@@ -1406,8 +1440,6 @@ def generate_whatsapp_link(row):
     else:  # Team 2
         headline = f"*{t2} def. {t1}*"
 
-    #share_text = f"*Match Result: {row['match_id']}*\n{date_str}\n{headline}\nSet scores {scores_str}"
-    #share_text = f"*Match Result*: {date_str}\n{headline}\nSet scores {scores_str}"
     share_text = f"{headline}\nSet scores {scores_str} on *{date_str}*"
     encoded_text = urllib.parse.quote(share_text)
     return f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
@@ -2080,37 +2112,27 @@ with tabs[1]:
 
 
     def format_match_scores_and_date(row):
-        score_parts_plain = [s for s in [row['set1'], row['set2'], row['set3']] if s]
+        score_parts_plain = []
+        for s in [row['set1'], row['set2'], row['set3']]:
+            if s:
+                if "Tie Break" in s:
+                    tie_break_scores = s.replace("Tie Break", "").strip().split('-')
+                    if int(tie_break_scores[0]) > int(tie_break_scores[1]):
+                        score_parts_plain.append(f"7-6({s})")
+                    else:
+                        score_parts_plain.append(f"6-7({s})")
+                else:
+                    score_parts_plain.append(s)
+
         score_text = ", ".join(score_parts_plain)
         target_width = 23
         padding_spaces = " " * (target_width - len(score_text))
+        
         score_parts_html = [f"<span style='font-weight:bold; color:#fff500;'>{s}</span>" for s in score_parts_plain]
         score_html = ", ".join(score_parts_html)
+        
         date_str = row['date'].strftime('%A, %d %b')
         return f"<div style='font-family: monospace; white-space: pre;'>{score_html}{padding_spaces}{date_str}</div>"
-
-    if filtered_matches.empty:
-        st.info("No matches found for the selected filters.")
-    else:
-        for index, row in filtered_matches.iterrows():
-            # Create four columns: serial number, image, match details, and share button
-            cols = st.columns([1, 1, 7, 1])
-            with cols[0]:
-                # Display serial number
-                st.markdown(f"<span style='font-weight:bold; color:#fff500;'>{row['serial_number']}</span>", unsafe_allow_html=True)
-            with cols[1]:
-                if row["match_image_url"]:
-                    try:
-                        st.image(row["match_image_url"], width=50, caption="")
-                    except Exception as e:
-                        st.error(f"Error displaying match image: {str(e)}")
-            with cols[2]:
-                st.markdown(f"{format_match_players(row)}", unsafe_allow_html=True)
-                st.markdown(format_match_scores_and_date(row), unsafe_allow_html=True)
-            with cols[3]:
-                share_link = generate_whatsapp_link(row)
-                st.markdown(f'<a href="{share_link}" target="_blank" style="text-decoration:none; color:#ffffff;"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Share" style="width:30px;height:30px;"/></a>', unsafe_allow_html=True)
-            st.markdown("<hr style='border-top: 1px solid #333333; margin: 10px 0;'>", unsafe_allow_html=True)
 
 # ... (rest of the code remains unchanged)
 
