@@ -1990,92 +1990,102 @@ with tabs[1]:
     all_scores = tennis_scores()
 
     with st.expander("Post a New Match", expanded=False, icon="➡️"):
-        st.subheader("Add New Match")
-        match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_match_type_{st.session_state.form_key_suffix}")
-        
-        with st.form(key=f"add_match_form_{st.session_state.form_key_suffix}"):
-            date = st.date_input("Match Date *", value=datetime.today(), key=f"date_{st.session_state.form_key_suffix}")
-            hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(0, 24)]
-            time = st.selectbox("Match Time *", hours, key=f"time_{st.session_state.form_key_suffix}")
-            
-            if match_type == "Doubles":
-                col1, col2 = st.columns(2)
-                with col1:
-                    p1 = st.selectbox("Team 1 - Player 1 *", [""] + available_players, key=f"t1p1_{st.session_state.form_key_suffix}")
-                    p2 = st.selectbox("Team 1 - Player 2 *", [""] + available_players, key=f"t1p2_{st.session_state.form_key_suffix}")
-                with col2:
-                    p3 = st.selectbox("Team 2 - Player 1 *", [""] + available_players, key=f"t2p1_{st.session_state.form_key_suffix}")
-                    p4 = st.selectbox("Team 2 - Player 2 *", [""] + available_players, key=f"t2p2_{st.session_state.form_key_suffix}")
-            else:
-                p1 = st.selectbox("Player 1 *", [""] + available_players, key=f"s1p1_{st.session_state.form_key_suffix}")
-                p3 = st.selectbox("Player 2 *", [""] + available_players, key=f"s1p2_{st.session_state.form_key_suffix}")
-                p2 = ""
-                p4 = ""
-            
-            set1 = st.selectbox("Set 1 *", [""] + all_scores, key=f"set1_{st.session_state.form_key_suffix}")
-            set2 = st.selectbox("Set 2 (optional)", [""] + all_scores, key=f"set2_{st.session_state.form_key_suffix}")
-            set3 = st.selectbox("Set 3 (optional)", [""] + all_scores, key=f"set3_{st.session_state.form_key_suffix}")
-            winner = st.selectbox("Winner *", ["", "Team 1", "Team 2", "Tie"], key=f"winner_{st.session_state.form_key_suffix}")
-            match_image = st.file_uploader("Match Image (optional)", type=["jpg", "jpeg", "png", "gif", "bmp", "webp"], key=f"match_image_{st.session_state.form_key_suffix}")
-            
-            st.markdown("*Required fields", unsafe_allow_html=True)
-            
-            submit = st.form_submit_button("Add Match")
-            if submit:
-                if not all([p1, p3, set1, winner, date, time]) or (match_type == "Doubles" and not all([p2, p4])):
-                    st.error("Please fill in all required fields.")
-                elif match_type == "Doubles" and len(set([p1, p2, p3, p4])) != 4:
-                    st.error("Please select different players for each position.")
-                elif match_type == "Singles" and p1 == p3:
-                    st.error("Please select different players for each position.")
-                elif winner == "Tie" and (set1 == "" or (set2 != "" and set3 != "")):
-                    st.error("Tie matches should have 1 or 2 sets only.")
-                else:
-                    try:
-                        combined_datetime = datetime.combine(date, datetime.strptime(time, "%I:%M %p").time())
-                        match_id = generate_match_id(st.session_state.matches_df, combined_datetime)
-                        image_url = upload_image_to_supabase(match_image, match_id, image_type="match") if match_image else ""
-                        
-                        # Format tie break scores for display
-                        def format_display_score(score, winner, team1_wins):
-                            if score and "Tie Break" in score:
-                                tb_score = score.split("Tie Break ")[1]
-                                tb1, tb2 = map(int, tb_score.split('-'))
-                                if team1_wins:
-                                    base_score = "7-6" if tb1 > tb2 else "6-7"
-                                else:
-                                    base_score = "6-7" if tb1 > tb2 else "7-6"
-                                return f"{base_score} (Tie Break {tb1}-{tb2})"
-                            return score
+with tabs[1]:
+    st.subheader("Add a New Match")
 
-                        team1_wins = (winner == "Team 1")
-                        
-                        set1_display = format_display_score(set1, winner, team1_wins)
-                        set2_display = format_display_score(set2, winner, team1_wins)
-                        set3_display = format_display_score(set3, winner, team1_wins)
-                        
-                        new_match = {
-                            "match_id": match_id,
-                            "date": combined_datetime,
-                            "match_type": match_type,
-                            "team1_player1": p1,
-                            "team1_player2": p2,
-                            "team2_player1": p3,
-                            "team2_player2": p4,
-                            "set1": set1_display,
-                            "set2": set2_display,
-                            "set3": set3_display,
-                            "winner": winner,
-                            "match_image_url": image_url
-                        }
-                        st.session_state.matches_df = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match])], ignore_index=True)
-                        save_matches(st.session_state.matches_df)
-                        load_matches()
-                        st.success("Match added successfully.")
-                        st.session_state.form_key_suffix += 1
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error adding match: {str(e)}")
+    # Ensure players_df is loaded and not empty before creating the list
+    if 'players_df' in st.session_state and not st.session_state.players_df.empty:
+        # Create a sorted list of player names
+        available_players = sorted(st.session_state.players_df['name'].tolist())
+    else:
+        # Provide an empty list if players haven't been loaded yet
+        available_players = []
+        st.warning("Player data is not available. Please load players in the 'Players' tab.")
+
+    # Form to add a new match
+    with st.form("new_match_form", clear_on_submit=True):
+        st.markdown("**Match Details**")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            match_date = st.date_input("Match Date *", datetime.now(), key=f"match_date_{st.session_state.form_key_suffix}")
+        with col2:
+            match_time = st.time_input("Match Time", datetime.now().time(), key=f"match_time_{st.session_state.form_key_suffix}")
+        with col3:
+            court_name = st.selectbox("Court Name", [""] + COURT_NAMES, key=f"court_name_{st.session_state.form_key_suffix}")
+
+        st.markdown("**Team 1**")
+        col1, col2 = st.columns(2)
+        with col1:
+            p1 = st.selectbox("Team 1 - Player 1 *", [""] + available_players, key=f"t1p1_{st.session_state.form_key_suffix}")
+            p2 = st.selectbox("Team 1 - Player 2", [""] + available_players, key=f"t1p2_{st.session_state.form_key_suffix}")
+        with col2:
+            s1 = st.number_input("Set 1 Score *", min_value=0, max_value=7, step=1, key=f"t1s1_{st.session_state.form_key_suffix}")
+            s2 = st.number_input("Set 2 Score", min_value=0, max_value=7, step=1, key=f"t1s2_{st.session_state.form_key_suffix}")
+            s3 = st.number_input("Set 3 Score", min_value=0, max_value=7, step=1, key=f"t1s3_{st.session_state.form_key_suffix}")
+
+        st.markdown("**Team 2**")
+        col1, col2 = st.columns(2)
+        with col1:
+            p3 = st.selectbox("Team 2 - Player 1 *", [""] + available_players, key=f"t2p1_{st.session_state.form_key_suffix}")
+            p4 = st.selectbox("Team 2 - Player 2", [""] + available_players, key=f"t2p2_{st.session_state.form_key_suffix}")
+        with col2:
+            s4 = st.number_input("Set 1 Score *", min_value=0, max_value=7, step=1, key=f"t2s1_{st.session_state.form_key_suffix}")
+            s5 = st.number_input("Set 2 Score", min_value=0, max_value=7, step=1, key=f"t2s2_{st.session_state.form_key_suffix}")
+            s6 = st.number_input("Set 3 Score", min_value=0, max_value=7, step=1, key=f"t2s3_{st.session_state.form_key_suffix}")
+
+        match_image_url = st.text_input("Match Image URL (Optional)", key=f"match_image_{st.session_state.form_key_suffix}")
+
+        # This is the submit button for the form
+        submitted = st.form_submit_button("Add Match")
+
+        if submitted:
+            # Validation checks
+            if not all([match_date, p1, p3, s1 is not None, s4 is not None]):
+                st.error("Please fill in all required fields marked with *.")
+            elif len(set(filter(None, [p1, p2, p3, p4]))) != len(list(filter(None, [p1, p2, p3, p4]))):
+                st.error("Each player can only be selected once per match.")
+            elif (s1 == s4) or (s2 is not None and s5 is not None and s2 == s5) or (s3 is not None and s6 is not None and s3 == s6):
+                 st.error("Set scores cannot be a tie. Please enter a valid score.")
+            else:
+                # Combine date and time
+                match_datetime = datetime.combine(match_date, match_time)
+
+                # Find winner
+                team1_sets_won = (s1 > s4) + (s2 > s5 if s2 is not None and s5 is not None else 0) + (s3 > s6 if s3 is not None and s6 is not None else 0)
+                team2_sets_won = (s4 > s1) + (s5 > s2 if s2 is not None and s5 is not None else 0) + (s6 > s3 if s3 is not None and s6 is not None else 0)
+                winner = 1 if team1_sets_won > team2_sets_won else 2
+
+                # Create new match dictionary
+                new_match = {
+                    "match_id": str(uuid.uuid4()),
+                    "datetime": match_datetime.isoformat(),
+                    "court_name": court_name,
+                    "team1_player1": p1, "team1_player2": p2 if p2 else None,
+                    "team2_player1": p3, "team2_player2": p4 if p4 else None,
+                    "team1_set1_score": s1, "team1_set2_score": s2 if s2 is not None else None, "team1_set3_score": s3 if s3 is not None else None,
+                    "team2_set1_score": s4, "team2_set2_score": s5 if s5 is not None else None, "team2_set3_score": s6 if s6 is not None else None,
+                    "winner_team": winner,
+                    "match_image_url": match_image_url if match_image_url else None
+                }
+
+                try:
+                    # Insert data into Supabase
+                    _, error = st.session_state.supabase.table("matches").insert(new_match).execute()
+                    if isinstance(error, tuple) and len(error) > 1 and error[1]:
+                         raise Exception(error[1])
+
+                    # Refresh matches from DB and recalculate stats
+                    load_matches(force_refresh=True)
+                    calculate_player_stats()
+
+                    st.success("Match added successfully!")
+
+                    # Increment form key to reset fields
+                    st.session_state.form_key_suffix += 1
+                    st.experimental_rerun()
+
+                except Exception as e:
+                    st.error(f"Failed to add match: {e}")
 
     st.markdown("---")
     st.subheader("🎾 Recent Matches")
