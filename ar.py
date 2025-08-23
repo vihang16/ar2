@@ -2570,7 +2570,7 @@ with tabs[4]:
     
     st.subheader("📅 Upcoming Bookings")
     bookings_df = st.session_state.bookings_df.copy()
-    court_url_mapping = {court["name"]: court["url"] for court in ar_courts + mira_courts}
+    court_url_mapping = {court["name"]: court["url"] for court in krakow_courts}
     if bookings_df.empty:
         st.info("No upcoming bookings found.")
     else:
