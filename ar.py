@@ -1575,10 +1575,8 @@ if todays_birthdays:
 
 
 court_names = [
-    "Alvorado 1","Alvorado 2", "Palmera 2", "Palmera 4", "Saheel", "Hattan",
-    "MLC Mirador La Colleccion", "Al Mahra", "Mirador", "Reem 1", "Reem 2",
-    "Reem 3", "Alma", "Mira 2", "Mira 4", "Mira 5 A", "Mira 5 B", "Mira Oasis 1",
-    "Mira Oasis 2", "Mira Oasis 3 A","Mira Oasis 3 B", "Mira Oasis 3 C"
+    "Korty Dąbskie", "KATenis - korty Olsza","Czyżyny Sports Center",
+      "Korty ziemne (Centrum tenisowe PK)", "Krakowski Klub Tenisowy Olsza"
 ]
 
 players_df = st.session_state.players_df

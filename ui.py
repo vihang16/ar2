@@ -463,27 +463,12 @@ def display_court_locations():
     """Displays a list of tennis court locations with Google Maps links."""
     st.header("Court Locations")
     st.markdown("""
-    ### Arabian Ranches Tennis Courts
-    - [Alvorado 1 & 2](https://maps.google.com/?q=25.041792,55.259258)
-    - [Palmera 2](https://maps.app.goo.gl/CHimjtqQeCfU1d3W6)
-    - [Palmera 4](https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6)
-    - [Saheel](https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8)
-    - [Hattan](https://maps.app.goo.gl/fjGpeNzncyG1o34c7)
-    - [MLC Mirador La Colleccion](https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6)
-    - [Al Mahra](https://maps.app.goo.gl/zVivadvUsD6yyL2Y9)
-    - [Mirador](https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8)
-    - [Reem 1](https://maps.app.goo.gl/qKswqmb9Lqsni5RD7)
-    - [Reem 2](https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5)
-    - [Reem 3](https://maps.app.goo.gl/o8z9pHo8tSqTbEL39)
-    - [Alma](https://maps.app.goo.gl/BZNfScABbzb3osJ18)
-    ### Mira & Mira Oasis Tennis Courts
-    - [Mira 2](https://maps.app.goo.gl/JeVmwiuRboCnzhnb9)
-    - [Mira 4](https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A)
-    - [Mira 5 A & B](https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6)
-    - [Mira Oasis 1](https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8)
-    - [Mira Oasis 2](https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9)
-    - [Mira Oasis 3 A & B](https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9)
-    - [Mira Oasis 3 C](https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8)
+    ### Krakow Tennis Courts
+    - [Korty Dąbski](https://maps.app.goo.gl/c1eNLt3dpf1Y6Vnw6)  
+    - [KATenis - korty Olszai](https://maps.app.goo.gl/qAQdJETTpM6sSr1N6) 
+    - [Czyżyny Sports Center"](https://maps.app.goo.gl/8pfHMGTqZRCFtWSz6) 
+    - [Korty ziemne (Centrum tenisowe PK)](https://maps.app.goo.gl/uciZTXWYkcAXMFTL9) 
+    - [Krakowski Klub Tenisowy Olsza](https://maps.app.goo.gl/D91Lsu63aQWnhKm9A)        
     """)
 
 def display_backup_buttons(matches_df, players_df):
