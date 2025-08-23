@@ -2436,7 +2436,7 @@ with tabs[2]:
     st.markdown("---")
     st.header("Player Insights")
     rank_df_combined, partner_stats_combined = calculate_rankings(st.session_state.matches_df)
-    if players:
+    if players and not rank_df_combined.empty:
         display_player_insights(players, st.session_state.players_df, st.session_state.matches_df, rank_df_combined, partner_stats_combined, key_prefix="profile_")
     else:
         st.info("No players available for insights. Please add players above.")
