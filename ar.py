@@ -39,7 +39,7 @@ import requests
 
 
 # Set the page title
-st.set_page_config(page_title="AR Tennis")
+st.set_page_config(page_title="Krakow Tennis")
 
 # Custom CSS for a scenic background
 st.markdown("""
@@ -2448,20 +2448,12 @@ with tabs[3]:
     court_icon_url = "https://img.icons8.com/color/48/000000/tennis.png"  # Example from Icons8; replace if needed
     
     # Arabian Ranches courts (as a list of dicts for name and URL)
-    ar_courts = [
-        {"name": "Alvorado 1", "url": "https://maps.google.com/?q=25.041792,55.259258"},
-        {"name": "Alvorado 2", "url": "https://maps.google.com/?q=25.041792,55.259258"},
-        {"name": "Palmera 2", "url": "https://maps.app.goo.gl/CHimjtqQeCfU1d3W6"},
-        {"name": "Palmera 4", "url": "https://maps.app.goo.gl/4nn1VzqMpgVkiZGN6"},
-        {"name": "Saheel", "url": "https://maps.app.goo.gl/a7qSvtHCtfgvJoxJ8"},
-        {"name": "Hattan", "url": "https://maps.app.goo.gl/fjGpeNzncyG1o34c7"},
-        {"name": "MLC Mirador La Colleccion", "url": "https://maps.app.goo.gl/n14VSDAVFZ1P1qEr6"},
-        {"name": "Al Mahra", "url": "https://maps.app.goo.gl/zVivadvUsD6yyL2Y9"},
-        {"name": "Mirador", "url": "https://maps.app.goo.gl/kVPVsJQ3FtMWxyKP8"},
-        {"name": "Reem 1", "url": "https://maps.app.goo.gl/qKswqmb9Lqsni5RD7"},
-        {"name": "Reem 2", "url": "https://maps.app.goo.gl/oFaUFQ9DRDMsVbMu5"},
-        {"name": "Reem 3", "url": "https://maps.app.goo.gl/o8z9pHo8tSqTbEL39"},
-        {"name": "Alma", "url": "https://maps.app.goo.gl/BZNfScABbzb3osJ18"},
+    krakow_courts = [
+        {"name": "Korty Dąbskie", "url": "https://maps.app.goo.gl/c1eNLt3dpf1Y6Vnw6"},
+        {"name": "KATenis - korty Olsza", "url": "https://maps.app.goo.gl/qAQdJETTpM6sSr1N6"},
+        {"name": "Czyżyny Sports Center", "url": "https://maps.app.goo.gl/8pfHMGTqZRCFtWSz6"},
+        {"name": "Korty ziemne (Centrum tenisowe PK)", "url": "https://maps.app.goo.gl/uciZTXWYkcAXMFTL9"},
+        {"name": "Krakowski Klub Tenisowy Olsza", "url": "https://maps.app.goo.gl/D91Lsu63aQWnhKm9A"}
     ]
     
     # Mira & Mira Oasis courts
@@ -2494,11 +2486,8 @@ with tabs[3]:
                     """, unsafe_allow_html=True)
     
     # Display sections
-    with st.expander("Arabian Ranches Tennis Courts", expanded=False, icon="➡️"):
-        display_courts("", ar_courts)  # No extra title inside expander
-    with st.expander("Mira & Mira Oasis Tennis Courts", expanded=False, icon="➡️"):
-        display_courts("", mira_courts)
-
+    with st.expander("Krakow Tennis Courts", expanded=False, icon="➡️"):
+        display_courts("", krakow_courts)  # No extra title inside expander
         
 #-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
 
