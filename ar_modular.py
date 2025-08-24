@@ -48,7 +48,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = generate_match_id(matches, match_date_for_id)
     save_matches(supabase, matches)
 
-st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
+st.image("krakow_tennis_league.jpeg", use_container_width=True)
 
 tab_names = ["Rankings", "Matches", "Player Profile", "Court Locations"]
 tabs = st.tabs(tab_names)

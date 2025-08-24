@@ -474,7 +474,7 @@ def delete_match_from_db(match_id):
 
 def upload_image_to_supabase(file, file_name, image_type="match"):
     try:
-        bucket = "profile" if image_type == "profile" else "ar"
+        bucket = "profile" if image_type == "profile" else "krakow-matches"
         if image_type == "match":
             file_path = f"2ep_1/{file_name}"
         elif image_type == "booking":
@@ -486,7 +486,7 @@ def upload_image_to_supabase(file, file_name, image_type="match"):
             error_message = response.get("error", "Unknown error") if isinstance(response, dict) else "Upload failed"
             return ""
         public_url = supabase.storage.from_(bucket).get_public_url(file_path)
-        if not public_url.startswith(f"https://vnolrqfkpptpljizzdvw.supabase.co/storage/v1/object/public/{bucket}/"):
+        if not public_url.startswith(f"https://ukapgwhimdtxcclwsjia.supabase.co/storage/v1/object/public/{bucket}/"):
             st.warning(f"Uploaded image URL does not match expected prefix. Got: {public_url}")
         return public_url
     except Exception as e:
@@ -1591,7 +1591,7 @@ if not matches.empty and ("match_id" not in matches.columns or matches["match_id
             matches.at[i, "match_id"] = generate_match_id(matches, match_date_for_id)
     save_matches(matches)
 
-st.image("https://raw.githubusercontent.com/mahadevbk/ar2/main/dubai.png", use_container_width=True)
+st.image("krakow_tennis_league.jpeg", use_container_width=True)
 
 tab_names = ["Rankings", "Matches", "Player Profile", "Maps", "Bookings","Mini Tourney"]
 
