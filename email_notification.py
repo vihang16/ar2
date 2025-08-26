@@ -1,6 +1,6 @@
 import streamlit as st
 from supabase import create_client
-import smtplib
+import smtplib, ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -16,9 +16,10 @@ EMAIL_TO   = st.secrets['supabase']["EMAIL_TO"]
 
 def send_email(subject, body):
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as server:
             server.login(EMAIL_USER, EMAIL_PASS)
-        st.success("SMTP login successful ✅")
+            server.sendmail(EMAIL_USER, EMAIL_TO, msg.as_string())
+            st.success("SMTP connection succsfully")
     except Exception as e:
         st.error(f"SMTP failed: {e}")
 
