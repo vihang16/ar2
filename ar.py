@@ -35,12 +35,13 @@ import io
 from datetime import datetime
 import urllib.parse
 import requests
-
+from email_notification import send_email
 
 
 # Set the page title
 st.set_page_config(page_title="Krakow Tennis")
 
+NOTIFICATION = "Krakow Tennis Notification"
 # Custom CSS for a scenic background
 st.markdown("""
 <style>
@@ -339,6 +340,7 @@ def save_players(players_df):
 def delete_player_from_db(player_name):
     try:
         supabase.table(players_table_name).delete().eq("name", player_name).execute()
+        send_email(NOTIFICATION, f"player deleted:{player_name}")
     except Exception as e:
         st.error(f"Error deleting player from database: {str(e)}")
 
@@ -465,7 +467,9 @@ def save_matches(df):
 
 def delete_match_from_db(match_id):
     try:
+        temp_match_df = supabase.table(matches_table_name).select().eq("match_id", match_id).execute()
         supabase.table(matches_table_name).delete().eq("match_id", match_id).execute()
+        send_email(NOTIFICATION,f"match deleted:{match_id} winner:{temp_match_df.data[0]['winner']}")
         # Remove the match from session state
         st.session_state.matches_df = st.session_state.matches_df[st.session_state.matches_df["match_id"] != match_id].reset_index(drop=True)
         save_matches(st.session_state.matches_df)  # Save to ensure consistency
@@ -1406,8 +1410,11 @@ def suggest_singles_odds(players, singles_rank_df):
 
 def delete_booking_from_db(booking_id):
     try:
+        temp_df= supabase.table(bookings_table_name).select("*").eq("booking_id", booking_id).execute()
+        print(f"temp_df:{temp_df}")
         supabase.table(bookings_table_name).delete().eq("booking_id", booking_id).execute()
         st.session_state.bookings_df = st.session_state.bookings_df[st.session_state.bookings_df["booking_id"] != booking_id].reset_index(drop=True)
+        send_email(NOTIFICATION, f"booking deleted. court name:{temp_df.data[0]['court_name']} date:{temp_df.data[0]['date']} time:{temp_df.data[0]['time']}")
         save_bookings(st.session_state.bookings_df)
     except Exception as e:
         st.error(f"Error deleting booking from database: {str(e)}")
@@ -2116,6 +2123,7 @@ with tabs[1]:
                     }
                     matches_to_save = pd.concat([st.session_state.matches_df, pd.DataFrame([new_match_entry])], ignore_index=True)
                     save_matches(matches_to_save)
+                    send_email(NOTIFICATION, f"New match created. date:{new_match_date} match ID:{match_id_new} match type:{match_type_new} players:{p1_new} {p2_new} {p3_new} {p4_new}")
                     load_matches()  # Reload data from DB
                     st.success("Match submitted.")
                     st.session_state.form_key_suffix += 1
@@ -2366,6 +2374,7 @@ with tabs[2]:
                     new_player_data = {"name": new_player, "profile_image_url": "", "birthday": ""}
                     st.session_state.players_df = pd.concat([st.session_state.players_df, pd.DataFrame([new_player_data])], ignore_index=True)
                     save_players(st.session_state.players_df)
+                    send_email(NOTIFICATION, f"new player added:{new_player}")
                     load_players()
                     st.success(f"{new_player} added.")
                     st.rerun()
@@ -2401,13 +2410,18 @@ with tabs[2]:
                 birthday_month = st.number_input("Birthday Month", min_value=1, max_value=12, value=default_month, key=f"birthday_month_{selected_player_manage}")
                 col_save, col_delete = st.columns(2)
                 with col_save:
+                    
                     if st.button("Save Profile Changes", key=f"save_profile_changes_{selected_player_manage}"):
                         image_url = current_image
+                        msg = f"profile updated for:{selected_player_manage}"
                         if profile_image:
                             image_url = upload_image_to_supabase(profile_image, f"profile_{selected_player_manage}_{uuid.uuid4().hex[:6]}", image_type="profile")
+                            msg += " new image added"
                         st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "profile_image_url"] = image_url
                         st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
+                        msg += f" birthday:{birthday_day:02d}-{birthday_month:02d}"
                         save_players(st.session_state.players_df)
+                        send_email(NOTIFICATION, msg)
                         load_players()
                         st.success(f"Profile for {selected_player_manage} updated.")
                         st.rerun()
@@ -2536,6 +2550,7 @@ with tabs[4]:
                         booking_id = str(uuid.uuid4())
                         screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking") if screenshot else None
                         time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
+                        print(f"time:{time_24hr}")
                         new_booking = {
                             "booking_id": booking_id,
                             "date": date.isoformat(),
@@ -2555,7 +2570,9 @@ with tabs[4]:
                             bookings_to_save = st.session_state.bookings_df[expected_columns].copy()
                             for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
                                 bookings_to_save[col] = bookings_to_save[col].replace("", None)
-                            save_bookings(bookings_to_save)
+                            # print(f"bookings to save:{pd.DataFrame([new_booking])}")
+                            save_bookings(pd.DataFrame([new_booking]))
+                            send_email(NOTIFICATION, f"new booking created. court:{court} players:{p1} {p2} {p3} {p4} stand by:{standby} date:{date} time:{time}")
                             load_bookings()
                             st.success("Booking added successfully.")
                             st.session_state.form_key_suffix += 1
@@ -2584,7 +2601,7 @@ with tabs[4]:
             bookings_df['date'].astype(str) + ' ' + bookings_df['time'],
             errors='coerce',
             utc=True
-        ).dt.tz_convert('Asia/Dubai')
+        ).dt.tz_convert('Europe/Berlin')
         
         # Filter upcoming bookings
         upcoming_bookings = bookings_df[
