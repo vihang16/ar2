@@ -15,26 +15,14 @@ EMAIL_PASS = st.secrets['supabase']["EMAIL_PASSWORD"]
 EMAIL_TO   = st.secrets['supabase']["EMAIL_TO"]
 
 def send_email(subject, body):
-    msg = MIMEMultipart("Test message from Streamlit Cloud ✅")
+    msg = MIMEMultipart()
     msg["From"] = EMAIL_USER
     msg["To"] = EMAIL_TO
     msg["Subject"] = subject
     msg.attach(MIMEText(body, "plain"))
-    print(f"triggering email:{EMAIL_USER}")
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as server:
             server.login(EMAIL_USER, EMAIL_PASS)
-            result = server.sendmail(EMAIL_USER, EMAIL_TO, msg.as_string())
-            st.success(f"SMTP connection success. result:{result}")
+            server.sendmail(EMAIL_USER, EMAIL_TO, msg.as_string())      
     except Exception as e:
         st.error(f"SMTP failed: {e}")
-
-# --- Realtime subscription ---
-def handle_change(payload):
-    change_type = payload["eventType"]
-    table = payload["table"]
-    record = payload["new"]
-    print(f"even triggered:{change_type}")
-    subject = f"DB Change: {change_type} on {table}"
-    body = f"Table: {table}\nEvent: {change_type}\nRecord: {record}"
-    send_email(subject, body)
