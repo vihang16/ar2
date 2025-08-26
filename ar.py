@@ -531,7 +531,7 @@ def download_image(url):
     return None
 
 st.write("EMAIL_USER found?", "EMAIL_USER" in st.secrets)
-
+st.write("st secrets:",st.secrets)
 def get_quarter(month):
     if 1 <= month <= 3:
         return "Q1"
