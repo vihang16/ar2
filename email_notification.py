@@ -24,8 +24,8 @@ def send_email(subject, body):
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context()) as server:
             server.login(EMAIL_USER, EMAIL_PASS)
-            server.sendmail(EMAIL_USER, EMAIL_TO, msg.as_string())
-            st.success("SMTP connection success")
+            result = server.sendmail(EMAIL_USER, EMAIL_TO, msg.as_string())
+            st.success(f"SMTP connection success. result:{result}")
     except Exception as e:
         st.error(f"SMTP failed: {e}")
 
