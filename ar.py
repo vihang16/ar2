@@ -530,6 +530,7 @@ def download_image(url):
         st.error(f"Failed to download {url}: {e}")
     return None
 
+st.write("EMAIL_USER found?", "EMAIL_USER" in st.secrets)
 
 def get_quarter(month):
     if 1 <= month <= 3:
