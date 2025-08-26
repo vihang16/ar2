@@ -15,6 +15,13 @@ EMAIL_PASS = st.secrets['supabase']["EMAIL_PASSWORD"]
 EMAIL_TO   = st.secrets['supabase']["EMAIL_TO"]
 
 def send_email(subject, body):
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(EMAIL_USER, EMAIL_PASS)
+        st.success("SMTP login successful ✅")
+    except Exception as e:
+        st.error(f"SMTP failed: {e}")
+
     msg = MIMEMultipart()
     msg["From"] = EMAIL_USER
     msg["To"] = EMAIL_TO
