@@ -37,6 +37,7 @@ import urllib.parse
 import requests
 from bookings import load_upcoming_bookings
 from email_notification import send_email
+from locations import add_court, load_locations
 
 
 # Set the page title
@@ -1575,17 +1576,14 @@ def display_birthday_message(birthday_players):
 load_players()
 load_matches()
 load_bookings()
-
+krakow_courts = load_locations().to_dict('records')
 # Check for and display birthday messages
 todays_birthdays = check_birthdays(st.session_state.players_df)
 if todays_birthdays:
     display_birthday_message(todays_birthdays)
 
 
-court_names = [
-    "Korty Dąbskie", "KATenis - korty Olsza","Czyżyny Sports Center",
-      "Korty ziemne (Centrum tenisowe PK)", "Krakowski Klub Tenisowy Olsza"
-]
+court_names = [x.get('name') for x in krakow_courts]
 
 players_df = st.session_state.players_df
 matches = st.session_state.matches_df
@@ -2461,26 +2459,15 @@ with tabs[3]:
     court_icon_url = "https://img.icons8.com/color/48/000000/tennis.png"  # Example from Icons8; replace if needed
     
     # Arabian Ranches courts (as a list of dicts for name and URL)
-    krakow_courts = [
-        {"name": "Korty Dąbskie", "url": "https://maps.app.goo.gl/c1eNLt3dpf1Y6Vnw6"},
-        {"name": "KATenis - korty Olsza", "url": "https://maps.app.goo.gl/qAQdJETTpM6sSr1N6"},
-        {"name": "Czyżyny Sports Center", "url": "https://maps.app.goo.gl/8pfHMGTqZRCFtWSz6"},
-        {"name": "Korty ziemne (Centrum tenisowe PK)", "url": "https://maps.app.goo.gl/uciZTXWYkcAXMFTL9"},
-        {"name": "Krakowski Klub Tenisowy Olsza", "url": "https://maps.app.goo.gl/D91Lsu63aQWnhKm9A"}
-    ]
     
-    # Mira & Mira Oasis courts
-    mira_courts = [
-        {"name": "Mira 2", "url": "https://maps.app.goo.gl/JeVmwiuRboCnzhnb9"},
-        {"name": "Mira 4", "url": "https://maps.app.goo.gl/e1Vqv5MJXB1eusv6A"},
-        {"name": "Mira 5 A", "url": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6"},
-        {"name": "Mira 5 B", "url": "https://maps.app.goo.gl/rWBj5JEUdw4LqJZb6"},
-        {"name": "Mira Oasis 1", "url": "https://maps.app.goo.gl/F9VYsFBwUCzvdJ2t8"},
-        {"name": "Mira Oasis 2", "url": "https://maps.app.goo.gl/ZNJteRu8aYVUy8sd9"},
-        {"name": "Mira Oasis 3 A", "url": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9"},
-        {"name": "Mira Oasis 3 B", "url": "https://maps.app.goo.gl/ouXQGUxYSZSfaW1z9"},
-        {"name": "Mira Oasis 3 C", "url": "https://maps.app.goo.gl/kf7A9K7DoYm4PEPu8"},
-    ]
+    # [
+    #     {"name": "Korty Dąbskie", "url": "https://maps.app.goo.gl/c1eNLt3dpf1Y6Vnw6"},
+    #     {"name": "KATenis - korty Olsza", "url": "https://maps.app.goo.gl/qAQdJETTpM6sSr1N6"},
+    #     {"name": "Czyżyny Sports Center", "url": "https://maps.app.goo.gl/8pfHMGTqZRCFtWSz6"},
+    #     {"name": "Korty ziemne (Centrum tenisowe PK)", "url": "https://maps.app.goo.gl/uciZTXWYkcAXMFTL9"},
+    #     {"name": "Krakowski Klub Tenisowy Olsza", "url": "https://maps.app.goo.gl/D91Lsu63aQWnhKm9A"}
+    # ]
+    
     
     # Function to display courts in a grid
     def display_courts(section_title, courts_list):
@@ -2494,13 +2481,17 @@ with tabs[3]:
                     <div class="court-card">
                         <img src="{court_icon_url}" class="court-icon" alt="Tennis Court Icon">
                         <h4>{court['name']}</h4>
-                        <a href="{court['url']}" target="_blank">View on Map</a>
+                        <a href="{court['google_map_url']}" target="_blank">View on Map</a>
                     </div>
                     """, unsafe_allow_html=True)
     
     # Display sections
     with st.expander("Krakow Tennis Courts", expanded=False, icon="➡️"):
         display_courts("", krakow_courts)  # No extra title inside expander
+
+    with st.expander("Add court", expanded=False, icon="➕"):
+        add_court()
+        
         
 #-----TAB 4 WITH THUMBNAILS INSIDE BOOKING BOX AND WHATSAPP SHARE WITH PROPER FORMATTING--------------------------------------------
 
@@ -2585,7 +2576,7 @@ with tabs[4]:
     st.markdown("---")
     st.subheader("📅 Upcoming Bookings")
     bookings_df = load_upcoming_bookings()
-    court_url_mapping = {court["name"]: court["url"] for court in krakow_courts}
+    court_url_mapping = {court["name"]: court["google_map_url"] for court in krakow_courts}
     if bookings_df.empty:
         st.info("No upcoming bookings found.")
     else:
