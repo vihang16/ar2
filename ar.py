@@ -14,7 +14,7 @@
 import streamlit as st
 import pandas as pd
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from supabase import create_client, Client
 import re
@@ -35,6 +35,7 @@ import io
 from datetime import datetime
 import urllib.parse
 import requests
+from bookings import load_upcoming_bookings
 from email_notification import send_email
 
 
@@ -1150,8 +1151,8 @@ def save_bookings(bookings_df):
 
 
 
-
 def load_bookings():
+    load_upcoming_bookings()
     try:
         response = supabase.table("bookings").select("*").execute()
         df = pd.DataFrame(response.data)
@@ -1411,7 +1412,7 @@ def suggest_singles_odds(players, singles_rank_df):
 def delete_booking_from_db(booking_id):
     try:
         temp_df= supabase.table(bookings_table_name).select("*").eq("booking_id", booking_id).execute()
-        print(f"temp_df:{temp_df}")
+        # print(f"temp_df:{temp_df}")
         supabase.table(bookings_table_name).delete().eq("booking_id", booking_id).execute()
         st.session_state.bookings_df = st.session_state.bookings_df[st.session_state.bookings_df["booking_id"] != booking_id].reset_index(drop=True)
         send_email(NOTIFICATION, f"booking deleted. court name:{temp_df.data[0]['court_name']} date:{temp_df.data[0]['date']} time:{temp_df.data[0]['time']}")
@@ -2550,7 +2551,7 @@ with tabs[4]:
                         booking_id = str(uuid.uuid4())
                         screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking") if screenshot else None
                         time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
-                        print(f"time:{time_24hr}")
+                        # print(f"time:{time_24hr}")
                         new_booking = {
                             "booking_id": booking_id,
                             "date": date.isoformat(),
@@ -2582,9 +2583,8 @@ with tabs[4]:
                             st.rerun()
     
     st.markdown("---")
-    
     st.subheader("📅 Upcoming Bookings")
-    bookings_df = st.session_state.bookings_df.copy()
+    bookings_df = load_upcoming_bookings()
     court_url_mapping = {court["name"]: court["url"] for court in krakow_courts}
     if bookings_df.empty:
         st.info("No upcoming bookings found.")
@@ -2606,7 +2606,7 @@ with tabs[4]:
         # Filter upcoming bookings
         upcoming_bookings = bookings_df[
             (bookings_df['datetime'].notna()) & 
-            (bookings_df['datetime'] >= pd.Timestamp.now(tz='Asia/Dubai'))
+            (bookings_df['datetime'] >= pd.Timestamp.now(tz='Europe/Berlin'))
         ].sort_values('datetime')
         
         if upcoming_bookings.empty:
@@ -2691,6 +2691,7 @@ with tabs[4]:
                                 f"<span style='font-weight:bold;'>{p2_styled}</span> ({p2_odds:.1f}%)</div>"
                             )
                             plain_suggestion = f"\n*Odds: {players[0]} ({p1_odds:.1f}%) vs {players[1]} ({p2_odds:.1f}%)*"
+                            plain_suggestion ="testing for singles"
                     # =====================================================================
                     # END: MODIFICATION FOR NEW ODDS CALCULATION
                     # =====================================================================
@@ -2710,6 +2711,7 @@ with tabs[4]:
                 
                 share_text = f"*Game Booking :* \nDate : *{full_date}* \nCourt : *{court_name}*\nPlayers :\n{players_list}{standby_text}{plain_suggestion}\nCourt location : {court_url}"
                 encoded_text = urllib.parse.quote(share_text)
+                # print(f"encoded text:{encoded_text}")
                 whatsapp_link = f"https://api.whatsapp.com/send/?text={encoded_text}&type=custom_url&app_absent=0"
     
                 booking_text = f"""
