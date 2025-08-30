@@ -2503,11 +2503,18 @@ with tabs[4]:
     with st.expander("Add New Booking", expanded=False, icon="➡️"):
         st.subheader("Add New Booking")
         match_type = st.radio("Match Type", ["Doubles", "Singles"], index=0, key=f"new_booking_match_type_{st.session_state.form_key_suffix}")
-        
+        start = datetime.strptime("06:00", "%H:%M")
+        end = datetime.strptime("22:00", "%H:%M")
+
+        slots = []
+        current = start
+        while current <= end:
+            slots.append(current.strftime("%-I:%M %p"))
+            current += timedelta(minutes=30)
         with st.form(key=f"add_booking_form_{st.session_state.form_key_suffix}"):
             date = st.date_input("Booking Date *", value=datetime.today())
-            hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
-            time = st.selectbox("Booking Time *", hours, key=f"new_booking_time_{st.session_state.form_key_suffix}")
+            # hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:00 %p") for h in range(6, 22)]
+            time = st.selectbox("Booking Time *", slots, key=f"new_booking_time_{st.session_state.form_key_suffix}")
             
             if match_type == "Doubles":
                 col1, col2 = st.columns(2)
