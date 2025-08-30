@@ -1902,7 +1902,7 @@ with tabs[0]:
                 - **Ranking Criteria**: Players are ranked by Points (highest first), then by Win Percentage, Game Difference Average, Games Won, and finally alphabetically by name.
                 - **Matches Included**: All matches, including those with a 'Visitor', contribute to AR players' stats, but 'Visitor' is excluded from rankings and insights.
 
-                Detailed Ranking Logic at https://github.com/mahadevbk/ar2/blob/main/ar_ranking_logic.pdf
+                Detailed Ranking Logic at https://github.com/vihang16/krakow-tennis/blob/main/krakow_ranking_logic.pdf
                 
                 """)
     elif ranking_type == "Table View":
@@ -2957,7 +2957,7 @@ with tabs[4]:
                                 st.rerun()
 
     st.markdown("---")
-    st.markdown("Detailed Odd's calculation Logic at https://github.com/mahadevbk/ar2/blob/main/ar%20odds%20prediction%20system.pdf")
+    st.markdown("Detailed Odd's calculation Logic at https://github.com/vihang16/krakow-tennis/blob/main/krakow%20odds%20prediction%20system.pdf")
 
             
 
