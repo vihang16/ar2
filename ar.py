@@ -2927,7 +2927,7 @@ with tabs[4]:
                                         for col in ['player1', 'player2', 'player3', 'player4', 'standby_player', 'screenshot_url']:
                                             bookings_to_save[col] = bookings_to_save[col].replace("", None)
                                         bookings_to_save = bookings_to_save.drop_duplicates(subset=['booking_id'], keep='last')
-                                        save_bookings(bookings_to_save)
+                                        save_bookings(pd.DataFrame([updated_booking]))
                                         load_bookings()
                                         st.success("Booking updated successfully.")
                                         st.session_state.edit_booking_key += 1
