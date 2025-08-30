@@ -2509,7 +2509,7 @@ with tabs[4]:
         slots = []
         current = start
         while current <= end:
-            slots.append(current.strftime("%-I:%M %p"))
+            slots.append(current.strftime("%X"))
             current += timedelta(minutes=30)
         with st.form(key=f"add_booking_form_{st.session_state.form_key_suffix}"):
             date = st.date_input("Booking Date *", value=datetime.today())
@@ -2849,9 +2849,9 @@ with tabs[4]:
                     current_time_ampm = format_time_safe(booking_row["time"])
     
                     hours = [datetime.strptime(f"{h}:00", "%H:%M").strftime("%-I:%M %p") for h in range(6, 22)]
-                    time_index = hours.index(current_time_ampm) if current_time_ampm in hours else 0
+                    time_index = slots.index(current_time_ampm) if current_time_ampm in slots else 0
     
-                    time_edit = st.selectbox("Booking Time *", hours, index=time_index, key=f"edit_booking_time_{booking_id}")
+                    time_edit = st.selectbox("Booking Time *", slots, index=time_index, key=f"edit_booking_time_{booking_id}")
                     match_type_edit = st.radio("Match Type", ["Doubles", "Singles"],
                                                index=0 if booking_row["match_type"] == "Doubles" else 1,
                                                key=f"edit_booking_match_type_{booking_id}")
