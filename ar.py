@@ -35,7 +35,7 @@ import io
 from datetime import datetime
 import urllib.parse
 import requests
-from bookings import load_upcoming_bookings
+from bookings import load_all_bookings, load_upcoming_bookings
 from email_notification import send_email
 from locations import add_court, load_locations
 
@@ -2584,6 +2584,7 @@ with tabs[4]:
     st.markdown("---")
     st.subheader("📅 Upcoming Bookings")
     bookings_df = load_upcoming_bookings()
+    all_bookings_df = load_all_bookings()
     court_url_mapping = {court["name"]: court["google_map_url"] for court in krakow_courts}
     if bookings_df.empty:
         st.info("No upcoming bookings found.")
@@ -2802,11 +2803,11 @@ with tabs[4]:
         st.session_state.edit_booking_key = 0
     unique_key = f"select_booking_to_edit_{st.session_state.edit_booking_key}"
     
-    if bookings_df.empty:
+    if all_bookings_df.empty:
         st.info("No bookings available to manage.")
     else:
         # Check for duplicate booking_ids
-        duplicate_ids = bookings_df[bookings_df.duplicated(subset=['booking_id'], keep=False)]['booking_id'].unique()
+        duplicate_ids = all_bookings_df[all_bookings_df.duplicated(subset=['booking_id'], keep=False)]['booking_id'].unique()
         if len(duplicate_ids) > 0:
             st.warning(f"Found duplicate booking_id values: {duplicate_ids.tolist()}. Please remove duplicates in Supabase before editing.")
         else:
@@ -2824,7 +2825,7 @@ with tabs[4]:
                         continue
                 return "Unknown Time"
     
-            for _, row in bookings_df.iterrows():
+            for _, row in all_bookings_df.iterrows():
                 date_str = pd.to_datetime(row['date'], errors="coerce").strftime('%A, %d %b') if row['date'] else "Unknown Date"
                 time_ampm = format_time_safe(row['time'])
                 players = [p for p in [row['player1'], row['player2'], row['player3'], row['player4']] if p]
@@ -2836,8 +2837,8 @@ with tabs[4]:
             selected_booking = st.selectbox("Select a booking to edit or delete", [""] + booking_options, key=unique_key)
             if selected_booking:
                 booking_id = selected_booking.split(" | Booking ID: ")[-1]
-                booking_row = bookings_df[bookings_df["booking_id"] == booking_id].iloc[0]
-                booking_idx = bookings_df[bookings_df["booking_id"] == booking_id].index[0]
+                booking_row = all_bookings_df[all_bookings_df["booking_id"] == booking_id].iloc[0]
+                booking_idx = all_bookings_df[all_bookings_df["booking_id"] == booking_id].index[0]
     
                 with st.expander("Edit Booking Details", expanded=True):
                     date_edit = st.date_input(
@@ -2937,6 +2938,7 @@ with tabs[4]:
                                         bookings_to_save = bookings_to_save.drop_duplicates(subset=['booking_id'], keep='last')
                                         save_bookings(pd.DataFrame([updated_booking]))
                                         load_bookings()
+                                        all_bookings_df = load_all_bookings()
                                         st.success("Booking updated successfully.")
                                         st.session_state.edit_booking_key += 1
                                         st.rerun()
