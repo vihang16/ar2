@@ -2548,12 +2548,13 @@ with tabs[4]:
                     else:
                         booking_id = str(uuid.uuid4())
                         screenshot_url = upload_image_to_supabase(screenshot, booking_id, image_type="booking") if screenshot else None
-                        time_24hr = datetime.strptime(time, "%I:%M %p").strftime("%H:%M")
-                        # print(f"time:{time_24hr}")
+                        time_24hr = datetime.strptime(time, "%X").strftime("%H:%M")
+                        print(f"time:{time_24hr}")
                         new_booking = {
                             "booking_id": booking_id,
                             "date": date.isoformat(),
                             "time": time_24hr,
+                            # "end_time": end_time,
                             "match_type": match_type,
                             "court_name": court,
                             "player1": p1 if p1 else None,
