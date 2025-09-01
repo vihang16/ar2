@@ -2819,7 +2819,7 @@ with tabs[4]:
                 t = str(time_str).strip()
                 for fmt in ["%H:%M", "%H:%M:%S"]:
                     try:
-                        return datetime.strptime(t, fmt).strftime("%-I:%M %p")
+                        return datetime.strptime(t, fmt).strftime("%X")
                     except ValueError:
                         continue
                 return "Unknown Time"
@@ -2913,7 +2913,7 @@ with tabs[4]:
                                     if screenshot_edit:
                                         screenshot_url_edit = upload_image_to_supabase(screenshot_edit, booking_id, image_type="booking")
     
-                                    time_24hr_edit = datetime.strptime(time_edit, "%I:%M %p").strftime("%H:%M")
+                                    time_24hr_edit = datetime.strptime(time_edit, "%X").strftime("%H:%M")
                                     updated_booking = {
                                         "booking_id": booking_id,
                                         "date": date_edit.isoformat(),
