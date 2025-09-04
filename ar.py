@@ -38,6 +38,7 @@ import requests
 from bookings import load_all_bookings, load_upcoming_bookings
 from email_notification import send_email
 from locations import add_court, load_locations
+from util import handle_non_english_charcters
 
 
 # Set the page title
@@ -2414,7 +2415,8 @@ with tabs[2]:
                         image_url = current_image
                         msg = f"profile updated for:{selected_player_manage}"
                         if profile_image:
-                            image_url = upload_image_to_supabase(profile_image, f"profile_{selected_player_manage}_{uuid.uuid4().hex[:6]}", image_type="profile")
+                            clean_up_player_name = handle_non_english_charcters(selected_player_manage)
+                            image_url = upload_image_to_supabase(profile_image, f"profile_{clean_up_player_name}_{uuid.uuid4().hex[:6]}", image_type="profile")
                             msg += " new image added"
                         st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "profile_image_url"] = image_url
                         st.session_state.players_df.loc[st.session_state.players_df["name"] == selected_player_manage, "birthday"] = f"{birthday_day:02d}-{birthday_month:02d}"
